@@ -330,33 +330,33 @@ class IoTDevice:
                 final_target = self.cloud_server
                 particle_color = (80, 80, 255)
                 decision_reason = (
-                    f"TYPE: {task.task_type.name} (Prio: {priority_score:.2f})\n"
-                    f"NET: SNR={snr_db:.1f}dB | Rate={datarate/1e6:.1f}Mbps\n"
-                    f"AI: {decision_method}\n"
-                    f"SEM: {semantic['analysis_method']}\n"
-                    f"Karar: CLOUD (Heavy/Latency Tolerant)"
+                    f"🧠 LLM Analizi: Görev boyutu ({task.size_bits/1e6:.1f}MB) ve\n"
+                    f"kritiklik seviyesi ({priority_score:.2f}) 'Bulut' için uygun.\n"
+                    f"🤖 AI Kararı (PPO): Uzak bulut sunucusunda yüksek\n"
+                    f"kapasite kullanımı optimize edildi.\n"
+                    f"Metod: {decision_method} | Karar: CLOUD OFFLOAD"
                 )
             elif final_decision_idx == 1: # EDGE
                 target_type = "EDGE"
                 final_target = closest_edge
                 particle_color = (80, 255, 150)
                 decision_reason = (
-                    f"TYPE: {task.task_type.name} (Prio: {priority_score:.2f})\n"
-                    f"NET: SNR={snr_db:.1f}dB | Dist={distance:.1f}m\n"
-                    f"AI: {decision_method}\n"
-                    f"ENG: TX={tx_energy_pred:.1f}J | Q_len={len(closest_edge.resource.queue)}\n"
-                    f"Karar: EDGE (Low Latency Recommendation)"
+                    f"🧠 LLM Analizi: Bu görev ({task.task_type.name}) düşük\n"
+                    f"gecikme gerektiriyor. Edge kullanımı öneriliyor.\n"
+                    f"🤖 AI Kararı (PPO): Yakındaki Edge Node yük dengesi\n"
+                    f"ve sinyal gücü ({snr_db:.1f}dB) için en iyi seçim.\n"
+                    f"Metod: {decision_method} | Karar: EDGE OFFLOAD"
                 )
             else: # LOCAL
                 target_type = "LOCAL"
                 final_target = None
                 particle_color = GRAY
                 decision_reason = (
-                    f"TYPE: {task.task_type.name} (Prio: {priority_score:.2f})\n"
-                    f"MATH: Comp_Complex={semantic['complexity']:.2f}\n"
-                    f"AI: {decision_method}\n"
-                    f"ENG: Local_Energy={local_comp_energy_pred:.1f}J\n"
-                    f"Karar: LOCAL EXECUTION"
+                    f"🧠 LLM Analizi: Düşük karmaşıklıktaki görev yerel\n"
+                    f"kaynaklarla batarya dostu şekilde çözülebilir.\n"
+                    f"🤖 AI Kararı (PPO): Yerel işlemci (DVFS) kullanılarak\n"
+                    f"enerji verimliliği ({local_comp_energy_pred:.1f}J) maximize edildi.\n"
+                    f"Metod: {decision_method} | Karar: LOCAL EXECUTION"
                 )
 
             # Log to GUI
@@ -374,10 +374,12 @@ class IoTDevice:
             
             elif final_target == closest_edge:
                 self.current_target = closest_edge
+                edge_id = self.edge_servers.index(closest_edge)
                 if self.gui:
                     self.gui.add_task_particle(self.location[:], closest_edge.location, particle_color, task.id)
                     self.gui.stats['tasks_offloaded'] += 1
-                    self.gui.stats['tasks_to_edge'] += 1
+                    stat_key = f'edge_{edge_id}'
+                    self.gui.stats[stat_key] = self.gui.stats.get(stat_key, 0) + 1
                 
                 # Transmission & Computation Energy
                 tx_energy = TRANSMISSION_POWER * transmission_time * ENERGY_SCALE_FACTOR

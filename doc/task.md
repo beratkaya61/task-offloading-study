@@ -30,7 +30,19 @@ Bu dosya, "Next-Gen IoT Task Offloading" konulu araştırma süreci ve simülasy
         - [x] Gymnasium ortamı (`rl_env.py`) ve Reward Shaping mantığı kodlandı.
         - [x] Eğitim betiği (`train_agent.py`) hazırlandı.
     - [x] `Reward Shaping`: LLM destekli ödül fonksiyonunun tasarlanması ve simülasyona entegrasyonu.
-- [ ] **Faz 3: Test, Analiz ve Makale**
+- [ ] **Faz 3: Test, Analiz ve GUI İyileştirmeleri**
+    - [x] `GUI SCROLL`: Karar akışının mouse wheel ile kaydırılabilir yapılması.
+    - [x] `UI Visibility`: Dark mode ile çakışan siyah yazıların ve görünmeyen barların düzeltilmesi.
+    - [x] `GUI LAYOUT`: Sol Methodology paneli eklenmesi (Screen Width 1800).
+    - [x] `GUI ZOOM`: Harita alanında mouse wheel ile zoom/pan yeteneği.
+    - [x] `NODE STATS`: Offload istatistiklerinin Edge-N bazlı kırılımı.
+    - [x] `HEALTH STATUS`: Device ve Edge bazlı spesifik sağlık göstergeleri.
+    - [x] `UI POLISH`: Node Health ve Stats panellerindeki çakışmanın giderilmesi.
+    - [x] `METHODOLOGY+`: Teknik panelin detaylandırılması ve fontların büyütülmesi.
+    - [x] `AI Humanized Logic`: Karar loglarının "LLM Analizi" vs "AI Önerisi" olarak netleştirilmesi.
+    - [ ] `Performance Metrics`: Latency, Energy, Fairness, Jitter, QoE ölçümleri.
+    - [ ] `Baseline Comparison`: Random ve Greedy algoritmalarla kıyaslama.
+    - [ ] Makale taslağının oluşturulması.
     - [ ] `Performance Metrics`: Latency, Energy, Fairness, Jitter, QoE ölçümleri.
     - [ ] `Baseline Comparison`: Random ve Greedy algoritmalarla kıyaslama.
     - [ ] Makale taslağının oluşturulması.

@@ -1,0 +1,43 @@
+# Walkthrough: Major GUI Overhaul & AI Transparency
+
+This document details the transition of the simulation GUI from a basic dashboard to a professional, three-panel research interface, along with significant improvements to AI decision explainability.
+
+## 📐 1. Professional Multi-Panel Layout
+The screen width has been expanded to **1800px** to accommodate three distinct functional zones:
+
+### [NEW] Left Panel: Simulation Methodology
+A permanent technical reference panel explaining the academic foundations:
+- **Network (Shannon):** Dynamic datarate modelingSistem Mimarisi ve İş Akışı.
+- **Energy (DVFS):** Power consumption calculation.
+- **Semantic AI (LLM):** Contextual priority scoring.
+- **RL Agent (PPO):** Real-time optimization logic.
+
+### Center: Interactive Strategy Map
+The simulation arena now supports:
+- **Zoom & Pan:** Use the mouse wheel in the center area to zoom into specific hotspots.
+- **Dynamic Scaling:** Icons and links scale according to zoom level.
+- **Clipping:** Map content is strictly bounded between sidebars.
+
+### Right Panel: Infrastructure & AI Feed
+- **Granular Stats:** Detailed breakdown of offloaded tasks per Edge Node (0, 1, 2) and Cloud.
+- **Node Health:** Specific health monitor for the Cloud and individual Edge servers (Stable/Busy/Overload).
+
+## 💬 2. AI Explainability: LLM vs. PPO
+We have refined the "Decision Feed" to clarify how the hybrid AI architecture works:
+
+| Feature | Role in System | Visual Feedback Example |
+| :--- | :--- | :--- |
+| **LLM Analysis** | Contextual Meaning | *"Gecikmeye duyarlı görev, Edge öneriliyor."* |
+| **AI Decision (PPO)** | Real-time Optimization | *"Edge Node-1 yük dengesi ve SNR için seçildi."* |
+
+## 🛠️ 3. Fixed Roadmap Rendering
+Resolved syntax errors in [roadmap.md](file:///c:/Users/BERAT/Desktop/task-offloading-study/doc/roadmap.md) to ensure the **Sistem Mimarisi** Mermaid diagram renders correctly for academic presentations.
+
+## 🚀 How to Run
+Execute the updated unified script:
+```powershell
+.\run_simulation.bat
+```
+- **Scroll:** Mouse wheel on the right panel.
+- **Zoom:** Mouse wheel on the central map.
+- **Analyze:** Observe the left panel to correlate theory with real-time visuals.

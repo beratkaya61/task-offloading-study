@@ -29,10 +29,29 @@ Integrating an intelligent agent using Stable-Baselines3.
 - [x] Priority-based deadline penalties implemented.
 
 
-## 3. Verification Plan
-1. **PPO Training**: Run training loop and observe reward convergence.
-2. **Comparative Analysis**: Compare PPO performance against Greedy and Random baselines for "Latency vs. Energy" Pareto frontier.
-3. **Article Update**: Document results in `src/progress/04_RL_Performance_Analysis.md`.
+## 3. Phase 3: GUI & Explainability Overhaul
+Significant layout redesign and advanced interactivity.
+
+### [Component] Layout Expansion - `src/gui.py`
+- [x] **Dual-Sidebar Layout**: Expand `SCREEN_WIDTH` to 1800 to accommodate a new **Left Methodology Panel**.
+- [x] **Methodology Expansion**: Detailed technical explanations for Shannon, Energy, SNR, and AI Logic with purpose/benefits.
+- [x] **UI Collision Fix**: Adjust y-offsets in `draw_legend` and `draw_knowledge_base` to prevent overlap.
+- [x] **Legibility Upgrade**: Increase font sizes for methodology headers and descriptions.
+- [x] **Granular Stats**: Breakdown "Offloaded" count by Cloud, Edge-0, Edge-1, etc.
+- [x] **Node Health Metrics**: Visual health indicators per specific device and edge node.
+
+### [Component] Interactivity & Visualization - `src/gui.py`
+- [ ] **Map Zoom & Pan**: Implement `zoom_level` and `offset` logic for the central map.
+- [ ] **Fixed Sidebars**: Ensure side panels remain static while the map scales.
+
+### [Component] AI Semantic Feedback - `src/simulation_env.py`
+- [ ] **PPO vs. LLM Clarification**: Rewrite feedback strings to clearly distinguish between **LLM Analysis** (Semantic Context) and **AI Recommendation** (PPO Optimization).
+
+## 4. Verification Plan
+1. **Layout**: Confirm both sidebars are visible and map is centered.
+2. **Zoom**: Test mouse wheel zoom on the map.
+3. **Stat Accuracy**: Verify per-edge offloading counts match simulation events.
+4. **Health**: Check that specific overloaded nodes show red/offline status.
 
 ---
 *Date: February 17, 2026*

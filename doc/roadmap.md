@@ -81,6 +81,8 @@ flowchart TD
     %% Parameter Flow Annotations
     style RL_Logic fill:#1a2a4a,stroke:#00ffff,color:#fff
     style Reward_Shaping fill:#2a1a4a,stroke:#ff00ff,color:#fff
+```
+
 ## Sistem İş Akışı: Adım Adım Derinlemesine Bakış
 
 Şemada görülen karmaşık yapıyı, bir görevin sistemdeki yolculuğu üzerinden adım adım açıklayalım:
@@ -114,7 +116,9 @@ Karar verildikten sonra fiziksel dünya devreye girer.
     - **Local**: Cihaz kendi işlemcisini kullanır, `DVFS Modeli` ile frekansı ayarlar ve batarya harcar.
     - **Edge/Cloud**: Veri havadan gönderilir. `Shannon Formülü` ile o anki gerçek veri hızı (Mbps) hesaplanır. Sunucuda `M/M/1 Kuyruk Modeli` ile bekleme süreleri eklenir.
 
-### 6. Adım: Takip ve Görselleştirme (Metrics & GUI)
-Tüm bu matematiksel süreçler kullanıcı için Dashboard'a aktarılır.
-*   **Nasıl?**: `Metrics Collector` tüm gecikme ve enerji verilerini toplar. **Dashboard** üzerinde cihazlar hareket ederken, **Decision Feed** panelinde "PPO Ajanı bu kararı şu sinyal kalitesi ve LLM önceliğiyle verdi" şeklinde detaylı raporlar akar.
+### 6. Takip ve Görselleştirme (Metrics & GUI)
+Tüm bu matematiksel süreçler kullanıcı için modern bir Dashboard'a aktarılır.
+*   **Methodology Paneli (Sol):** Sistemin akademik temellerini (Shannon, DVFS, Semantic AI) ve bu yöntemlerin optimizasyona faydalarını detaylıca açıklar.
+*   **Harita Alanı (Orta):** Cihazların hareketini, görev akışlarını (Particles) ve ağ durumunu Zoom/Pan yeteneğiyle görselleştirir.
+*   **Analiz Paneli (Sağ):** Sunucu yük dağılımları, anlık sağlık (Health) durumları ve AI karar mekanizmasının izlenebileceği "Decision Feed" alanıdır.
 
