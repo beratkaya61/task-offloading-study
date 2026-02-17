@@ -2,8 +2,16 @@ import simpy
 import random
 import math
 import dataclasses
+import os
 from enum import Enum
 from llm_analyzer import SemanticAnalyzer
+try:
+    from stable_baselines3 import PPO
+    from rl_env import OffloadingEnv
+    RL_AVAILABLE = True
+except ImportError:
+    RL_AVAILABLE = False
+    print("Warning: stable-baselines3 or rl_env not found. RL features disabled.")
 try:
     from src.gui import SimulationGUI
     GUI_ENABLED = True
@@ -33,6 +41,13 @@ KAPPA = 1e-28        # Effective switched capacitance for CPU energy
 DEFAULT_CPU_FREQ = 1e9 # 1 GHz
 CLOUD_CPU_FREQ = 5e9   # 5 GHz (Faster)
 CLOUD_LATENCY = 0.1    # 100ms fixed latency for Cloud
+
+# Colors for GUI logs
+GRAY = (100, 100, 100)
+GREEN = (50, 200, 50)
+BLUE = (50, 50, 200)
+ORANGE = (255, 165, 0)
+RED = (200, 50, 50)
 
 # Battery Model
 BATTERY_CAPACITY = 10000.0  # Joules (realistic for smartphone: ~10,000J = 2.7 Wh)
@@ -170,8 +185,31 @@ class CloudServer:
         
         print(f"[CLOUD] Task {task.id} processed in {processing_time:.4f}s (+ {2*CLOUD_LATENCY}s latency)")
 
-# Global LLM Analyzer (initialized once)
+# Global AI Models (initialized once)
 LLM_ANALYZER = None
+PPO_AGENT = None
+RL_ENV_WRAPPER = None
+
+def load_ai_models(edge_servers, cloud, channel):
+    global LLM_ANALYZER, PPO_AGENT, RL_ENV_WRAPPER
+    print("[INIT] Loading AI Models...")
+    LLM_ANALYZER = SemanticAnalyzer()
+    
+    if RL_AVAILABLE:
+        # Consistency: Always look for models in src/models
+        model_path = "src/models/ppo_offloading_agent.zip"
+        if os.path.exists(model_path):
+            try:
+                print(f"[INIT] Loading PPO Agent from {model_path}...")
+                PPO_AGENT = PPO.load(model_path)
+                from rl_env import OffloadingEnv
+                # Create a lightweight env wrapper only for normalization logic
+                RL_ENV_WRAPPER = OffloadingEnv(edge_servers=edge_servers, cloud_server=cloud, channel=channel)
+                print("[INIT] RL Agent loaded successfully!")
+            except Exception as e:
+                print(f"[INIT] RL Agent load failed: {e}")
+        else:
+            print("[INIT] RL Model file not found. Running with Semantic Rule-based logic.")
 
 class IoTDevice:
     def __init__(self, env, id, channel, edge_servers, cloud_server, battery_capacity, gui=None):
@@ -241,63 +279,127 @@ class IoTDevice:
             # Update GUI state
             self.current_task_type = task.task_type.name
             
-            # --- OFFLOADING DECISION (Placeholder for RL/LLM Agent) ---
-            # Ideally this comes from the Intelligence Layer
-            # For now: Greedy Strategy (Offload to closest Edge if Signal is good, else Local)
+            # --- AI OFFLOADING DECISION (Semantic + PPO Agent) ---
+            # 1. Get LLM Semantic Analysis (Used for stats and fallback)
+            semantic = task.semantic_analysis if task.semantic_analysis else LLM_ANALYZER.analyze_task(task)
+            rec_target = semantic['recommended_target']
+            priority_score = semantic['priority_score']
             
+            # 2. Get Real-time Network Stats (Shannon Model)
             closest_edge = min(self.edge_servers, key=lambda e: math.dist(self.location, e.location))
             datarate, distance = self.channel.calculate_datarate(self, closest_edge)
+            snr_db = 10 * math.log10( (TRANSMISSION_POWER * (distance**-PATH_LOSS_EXPONENT)) / NOISE_POWER ) if distance > 0 else 30
             
+            # Predict Energy
             transmission_time = task.size_bits / datarate
-            # Simple Greedy Logic: 
-            # If Edge is close/fast, go Edge.
-            # If Task is HUGE, go Cloud.
+            tx_energy_pred = TRANSMISSION_POWER * transmission_time * ENERGY_SCALE_FACTOR
+            local_comp_energy_pred = KAPPA * (DEFAULT_CPU_FREQ ** 2) * task.cpu_cycles * ENERGY_SCALE_FACTOR
             
-            if task.size_bits > 4e6: # > 4Mb -> Cloud
-                print(f"  -> Decided to OFFLOAD to CLOUD (Heavy Task)")
-                self.current_target = self.cloud_server
+            # 3. PPO AGENT INFERENCE (If available)
+            final_decision_idx = None
+            decision_method = "Semantic Rules"
+            
+            if PPO_AGENT and RL_ENV_WRAPPER:
+                # Prepare state vector
+                RL_ENV_WRAPPER.current_device = self
+                RL_ENV_WRAPPER.current_task = task
+                obs = RL_ENV_WRAPPER._get_obs()
                 
-                # Trigger GUI particle animation
+                # Predict action
+                action, _ = PPO_AGENT.predict(obs, deterministic=True)
+                final_decision_idx = action
+                decision_method = "PPO Agent (Optimized)"
+            else:
+                # Fallback to Semantic Rules
+                mapping = {"local": 0, "edge": 1, "cloud": 2}
+                final_decision_idx = mapping.get(rec_target, 1)
+
+            # 4. Final Decision Assignment
+            decision_msg = ""
+            final_target = None
+            particle_color = GRAY
+            
+            # Battery-Aware Check Override
+            battery_pct = (self.battery / BATTERY_CAPACITY) * 100
+            if battery_pct < 15 and final_decision_idx == 0:
+                final_decision_idx = 1 # Force offload on low battery
+                decision_method += " + Battery Guard"
+
+            if final_decision_idx == 2: # CLOUD
+                target_type = "CLOUD"
+                final_target = self.cloud_server
+                particle_color = (80, 80, 255)
+                decision_reason = (
+                    f"TYPE: {task.task_type.name} (Prio: {priority_score:.2f})\n"
+                    f"NET: SNR={snr_db:.1f}dB | Rate={datarate/1e6:.1f}Mbps\n"
+                    f"AI: {decision_method}\n"
+                    f"SEM: {semantic['analysis_method']}\n"
+                    f"Karar: CLOUD (Heavy/Latency Tolerant)"
+                )
+            elif final_decision_idx == 1: # EDGE
+                target_type = "EDGE"
+                final_target = closest_edge
+                particle_color = (80, 255, 150)
+                decision_reason = (
+                    f"TYPE: {task.task_type.name} (Prio: {priority_score:.2f})\n"
+                    f"NET: SNR={snr_db:.1f}dB | Dist={distance:.1f}m\n"
+                    f"AI: {decision_method}\n"
+                    f"ENG: TX={tx_energy_pred:.1f}J | Q_len={len(closest_edge.resource.queue)}\n"
+                    f"Karar: EDGE (Low Latency Recommendation)"
+                )
+            else: # LOCAL
+                target_type = "LOCAL"
+                final_target = None
+                particle_color = GRAY
+                decision_reason = (
+                    f"TYPE: {task.task_type.name} (Prio: {priority_score:.2f})\n"
+                    f"MATH: Comp_Complex={semantic['complexity']:.2f}\n"
+                    f"AI: {decision_method}\n"
+                    f"ENG: Local_Energy={local_comp_energy_pred:.1f}J\n"
+                    f"Karar: LOCAL EXECUTION"
+                )
+
+            # Log to GUI
+            if self.gui:
+                self.gui.add_decision_log(task.id, decision_reason, color=particle_color if final_target else GRAY)
+
+            # Execute Decision
+            if final_target == self.cloud_server:
+                self.current_target = self.cloud_server
                 if self.gui:
-                    self.gui.add_task_particle(self.location[:], (900, 100), (50, 50, 200))
+                    self.gui.add_task_particle(self.location[:], (900, 100), particle_color, task.id)
                     self.gui.stats['tasks_offloaded'] += 1
                     self.gui.stats['tasks_to_cloud'] += 1
-                
-                # Cloud Latency
                 yield self.env.process(self.cloud_server.process_task(task))
-            else:
-                print(f"  -> Decided to OFFLOAD to Edge-{closest_edge.id} (Dist: {distance:.2f}m, Rate: {datarate/1e6:.2f} Mbps)")
+            
+            elif final_target == closest_edge:
                 self.current_target = closest_edge
-                
-                # Trigger GUI particle animation
                 if self.gui:
-                    self.gui.add_task_particle(self.location[:], closest_edge.location, (255, 165, 0))
+                    self.gui.add_task_particle(self.location[:], closest_edge.location, particle_color, task.id)
                     self.gui.stats['tasks_offloaded'] += 1
                     self.gui.stats['tasks_to_edge'] += 1
                 
-                # Transmission Cost (Energy)
+                # Transmission & Computation Energy
                 tx_energy = TRANSMISSION_POWER * transmission_time * ENERGY_SCALE_FACTOR
+                comp_energy_overhead = 0.05 * local_comp_energy_pred # Basic control overhead
+                self.battery -= (tx_energy + comp_energy_overhead)
                 
-                # Computation Energy (if processing locally after receiving from edge)
-                # This represents the control overhead
-                comp_energy = KAPPA * (DEFAULT_CPU_FREQ ** 2) * DEFAULT_CPU_FREQ * (task.cpu_cycles / DEFAULT_CPU_FREQ) * ENERGY_SCALE_FACTOR
-                
-                # Total energy consumption
-                total_energy = tx_energy + comp_energy
-                self.battery -= total_energy
-                
-                print(f"  -> Energy: TX={tx_energy:.2f}J, Comp={comp_energy:.2f}J, Battery: {self.battery:.1f}J ({(self.battery/BATTERY_CAPACITY)*100:.1f}%)")
-                
-                yield self.env.timeout(transmission_time) # Transmission delay
-                
-                # Request processing at Edge
+                yield self.env.timeout(transmission_time)
                 closest_edge.current_load += 1
                 with closest_edge.resource.request() as req:
                     yield req
                     yield self.env.process(closest_edge.process_task(task))
+            
+            else: # LOCAL
+                self.current_target = None
+                self.battery -= local_comp_energy_pred
+                processing_time = task.cpu_cycles / DEFAULT_CPU_FREQ
+                yield self.env.timeout(processing_time)
+                task.completion_time = self.env.now
+                print(f"  -> Task {task.id} processed LOCALLY in {processing_time:.4f}s")
 
             total_delay = task.completion_time - task.creation_time
-            print(f"  -> Task {task.id} COMPLETED. Total Delay: {total_delay:.4f}s")
+            print(f"  -> Task {task.id} COMPLETED. Total Delay: {total_delay:.4f}s | Battery: {self.battery:.1f}J")
             
             # Reset GUI state
             self.current_target = None
@@ -306,22 +408,24 @@ class IoTDevice:
 def main(): # Renamed from run_simulation
     global LLM_ANALYZER
     
-    random.seed(RANDOM_SEED)
+def main():
+    import os
+    print("--------------------------------------------------")
+    print("   IOT TASK OFFLOADING SIMULATION v2.0 (AI CORE)   ")
+    print("--------------------------------------------------")
     env = simpy.Environment()
-    
-    # Initialize LLM Semantic Analyzer (rule-based by default)
-    print("[INIT] Initializing LLM Semantic Analyzer...")
-    LLM_ANALYZER = SemanticAnalyzer(use_llm=False)  # Set to True for actual LLM
-    print("[INIT] Analyzer ready!")
-    
-    # Infrastructure
     channel = WirelessChannel()
+    
+    # 1. Setup Infrastructure
     cloud_server = CloudServer(env)
     edge_servers = [
-        EdgeServer(env, id=0, location=(250, 250), max_freq=2e9),   # 2 GHz
-        EdgeServer(env, id=1, location=(750, 250), max_freq=2.5e9), # 2.5 GHz
-        EdgeServer(env, id=2, location=(500, 750), max_freq=3e9)    # 3 GHz
+        EdgeServer(env, 1, (200, 200), 2.5e9),
+        EdgeServer(env, 2, (800, 200), 2.0e9),
+        EdgeServer(env, 3, (500, 800), 2.2e9)
     ]
+    
+    # 2. Setup AI Models
+    load_ai_models(edge_servers, cloud_server, channel)
     
     # GUI Setup (Step 1: Init without devices)
     gui = None

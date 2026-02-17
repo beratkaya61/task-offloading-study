@@ -2,3 +2,9 @@ simpy
 pandas
 numpy
 pygame
+stable-baselines3
+shimmy
+gymnasium
+torch
+transformers
+matplotlib

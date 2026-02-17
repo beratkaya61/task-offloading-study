@@ -1,27 +1,34 @@
 import pygame
 import math
 
-# Colors
+# Colors - Modern Professional Palette
 WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (200, 50, 50)     # Critical Task / Low Battery
-GREEN = (50, 200, 50)   # Edge Server
-BLUE = (50, 50, 200)    # Cloud
-GRAY = (100, 100, 100)  # Device
-YELLOW = (200, 200, 50) # Interference / Wait
-ORANGE = (255, 165, 0)  # High Data Task
-LIGHT_GRAY = (240, 240, 240)  # Background grid
+BLACK = (20, 20, 25)      # Deep Black (Background)
+NAVY = (10, 25, 45)       # Dark Navy (Glassmorphism base)
+ACID_GREEN = (175, 255, 45) # Sharp Green for accents
+CYAN = (0, 255, 255)      # Cyber Cyan
+RED = (255, 80, 80)       # Modern Red
+GREEN = (80, 255, 150)    # Soft Neon Green
+BLUE = (80, 180, 255)     # Modern Blue
+GRAY = (180, 180, 190)    # Text Gray
+DARK_GRAY = (40, 40, 50)  # Panel Gray
+ORANGE = (255, 160, 0)
+GOLD = (255, 215, 0)
+LIGHT_GRAY = (240, 240, 250)
 
-SCREEN_WIDTH = 1200  # Increased for legend panel
+SCREEN_WIDTH = 1500  # Map (1000) + Side Panel (500)
 SCREEN_HEIGHT = 1000
+SIDE_PANEL_X = 1000
+SIDE_PANEL_WIDTH = 500
 
 class TaskParticle:
     """Visual representation of a task being offloaded"""
-    def __init__(self, start_pos, end_pos, color):
+    def __init__(self, start_pos, end_pos, color, task_id):
         self.pos = list(start_pos)
         self.target = end_pos
         self.color = color
-        self.speed = 5
+        self.task_id = task_id
+        self.speed = 7 # Slightly faster for better flow
         self.alive = True
         
     def update(self):
@@ -37,8 +44,13 @@ class TaskParticle:
         self.pos[0] += (dx / dist) * self.speed
         self.pos[1] += (dy / dist) * self.speed
     
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (int(self.pos[0]), int(self.pos[1])), 4)
+    def draw(self, screen, font):
+        pygame.draw.circle(screen, self.color, (int(self.pos[0]), int(self.pos[1])), 5)
+        # Draw Task ID pill
+        id_text = font.render(f"T-{self.task_id}", True, WHITE)
+        text_rect = id_text.get_rect(center=(int(self.pos[0]), int(self.pos[1]) - 15))
+        pygame.draw.rect(screen, self.color, text_rect.inflate(4, 2), border_radius=3)
+        screen.blit(id_text, text_rect)
 
 class SimulationGUI:
     def __init__(self, env, devices, edge_servers, cloud_server):
@@ -62,8 +74,18 @@ class SimulationGUI:
         self.edge_servers = edge_servers
         self.cloud_server = cloud_server
         
+        # UI Setup
         self.particles = []  # Task flow animations
         self.stats = {"tasks_offloaded": 0, "tasks_to_cloud": 0, "tasks_to_edge": 0}
+        self.decision_log = [] # List of strings for the chat panel
+        self.max_log_msgs = 12 # Reduced for better spacing
+        
+        # Transparent Surfaces for Glassmorphism
+        self.side_panel_surf = pygame.Surface((SIDE_PANEL_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.side_panel_surf.fill((10, 25, 45, 240)) # Arka plan (Navy with alpha)
+        
+        self.log_panel_surf = pygame.Surface((SIDE_PANEL_WIDTH - 20, 480), pygame.SRCALPHA)
+        self.log_panel_surf.fill((20, 20, 30, 180)) # Decision log bg
         
         self.running = True
 
@@ -74,9 +96,15 @@ class SimulationGUI:
                 pygame.quit()
                 exit()
 
-    def add_task_particle(self, start, end, color):
-        """Add animated particle for task flow"""
-        self.particles.append(TaskParticle(start, end, color))
+    def add_task_particle(self, start, end, color, task_id):
+        """Add animated particle for task flow with ID"""
+        self.particles.append(TaskParticle(start, end, color, task_id))
+
+    def add_decision_log(self, task_id, message, color=BLACK):
+        """Add a detailed decision reasoning to the chat log"""
+        self.decision_log.append({"id": task_id, "msg": message, "color": color, "time": self.env.now})
+        if len(self.decision_log) > self.max_log_msgs:
+            self.decision_log.pop(0)
 
     def draw_grid(self):
         """Draw background grid"""
@@ -86,57 +114,123 @@ class SimulationGUI:
             pygame.draw.line(self.screen, LIGHT_GRAY, (0, y), (1000, y), 1)
 
     def draw_legend(self):
-        """Draw legend panel on the right side"""
-        panel_x = 1020
-        panel_width = 180
+        """Draw professional legend and performance metrics"""
+        y_offset = 20
         
-        # Background
-        pygame.draw.rect(self.screen, (250, 250, 250), (panel_x, 0, panel_width, SCREEN_HEIGHT))
-        pygame.draw.line(self.screen, BLACK, (panel_x, 0), (panel_x, SCREEN_HEIGHT), 2)
+        # --- Dashboard Header ---
+        header_text = self.title_font.render("IOT DASHBOARD", True, CYAN)
+        self.screen.blit(header_text, (SIDE_PANEL_X + 25, y_offset))
+        y_offset += 35
         
-        # Title
-        title = self.title_font.render("LEGEND", True, BLACK)
-        self.screen.blit(title, (panel_x + 60, 10))
+        # --- Infrastructure Card ---
+        infra_rect = pygame.Rect(SIDE_PANEL_X + 20, y_offset, SIDE_PANEL_WIDTH - 40, 150)
+        pygame.draw.rect(self.screen, (30, 35, 60), infra_rect, border_radius=8)
+        pygame.draw.rect(self.screen, CYAN, infra_rect, 1, border_radius=8)
         
-        y_offset = 50
+        sub_title = self.font.render("INFRASTRUCTURE STATUS", True, CYAN)
+        self.screen.blit(sub_title, (SIDE_PANEL_X + 35, y_offset + 10))
+        y_offset += 40
         
-        # Icons
+        # Changed icons to standard symbols for better compatibility
         legends = [
-            ("🚗", "Mobile IoT (Vehicles)", BLACK),
-            ("🏢", "Edge Server", GREEN),
-            ("☁️", "Cloud Server", BLUE),
+            ("[D]", "V-IoT Device", WHITE, (100, 100, 100)),
+            ("[E]", "Edge Compute Node", GREEN, (50, 200, 50)),
+            ("[C]", "Remote Cloud", BLUE, (80, 80, 255)),
         ]
         
-        for icon, label, color in legends:
-            icon_surf = self.icon_font.render(icon, True, color)
-            self.screen.blit(icon_surf, (panel_x + 10, y_offset - 5))
-            text = self.font.render(label, True, BLACK)
-            self.screen.blit(text, (panel_x + 50, y_offset + 5))
-            y_offset += 45
+        for icon, label, color, dot_color in legends:
+            # Draw a colored dot and text instead of emojis
+            pygame.draw.circle(self.screen, dot_color, (SIDE_PANEL_X + 45, y_offset + 10), 8)
+            icon_surf = self.font.render(icon, True, color)
+            self.screen.blit(icon_surf, (SIDE_PANEL_X + 65, y_offset + 2))
+            text = self.font.render(label, True, WHITE)
+            self.screen.blit(text, (SIDE_PANEL_X + 110, y_offset + 3))
+            y_offset += 30
+
+        # --- Performance Metrics Card ---
+        y_offset += 25
+        stats_rect = pygame.Rect(SIDE_PANEL_X + 20, y_offset, SIDE_PANEL_WIDTH - 40, 130)
+        pygame.draw.rect(self.screen, (25, 30, 50), stats_rect, border_radius=8)
         
-        # Stats Panel
-        y_offset += 30
-        stats_title = self.title_font.render("STATISTICS", True, BLACK)
-        self.screen.blit(stats_title, (panel_x + 40, y_offset))
-        y_offset += 30
-        
-        stats_texts = [
-            f"Time: {self.env.now:.1f}s",
-            f"Total Tasks: {self.stats['tasks_offloaded']}",
-            f"→ Edge: {self.stats['tasks_to_edge']}",
-            f"→ Cloud: {self.stats['tasks_to_cloud']}",
-            f"Active Devices: {len([d for d in self.devices if d.battery > 0])}",
+        stats_list = [
+            ("Uptime:", f"{self.env.now:.1f}s", ACID_GREEN),
+            ("Offloaded:", f"{self.stats['tasks_offloaded']}", WHITE),
+            ("Edge Load:", f"{self.stats['tasks_to_edge']}", GREEN),
+            ("Cloud Load:", f"{self.stats['tasks_to_cloud']}", BLUE),
+            ("Devices Online:", f"{len([d for d in self.devices if d.battery > 0])}", ACID_GREEN),
         ]
         
-        for stat in stats_texts:
-            text = self.font.render(stat, True, BLACK)
-            self.screen.blit(text, (panel_x + 10, y_offset))
+        for label, val, color in stats_list:
+            lbl_surf = self.font.render(label, True, GRAY)
+            val_surf = self.font.render(val, True, color)
+            self.screen.blit(lbl_surf, (SIDE_PANEL_X + 35, y_offset + 10))
+            self.screen.blit(val_surf, (SIDE_PANEL_X + 220, y_offset + 10))
             y_offset += 20
+
+    def draw_knowledge_base(self):
+        """Separate panel for Scientific Booklet to avoid overlapping"""
+        panel_y = 360
+        panel_h = 160
+        booklet_rect = pygame.Rect(SIDE_PANEL_X + 20, panel_y, SIDE_PANEL_WIDTH - 40, panel_h)
+        pygame.draw.rect(self.screen, (35, 40, 65), booklet_rect, border_radius=8)
+        pygame.draw.rect(self.screen, GOLD, booklet_rect, 1, border_radius=8)
+        
+        title = self.font.render("SCIENTIFIC BOOKLET", True, GOLD)
+        self.screen.blit(title, (SIDE_PANEL_X + 35, panel_y + 10))
+        
+        lines = [
+            "1. Shannon: R = B * log2(1 + SNR)",
+            "2. Energy: P_cpu = k * f^3",
+            "3. SNR: 10 * log10(P_rx / N)",
+            "4. Task: Real-world Google Trace",
+            "5. Logic: Semantic AI Offloading"
+        ]
+        for i, line in enumerate(lines):
+            line_surf = self.font.render(line, True, WHITE)
+            self.screen.blit(line_surf, (SIDE_PANEL_X + 35, panel_y + 40 + (i * 22)))
+
+    def draw_decision_log(self):
+        """Draw Professional AI Decision Feed in its own space"""
+        panel_y = 535
+        panel_h = 445
+        
+        # Log background with glass effect
+        self.screen.blit(self.log_panel_surf, (SIDE_PANEL_X + 10, panel_y))
+        pygame.draw.rect(self.screen, CYAN, (SIDE_PANEL_X + 10, panel_y, SIDE_PANEL_WIDTH - 20, panel_h), 1, border_radius=5)
+        
+        title_surf = self.title_font.render("SEMANTIC DECISION FEED", True, ACID_GREEN)
+        self.screen.blit(title_surf, (SIDE_PANEL_X + 25, panel_y + 15))
+        
+        y_pos = panel_y + 50
+        for entry in self.decision_log[::-1]:
+            # Container for each log entry
+            entry_h = 95 # Increased height for more detail
+            if y_pos + entry_h > panel_y + panel_h: break
+            
+            # Entry border/indicator
+            pygame.draw.line(self.screen, entry['color'], (SIDE_PANEL_X + 20, y_pos), (SIDE_PANEL_X + 20, y_pos + entry_h - 15), 3)
+            
+            # Time & ID
+            header = f"Task-{entry['id']} | Mission T: {entry['time']:.1f}s"
+            header_surf = self.font.render(header, True, entry['color'])
+            self.screen.blit(header_surf, (SIDE_PANEL_X + 30, y_pos + 5))
+            
+            # Message lines
+            messages = entry['msg'].split('\n')
+            for i, line in enumerate(messages):
+                # Bold the 'Karar' or 'Decision' line
+                c = WHITE if i > 0 else entry['color']
+                if "Karar:" in line or "Decision:" in line: c = ACID_GREEN
+                
+                line_surf = self.font.render(line, True, c)
+                self.screen.blit(line_surf, (SIDE_PANEL_X + 35, y_pos + 25 + (i * 13)))
+            
+            y_pos += entry_h
 
     def draw(self):
         if not self.running: return
         
-        self.screen.fill(WHITE)
+        self.screen.fill((25, 25, 30)) # Modern Dark background
         self.draw_grid()
         
         # Draw Cloud (Top Right)
@@ -270,12 +364,18 @@ class SimulationGUI:
         for particle in self.particles[:]:
             particle.update()
             if particle.alive:
-                particle.draw(self.screen)
+                particle.draw(self.screen, self.font)
             else:
                 self.particles.remove(particle)
         
-        # Draw legend panel
+        # Draw Side Panel Background (Glassmorphism Effect)
+        self.screen.blit(self.side_panel_surf, (SIDE_PANEL_X, 0))
+        pygame.draw.line(self.screen, CYAN, (SIDE_PANEL_X, 0), (SIDE_PANEL_X, SCREEN_HEIGHT), 2)
+        
+        # Draw panels
         self.draw_legend()
+        self.draw_knowledge_base()
+        self.draw_decision_log()
         
         pygame.display.flip()
         self.handle_events()
