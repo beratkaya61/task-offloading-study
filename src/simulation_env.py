@@ -50,8 +50,8 @@ ORANGE = (255, 165, 0)
 RED = (200, 50, 50)
 
 # Battery Model
-BATTERY_CAPACITY = 10000.0  # Joules (realistic for smartphone: ~10,000J = 2.7 Wh)
-IDLE_POWER = 5.0  # Watts (idle consumption - increased for demo visibility)
+BATTERY_CAPACITY = 20000.0  # Increased for longer demo
+IDLE_POWER = 1.0  # Reduced to prevent premature death
 ENERGY_SCALE_FACTOR = 50.0  # Multiplier to make energy consumption visible
 
 
@@ -226,6 +226,7 @@ class IoTDevice:
         # GUI Helpers
         self.current_target = None
         self.current_task_type = None
+        self.latency_history = []  # For Phase 5 Advanced Metrics
         
         self.action_process = env.process(self.run())
 
@@ -307,7 +308,8 @@ class IoTDevice:
                 
                 # Predict action
                 action, _ = PPO_AGENT.predict(obs, deterministic=True)
-                final_decision_idx = action
+                # action can be a numpy array, cast to int for dictionary hashing
+                final_decision_idx = int(action)
                 decision_method = "PPO Agent (Optimized)"
             else:
                 # Fallback to Semantic Rules
@@ -343,7 +345,7 @@ class IoTDevice:
                 decision_reason = (
                     f"🧠 LLM Analizi: Bu görev ({task.task_type.name}) düşük\n"
                     f"gecikme gerektiriyor. Edge kullanımı öneriliyor.\n"
-                    f"🤖 AI Kararı (PPO): Yakındaki Edge Node yük dengesi\n"
+                    f"🤖 AI Kararı (PPO): Yakındaki Edge Node (ID: {self.edge_servers.index(closest_edge)+1}) yük dengesi\n"
                     f"ve sinyal gücü ({snr_db:.1f}dB) için en iyi seçim.\n"
                     f"Metod: {decision_method} | Karar: EDGE OFFLOAD"
                 )
@@ -363,7 +365,40 @@ class IoTDevice:
             if self.gui:
                 self.gui.add_decision_log(task.id, decision_reason, color=particle_color if final_target else GRAY)
 
-            # Execute Decision
+            # --- Shadow Baseline Calculations (Phase 4) ---
+            if self.gui:
+                # 1. Calculate costs for all 3 options for current state
+                costs = {} # {choice_idx: (latency, energy)}
+                # Choice 0: Local
+                local_lat = task.cpu_cycles / DEFAULT_CPU_FREQ
+                costs[0] = (local_lat, local_comp_energy_pred)
+                # Choice 1: Edge (closest)
+                edge_lat = transmission_time + (task.cpu_cycles / closest_edge.max_freq) + (len(closest_edge.resource.queue) * (task.cpu_cycles / closest_edge.max_freq))
+                edge_en = tx_energy_pred + (0.05 * local_comp_energy_pred)
+                costs[1] = (edge_lat, edge_en)
+                # Choice 2: Cloud
+                cloud_lat = (task.size_bits / CLOUD_CPU_FREQ) + CLOUD_LATENCY # simplified
+                cloud_en = (TRANSMISSION_POWER * (task.size_bits / 1e7) * ENERGY_SCALE_FACTOR) # simplified
+                costs[2] = (cloud_lat, cloud_en)
+                
+                # A. Greedy Choice (Min Latency for simplicity in demo)
+                greedy_idx = min(costs, key=lambda k: costs[k][0])
+                g_lat, g_en = costs[greedy_idx]
+                self.gui.stats['greedy_lat'] = self.gui.stats.get('greedy_lat', 0) + g_lat
+                self.gui.stats['greedy_en'] = self.gui.stats.get('greedy_en', 0) + g_en
+                
+                # B. Random Choice
+                rand_idx = random.choice([0, 1, 2])
+                r_lat, r_en = costs[rand_idx]
+                self.gui.stats['random_lat'] = self.gui.stats.get('random_lat', 0) + r_lat
+                self.gui.stats['random_en'] = self.gui.stats.get('random_en', 0) + r_en
+                
+                # C. Actual PPO Progress
+                p_lat, p_en = costs[final_decision_idx]
+                self.gui.stats['ppo_lat'] = self.gui.stats.get('ppo_lat', 0) + p_lat
+                self.gui.stats['ppo_en'] = self.gui.stats.get('ppo_en', 0) + p_en
+
+            # --- Execute Decision (Original Logic Restored) ---
             if final_target == self.cloud_server:
                 self.current_target = self.cloud_server
                 if self.gui:
@@ -401,15 +436,45 @@ class IoTDevice:
                 print(f"  -> Task {task.id} processed LOCALLY in {processing_time:.4f}s")
 
             total_delay = task.completion_time - task.creation_time
+            self.latency_history.append(total_delay)
+            
+            # --- Advanced Metrics Update (Phase 5) ---
+            if self.gui:
+                # 1. Update Jitter (Std Dev of latency)
+                if len(self.latency_history) > 1:
+                    avg_lat = sum(self.latency_history) / len(self.latency_history)
+                    variance = sum((x - avg_lat)**2 for x in self.latency_history) / len(self.latency_history)
+                    jitter = math.sqrt(variance)
+                    # Store global max jitter or avg jitter in stats
+                    self.gui.stats['jitter_avg'] = self.gui.stats.get('jitter_avg', 0) * 0.9 + jitter * 0.1
+                
+                # 2. Fairness Calculation (Jain's Index)
+                # We need all devices' average latencies
+                all_avg_lats = []
+                for d in self.gui.devices:
+                    if d.latency_history:
+                        all_avg_lats.append(sum(d.latency_history) / len(d.latency_history))
+                
+                if len(all_avg_lats) > 1:
+                    n = len(all_avg_lats)
+                    sum_x = sum(all_avg_lats)
+                    sum_x_sq = sum(x**2 for x in all_avg_lats)
+                    fairness = (sum_x**2) / (n * sum_x_sq) if sum_x_sq > 0 else 1.0
+                    self.gui.stats['fairness_index'] = fairness
+
+                # 3. QoE Score (Priority-weighted satisfaction)
+                priority_val = priority_score if 'priority_score' in locals() else 0.5
+                # QoE decreases with delay, especially for high priority
+                delay_penalty = total_delay * (1 + priority_val)
+                qoe_sample = max(0, 100 - (delay_penalty * 20)) # Score 0-100
+                self.gui.stats['qoe_score'] = self.gui.stats.get('qoe_score', 0) * 0.95 + qoe_sample * 0.05
+
             print(f"  -> Task {task.id} COMPLETED. Total Delay: {total_delay:.4f}s | Battery: {self.battery:.1f}J")
             
             # Reset GUI state
             self.current_target = None
 
 
-def main(): # Renamed from run_simulation
-    global LLM_ANALYZER
-    
 def main():
     import os
     print("--------------------------------------------------")
@@ -454,6 +519,18 @@ def main():
             if not gui.running: break
             
     print("--- Simulation Finished ---")
-
+    
+    # Keep window open until user closes it
+    if gui:
+        print("[INFO] Simulation complete. Window will remain open for inspection.")
+        # Trigger Completion Toast
+        gui.show_toast("🏁 SIMULATION COMPLETED", duration=300)
+        
+        while gui.running:
+            gui.update()
+            # Add a frozen status to the feed once
+            if not any("SIMULATION COMPLETE" in msg.get('msg', '') for msg in gui.decision_log):
+                gui.add_decision_log(0, "✅ SIMULATION COMPLETE. Final results frozen for analysis.", color=(0, 255, 100))
+        
 if __name__ == "__main__":
     main()

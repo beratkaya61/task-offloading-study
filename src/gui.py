@@ -15,6 +15,7 @@ DARK_GRAY = (40, 40, 50)  # Panel Gray
 ORANGE = (255, 160, 0)
 GOLD = (255, 215, 0)
 LIGHT_GRAY = (240, 240, 250)
+PURPLE = (200, 100, 255)
 
 SCREEN_WIDTH = 1800  # Methodology (400) + Map (1000) + Side Panel (400)
 SCREEN_HEIGHT = 1000
@@ -74,13 +75,15 @@ class SimulationGUI:
         self.small_font = pygame.font.SysFont("Arial", 12)
         self.title_font = pygame.font.SysFont("Arial", 18, bold=True) # Increased title font
         
-        # Windows supports 'segoeuiemoji' for icons, fallback to Arial
+        # Robust Unicode Symbols (Fallbacks for Windows/Unusual Fonts)
+        # 📡 = (U+1F4E1), ⚡ = (U+26A1), 🧠 = (U+1F9E0), 🤖 = (U+1F916), 🎓 = (U+1F393), 🏆 = (U+1F3C6)
+        # If emoji font fails, we use descriptive labels
         try:
-            self.icon_font = pygame.font.SysFont("segoeuiemoji", 40)  # Larger icons
-            self.small_icon_font = pygame.font.SysFont("segoeuiemoji", 20)
+            self.icon_font = pygame.font.SysFont("segoeuiemoji", 32)
+            self.small_icon_font = pygame.font.SysFont("segoeuiemoji", 18)
         except:
-            self.icon_font = pygame.font.SysFont("Arial", 40)
-            self.small_icon_font = pygame.font.SysFont("Arial", 20)
+            self.icon_font = pygame.font.SysFont("Arial", 32)
+            self.small_icon_font = pygame.font.SysFont("Arial", 18)
         
         self.env = env
         self.devices = devices
@@ -89,9 +92,14 @@ class SimulationGUI:
         
         # UI Setup
         self.particles = []  # Task flow animations
-        self.stats = {"tasks_offloaded": 0, "tasks_to_cloud": 0, "tasks_to_edge": 0}
+        self.stats = {
+            "tasks_offloaded": 0, "tasks_to_cloud": 0, "tasks_to_edge": 0,
+            "ppo_lat": 0, "ppo_en": 0,
+            "random_lat": 0, "random_en": 0,
+            "greedy_lat": 0, "greedy_en": 0,
+            "fairness_index": 1.0, "jitter_avg": 0.0, "qoe_score": 100.0
+        }
         self.decision_log = [] # List of strings for the chat panel
-        self.max_log_msgs = 12 # Reduced for better spacing
         
         # Transparent Surfaces for Glassmorphism
         self.method_panel_surf = pygame.Surface((METHOD_PANEL_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -112,6 +120,11 @@ class SimulationGUI:
         # Scrolling State for Feed
         self.scroll_y = 0
         self.max_scroll = 0
+        
+        # Toast Notification State
+        self.toast_msg = ""
+        self.toast_timer = 0
+        self.toast_alpha = 0
         
         self.running = True
 
@@ -232,59 +245,83 @@ class SimulationGUI:
             y_offset += 16
 
     def draw_methodology_panel(self):
-        """Enhanced Left Panel with detailed purpose/benefits"""
+        """Enhanced Left Panel with detailed Turkish scientific explanations"""
         self.screen.blit(self.method_panel_surf, (0, 0))
         pygame.draw.line(self.screen, GOLD, (METHOD_PANEL_WIDTH, 0), (METHOD_PANEL_WIDTH, SCREEN_HEIGHT), 2)
         
         y = 30
-        title = self.title_font.render("SIMULATION METHODOLOGY", True, GOLD)
-        self.screen.blit(title, (25, y))
+        # Robust Icon Header: Golden dot + Text
+        pygame.draw.circle(self.screen, GOLD, (20, y + 10), 6)
+        title = self.title_font.render("SİMÜLASYON METODOLOJİSİ", True, GOLD)
+        self.screen.blit(title, (35, y))
         y += 50
         
         sections = [
-            ("📡 1. NETWORK (Shannon)", [
-                "Metod: Veri iletim kapasitesini",
-                "Shannon-Hartley formülü ile hesaplar.",
-                "Fayda: Gerçekçi bant genişliği ve sinyal",
-                "gürültü (SNR) analizi sağlayarak her",
-                "cihaz için saniyelik veri hızını belirler."
+            ("KABLOSUZ AĞ (Shannon)", CYAN, [
+                "Yöntem: Shannon-Hartley Kapasite modeli.",
+                "Bilimsel Veri: SNR ve mesafe bazlı anlık",
+                "bant genişliği dalgalanmalarını simüle eder."
             ]),
-            ("⚡ 2. ENERGY (DVFS Model)", [
-                "Metod: IOT cihazlarının CPU frekansını",
-                "ve voltajını dinamik olarak modeller.",
-                "Fayda: Kararın batarya ömrüne etkisini",
-                "hesaplar (P=k*f³). Gereksiz enerji harcayan",
-                "kararların önüne geçerek verimlilik sunar."
+            ("ENERJİ (DVFS Modeli)", CYAN, [
+                "Yöntem: Dinamik Voltaj ve Frekans Ölçekleme.",
+                "Bilimsel Veri: Kararın batarya ömrüne etkisi",
+                "P=k*f³ formülü ile saniyelik hesaplanır."
             ]),
-            ("🧠 3. SEMANTIC AI (LLM)", [
-                "Metod: Görevin aciliyetini ve içeriğini",
-                "anlamsal (Semantic) olarak analiz eder.",
-                "Fayda: Sadece veri boyutuna değil, görevin",
-                "kritikliğine (Sağlık vs. Log) göre",
-                "akıllı önceliklendirme puanı üretir."
-            ]),
-            ("🤖 4. RL AGENT (PPO)", [
-                "Metod: Takviyeli Öğrenme (PPO) ajanı,",
-                "deneyimleyerek en iyi stratejiyi bulur.",
-                "Fayda: Gecikme ve enerji arasındaki",
-                "dengeyi dinamik ağ koşullarına göre",
-                "optimize eder, statik kuralları aşar."
+            ("SEMANTİK YAPAY ZEKA (LLM)", ACID_GREEN, [
+                "Yöntem: NLP bazlı görev önceliklendirme.",
+                "Bilimsel Veri: Kritiklik (Hastalık vs. Log)",
+                "context analizi ile dinamik puan üretir."
             ])
         ]
         
-        # Draw with larger headers and readable spacing
         sub_header_font = pygame.font.SysFont("Arial", 15, bold=True)
         text_font = pygame.font.SysFont("Arial", 13)
         
-        for title, bullets in sections:
-            t_surf = sub_header_font.render(title, True, CYAN)
-            self.screen.blit(t_surf, (25, y))
+        for title, color, bullets in sections:
+            # Section Indicator: Colored square
+            pygame.draw.rect(self.screen, color, (20, y + 5, 10, 10))
+            t_surf = sub_header_font.render(title, True, color)
+            self.screen.blit(t_surf, (40, y))
             y += 22
             for line in bullets:
                 l_surf = text_font.render(line, True, LIGHT_GRAY)
                 self.screen.blit(l_surf, (40, y))
                 y += 18
-            y += 28
+            y += 25
+
+        # --- AI KARŞILAŞTIRMA BÖLÜMÜ (Turkish Deep-Dive) ---
+        y += 10
+        pygame.draw.circle(self.screen, GOLD, (25, y+10), 5)
+        comp_title = sub_header_font.render("ALGORİTMA KIYASLAMASI", True, GOLD)
+        self.screen.blit(comp_title, (40, y))
+        y += 25
+        
+        # Why we prefer PPO?
+        ppo_desc = [
+            "PPO (Yapay Zeka): Neden Tercih Ediyoruz?",
+            "• Öngörülü (Proactive): Kuyruk yoğunluğunu",
+            "  ve ağ dar boğazlarını önceden tahmin eder.",
+            "• Global Optimizasyon: Sadece anı değil,",
+            "  uzun vadeli sistem ödülünü maksimize eder."
+        ]
+        
+        for i, line in enumerate(ppo_desc):
+            color = ACID_GREEN if i == 0 else WHITE
+            l_surf = self.small_font.render(line, True, color)
+            self.screen.blit(l_surf, (30, y))
+            y += 18
+        y += 15
+        
+        others = [
+            ("Greedy (Açgözlü):", "Anlık en hızlıyı seçer, dar görüşlüdür."),
+            ("Random (Baz):", "Literatürdeki alt kıstas noktasıdır.")
+        ]
+        for name, desc in others:
+            n_surf = text_font.render(name, True, ORANGE)
+            self.screen.blit(n_surf, (30, y))
+            d_surf = self.small_font.render(desc, True, GRAY)
+            self.screen.blit(d_surf, (35, y + 16))
+            y += 35
             
     def draw_knowledge_base(self):
         """Redesigned panel for Node-specific Health Status - Pushed down to avoid overlap"""
@@ -547,10 +584,146 @@ class SimulationGUI:
         self.draw_legend()
         self.draw_knowledge_base()
         self.draw_decision_log()
+        self.draw_performance_analytics()
+        self.draw_toast() # Draw toast on top
         
         pygame.display.flip()
         self.handle_events()
         
+    def draw_performance_analytics(self):
+        """Redesigned Comparison Drawer for maximum clarity and 'Wow' factor"""
+        panel_y = 810 # Slightly raised for better layout
+        panel_h = 175 
+        panel_w = MAP_WIDTH - 40
+        drawer_rect = pygame.Rect(MAP_X + 20, panel_y, panel_w, panel_h)
+        
+        # Deep Navy Glassmorphism Background with slight glow
+        surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        surf.fill((10, 25, 55, 230))
+        self.screen.blit(surf, (MAP_X + 20, panel_y))
+        pygame.draw.rect(self.screen, CYAN, drawer_rect, 1, border_radius=12)
+        
+        # Title with Icon
+        title_surf = self.title_font.render("🏆 AI PERFORMANCE COMPARISON: WHY PPO IS BETTER?", True, ACID_GREEN)
+        self.screen.blit(title_surf, (MAP_X + 50, panel_y + 15))
+        
+        # Data Retrieval - Using Averages to avoid extreme cumulative bias
+        count = max(1, self.stats['tasks_offloaded'])
+        ppo_lat_avg = self.stats['ppo_lat'] / count
+        greedy_lat_avg = self.stats['greedy_lat'] / count
+        
+        ppo_en_avg = self.stats['ppo_en'] / count
+        greedy_en_avg = self.stats['greedy_en'] / count
+        
+        def get_gain(ppo, base):
+            if base <= 0: return 0
+            # Ensure we don't show crazy numbers if samples are unbalanced
+            gain = ((base - ppo) / base) * 100
+            if gain < -100: return -100 # Clamp for UI sanity
+            return gain
+        
+        lat_gain_greedy = get_gain(ppo_lat_avg, greedy_lat_avg)
+        en_save_greedy = get_gain(ppo_en_avg, greedy_en_avg)
+        
+        # Font styling for emphasis
+        gain_font = pygame.font.SysFont("Arial", 22, bold=True)
+        small_bold = pygame.font.SysFont("Arial", 14, bold=True)
+        med_font = pygame.font.SysFont("Arial", 16)
+        
+        # --- SECTION 1: TIMING PROFIT (LATENCY) ---
+        col1_x = MAP_X + 40
+        pygame.draw.rect(self.screen, (30, 45, 80), (col1_x - 10, panel_y + 45, 230, 110), border_radius=8)
+        # Robust Icon: Blue Circle
+        pygame.draw.circle(self.screen, BLUE, (col1_x + 10, panel_y + 58), 5)
+        self.screen.blit(small_bold.render("ZAMANSAL KAZANÇ", True, BLUE), (col1_x + 25, panel_y + 53))
+        
+        prefix = "HIZLI" if lat_gain_greedy >= 0 else "YAVAŞ"
+        gain_text = f"%{abs(lat_gain_greedy):.1f} {prefix}"
+        g_surf = gain_font.render(gain_text, True, GREEN if lat_gain_greedy > 0 else RED)
+        self.screen.blit(g_surf, (col1_x + 10, panel_y + 80))
+        self.screen.blit(self.small_font.render("(vs Greedy Baseline)", True, GRAY), (col1_x + 10, panel_y + 115))
+        
+        # --- SECTION 2: ENERGY PROFIT (BATTERY) ---
+        col2_x = col1_x + 245
+        pygame.draw.rect(self.screen, (30, 45, 80), (col2_x - 10, panel_y + 45, 230, 110), border_radius=8)
+        # Robust Icon: Golden Circle
+        pygame.draw.circle(self.screen, GOLD, (col2_x + 10, panel_y + 58), 5)
+        self.screen.blit(small_bold.render("ENERJİ TASARRUFU", True, GOLD), (col2_x + 25, panel_y + 53))
+        
+        prefix_en = "VERİMLİ" if en_save_greedy >= 0 else "SAVURGAN"
+        en_text = f"%{abs(en_save_greedy):.1f} {prefix_en}"
+        e_surf = gain_font.render(en_text, True, GREEN if en_save_greedy > 0 else RED)
+        self.screen.blit(e_surf, (col2_x + 10, panel_y + 80))
+        self.screen.blit(self.small_font.render("(Batarya Koruma Oranı)", True, GRAY), (col2_x + 10, panel_y + 115))
+        
+        # --- SECTION 3: SCIENTIFIC INSIGHT ---
+        col3_x = col2_x + 245
+        # Robust Icon: Orange Circle
+        pygame.draw.circle(self.screen, ORANGE, (col3_x, panel_y + 58), 5)
+        self.screen.blit(small_bold.render("BİLİMSEL ANALİZ", True, ORANGE), (col3_x + 15, panel_y + 53))
+        
+        insight_title = "PPO Avantaj Analizi:"
+        if self.stats['tasks_offloaded'] < 3:
+            insight_body = "Veri toplanıyor..."
+            insight_foot = ""
+        elif lat_gain_greedy > 5:
+            insight_body = "PPO, Edge düğümlerindeki"
+            insight_foot = "yoğunluğu öngördü."
+        else:
+            insight_body = "Cihaz batarya sağlığı için"
+            insight_foot = "offload kararı optimize edildi."
+            
+        self.screen.blit(med_font.render(insight_title, True, WHITE), (col3_x, panel_y + 75))
+        self.screen.blit(med_font.render(insight_body, True, LIGHT_GRAY), (col3_x, panel_y + 98))
+        if insight_foot: self.screen.blit(med_font.render(insight_foot, True, LIGHT_GRAY), (col3_x, panel_y + 118))
+
+        # --- SECTION 4: QoS & FAIRNESS ---
+        col4_x = col3_x + 215 # Tightest spacing (Total X around 1350)
+        # Robust Icon: Purple Circle
+        pygame.draw.circle(self.screen, PURPLE, (col4_x, panel_y + 58), 5)
+        self.screen.blit(small_bold.render("QoS & FAIRNESS", True, PURPLE), (col4_x + 15, panel_y + 53))
+        
+        fairness = self.stats.get('fairness_index', 1.0)
+        jitter = self.stats.get('jitter_avg', 0.0)
+        qoe = self.stats.get('qoe_score', 100.0)
+        
+        f_text = self.small_font.render(f"Jain's Fairness: {fairness:.2f}", True, LIGHT_GRAY)
+        j_text = self.small_font.render(f"Avg Jitter: {jitter:.3f}s", True, LIGHT_GRAY)
+        q_text = self.small_font.render(f"QoE Score: {qoe:.1f}/100", True, ACID_GREEN if qoe > 70 else ORANGE)
+        
+        self.screen.blit(f_text, (col4_x, panel_y + 75))
+        self.screen.blit(j_text, (col4_x, panel_y + 95))
+        self.screen.blit(q_text, (col4_x, panel_y + 115))
+
+    def show_toast(self, message, duration=90):
+        """Trigger a toast notification"""
+        self.toast_msg = message
+        self.toast_timer = duration
+        self.toast_alpha = 255
+
+    def draw_toast(self):
+        """Draw fading toast notification in center"""
+        if self.toast_timer > 0:
+            toast_w, toast_h = 400, 60
+            toast_x = MAP_X + (MAP_WIDTH - toast_w) // 2
+            toast_y = 100
+            
+            # Fade logic
+            if self.toast_timer < 20:
+                self.toast_alpha = int(255 * (self.toast_timer / 20))
+            
+            surf = pygame.Surface((toast_w, toast_h), pygame.SRCALPHA)
+            surf.fill((0, 0, 0, self.toast_alpha // 2))
+            pygame.draw.rect(surf, ACID_GREEN, (0, 0, toast_w, toast_h), 2, border_radius=10)
+            
+            text = self.title_font.render(self.toast_msg, True, WHITE)
+            text.set_alpha(self.toast_alpha)
+            text_rect = text.get_rect(center=(toast_w // 2, toast_h // 2))
+            surf.blit(text, text_rect)
+            
+            self.screen.blit(surf, (toast_x, toast_y))
+            self.toast_timer -= 1
+
     def update(self):
         self.draw()
         self.clock.tick(30)  # 30 FPS

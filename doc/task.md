@@ -40,9 +40,9 @@ Bu dosya, "Next-Gen IoT Task Offloading" konulu araştırma süreci ve simülasy
     - [x] `UI POLISH`: Node Health ve Stats panellerindeki çakışmanın giderilmesi.
     - [x] `METHODOLOGY+`: Teknik panelin detaylandırılması ve fontların büyütülmesi.
     - [x] `AI Humanized Logic`: Karar loglarının "LLM Analizi" vs "AI Önerisi" olarak netleştirilmesi.
-    - [ ] `Performance Metrics`: Latency, Energy, Fairness, Jitter, QoE ölçümleri.
-    - [ ] `Baseline Comparison`: Random ve Greedy algoritmalarla kıyaslama.
-    - [ ] Makale taslağının oluşturulması.
-    - [ ] `Performance Metrics`: Latency, Energy, Fairness, Jitter, QoE ölçümleri.
-    - [ ] `Baseline Comparison`: Random ve Greedy algoritmalarla kıyaslama.
-    - [ ] Makale taslağının oluşturulması.
+- [x] **Faz 4: Baselines ve Karşılaştırmalı Analiz**
+    - [x] `Shadow Baselines`: PPO ile eş zamanlı olarak Random ve Greedy maliyetlerinin hesaplanması.
+    - [x] `Performance Drawer`: Sayfanın altına kazanç sidebar/paneli eklenmesi.
+    - [x] `Gain Analysis`: PPO'nun yüzde kaç daha verimli olduğunun (Latency/Energy) anlık gösterimi.
+    - [x] `Explainable Results`: Kazancın nedenlerini (örn. "PPO kuyrukları önceden tahmin etti") açıklayan detaylı metinler.
+    - [x] `Metrics Engine`: Fairness, Jitter ve QoE hesaplama mantığı.

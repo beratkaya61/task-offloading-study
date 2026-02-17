@@ -41,13 +41,27 @@ Significant layout redesign and advanced interactivity.
 - [x] **Node Health Metrics**: Visual health indicators per specific device and edge node.
 
 ### [Component] Interactivity & Visualization - `src/gui.py`
-- [ ] **Map Zoom & Pan**: Implement `zoom_level` and `offset` logic for the central map.
-- [ ] **Fixed Sidebars**: Ensure side panels remain static while the map scales.
+- [x] **Map Zoom & Pan**: Implement `zoom_level` and `offset` logic for the central map.
+- [x] **Fixed Sidebars**: Ensure side panels remain static while the map scales.
 
 ### [Component] AI Semantic Feedback - `src/simulation_env.py`
-- [ ] **PPO vs. LLM Clarification**: Rewrite feedback strings to clearly distinguish between **LLM Analysis** (Semantic Context) and **AI Recommendation** (PPO Optimization).
+- [x] **PPO vs. LLM Clarification**: Rewrite feedback strings to clearly distinguish between **LLM Analysis** (Semantic Context) and **AI Recommendation** (PPO Optimization).
 
-## 4. Verification Plan
+## 4. Phase 4: Comparative Analysis & Metrics [COMPLETED]
+Evaluating PPO against traditional baselines in real-time.
+
+### [Component] Baseline Engine - `src/simulation_env.py`
+- [x] **Shadow Calculations**: For every PPO decision, calculate "what if" scenarios for Random and Greedy.
+- [x] **Cumulative Metrics**: Track total latency and energy for all three agents (PPO, Random, Greedy).
+
+### [Component] Comparative Gain Panel - `src/gui.py`
+- [x] **Analysis Drawer**: Add a bottom panel (`ANALYSIS_PANEL_HEIGHT = 160`) to display real-time gains.
+- [x] **Efficiency Metrics**: % Gain in latency and % Energy savings compared to baselines.
+- [x] **Detail Text**: Narrative explanation of WHY PPO is outperforming.
+
+## 5. Phase 5: Advanced Metrics [COMPLETED]
+- [x] **Fairness & Jitter**: Integration of Jain's Index and delay variation.
+- [x] **QoE Scoring**: Semantic-weighted user experience metric.
 1. **Layout**: Confirm both sidebars are visible and map is centered.
 2. **Zoom**: Test mouse wheel zoom on the map.
 3. **Stat Accuracy**: Verify per-edge offloading counts match simulation events.
