@@ -1,43 +1,59 @@
-# Walkthrough: Major GUI Overhaul & AI Transparency
+# Walkthrough: Partial Offloading & Hybrid AI (Phase 9)
 
-This document details the transition of the simulation GUI from a basic dashboard to a professional, three-panel research interface, along with significant improvements to AI decision explainability.
+This milestone marks the core technical advancement of the simulation: the transition from binary (All-or-Nothing) decisions to **Partial Offloading**, supported by a Hybrid AI framework that integrates LLM semantic analysis with Deep Reinforcement Learning (PPO).
 
-## 📐 1. Professional Multi-Panel Layout
-The screen width has been expanded to **1800px** to accommodate three distinct functional zones:
+## 🧩 1. Partial Offloading Engine
+The simulation now supports splitting tasks between the local device and edge servers, enabling parallel execution.
+- **6-Action Set**: The PPO action space was expanded from 3 to 6:
+    - `Action 0`: 100% Local
+    - `Action 1-3`: 25%, 50%, 75% Partial Edge Offloading
+    - `Action 4`: 100% Edge
+    - `Action 5`: 100% Cloud
+- **Parallel processing Logic**: Latency is now calculated as `max(local_time, transmission_time + remote_execution_time)` for partial tasks, allowing processing to begin locally while the offloaded portion is still in transit.
 
-### [NEW] Left Panel: Simulation Methodology
-A permanent technical reference panel explaining the academic foundations:
-- **Network (Shannon):** Dynamic datarate modelingSistem Mimarisi ve İş Akışı.
-- **Energy (DVFS):** Power consumption calculation.
-- **Semantic AI (LLM):** Contextual priority scoring.
-- **RL Agent (PPO):** Real-time optimization logic.
+## 🤖 2. Hybrid AI & Semantic Transparency
+We've unified the LLM's high-level semantic reasoning with PPO's low-level optimization.
+- **JSON Decision Feed**: The LLM analyzer now outputs structured JSON (Reason, Raw Stats, Priority Score), which is rendered directly in the GUI. This provides full transparency into *why* the AI recommended a specific offloading strategy.
+### 2. Enhanced Semantic Decision Feed
+Each entry in the decision feed now follows a stable 4-line pattern with a dynamic logical layer:
+- **LLM Analizi**: Konteks bazlı görev önceliklendirme ve sınıflandırma.
+- **AI Kararı (PPO)**: Artık verilen kararla tamamen tutarlı (Bulut seçildiyse Bulut gerekçesi, Edge seçildiyse Edge verisi görünür). Ayrıca isimlendirmeler senkronize edildi (Edge-0 yerine fiziksel ID olan Edge-1 kullanılır).
+- **Nöral Öncelik (Neural Override)**: LLM önerisi ile PPO kararı çeliştiğinde (Örn: LLM 'Yerel' derken PPO 'Kısmi' seçtiğinde), turuncu renkli bir açıklama satırı eklenerek bu stratejik değişikliğin nedeni belirtilir.
+- **Metod**: PPO Agent optimizasyon seviyesi ve tam hedef (Örn: Local + Edge-1).
+- **Genişletilmiş Ham JSON**: JSON bloğu **%100 büyütülerek** ambalajlanmış (box) bir yapıya kavuştu.
 
-### Center: Interactive Strategy Map
-The simulation arena now supports:
-- **Zoom & Pan:** Use the mouse wheel in the center area to zoom into specific hotspots.
-- **Dynamic Scaling:** Icons and links scale according to zoom level.
-- **Clipping:** Map content is strictly bounded between sidebars.
+### 3. Strateji Özet Tablosu (PPO Strategy Frequency)
+Arayüzün **sol paneline (metodoloji altına)** taşınan bu tablo, PPO ajanının aksiyon dağılımını gösterir:
+- **0: Local Processing**: Tamamen cihazda işlem.
+- **1-3: Partial Edge**: Karma işleme (%25, %50, %75 oranlarında sunucuya offload).
+- **4: Full Edge**: %100 Edge sunucusu.
+- **5: Full Cloud**: %100 Bulut.
 
-### Right Panel: Infrastructure & AI Feed
-- **Granular Stats:** Detailed breakdown of offloaded tasks per Edge Node (0, 1, 2) and Cloud.
-- **Node Health:** Specific health monitor for the Cloud and individual Edge servers (Stable/Busy/Overload).
+### 4. Profesyonel İsimlendirme ve Görünürlük
+- **Sync Naming**: Dashboard ve harita genelinde `Edge-1`, `Edge-2`, `Edge-3` standartlaştırması yapıldı.
+- **Queue Length**: "Q" kısaltması yerine "Queue Length:" ifadesi kullanıldı.
+- **Font Visibility**: Karar akışındaki yazı fontları büyütüldü ve her giriş arası boşluk **300 piksele** çıkarılarak çakışmalar (overlap) tamamen giderildi.
+- **Strategy Monitor**: A new GUI panel tracks the PPO agent's decision trends (trend dot-trail). It detects if the agent is currently leaning towards **Battery Savings** (Local preference) or **High Performance** (Edge/Partial preference).
 
-## 💬 2. AI Explainability: LLM vs. PPO
-We have refined the "Decision Feed" to clarify how the hybrid AI architecture works:
+## ⚖️ 3. Load Balancing: "Least Congested Edge"
+For actions 1-4 (Edge-related), the system no longer just picks the "closest" server.
+- **Dynamic Selection**: It calculates the current queue length of all edge servers and routes the task to the one with the **least load**. This prevents congestion hotspots and improves overall system fairness.
 
-| Feature | Role in System | Visual Feedback Example |
-| :--- | :--- | :--- |
-| **LLM Analysis** | Contextual Meaning | *"Gecikmeye duyarlı görev, Edge öneriliyor."* |
-| **AI Decision (PPO)** | Real-time Optimization | *"Edge Node-1 yük dengesi ve SNR için seçildi."* |
+## 📺 4. Split-Screen Comparison
+The GUI has been redesigned with a central divider to visually compare the new "Partial" strategy against a "Binary" baseline in real-time.
+- **Binary Shadow Baseline**: A parallel simulation tracks what would have happened if the system only allowed 100% Local or 100% Edge decisions.
+- **Live Gain Analytics**: The bottom drawer now specifically compares **Partial vs Binary** latency, highlighting the speedup achieved through task splitting.
 
-## 🛠️ 3. Fixed Roadmap Rendering
-Resolved syntax errors in [roadmap.md](file:///c:/Users/BERAT/Desktop/task-offloading-study/doc/roadmap.md) to ensure the **Sistem Mimarisi** Mermaid diagram renders correctly for academic presentations.
+## 🔬 5. Scientific Rationale: Why excluding Cloud?
+We've documented and implemented the rationale for excluding Cloud from partial offloading:
+> [!IMPORTANT]
+> Since Cloud latency is dominated by transmission time (WAN jitters) rather than computation, splitting a task with the Cloud often results in a "wait-for-remote" state that negates any parallel local gains. Therefore, the system only allows **Full Cloud** for high-complexity/low-priority tasks or **Partial Edge** for time-sensitive tasks.
 
-## 🚀 How to Run
-Execute the updated unified script:
-```powershell
-.\run_simulation.bat
-```
-- **Scroll:** Mouse wheel on the right panel.
-- **Zoom:** Mouse wheel on the central map.
-- **Analyze:** Observe the left panel to correlate theory with real-time visuals.
+---
+
+### Final Implementation Checklist:
+- [x] **simulation_env.py**: Parallel splitting logic & least-congested edge.
+- [x] **rl_env.py**: 6-action space integration & reward shaping updates.
+- [x] **llm_analyzer.py**: JSON serialization for analyzer reasoning.
+- [x] **gui.py**: Split-screen UI, JSON feed renderer, and Strategy Monitor.
+- [x] **doc/roadmap.md & task.md**: Updated with Phase 9 technical depth.

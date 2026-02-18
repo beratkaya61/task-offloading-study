@@ -12,8 +12,14 @@ class OffloadingEnv(gym.Env):
     def __init__(self, devices=None, edge_servers=None, cloud_server=None, channel=None):
         super(OffloadingEnv, self).__init__()
         
-        # Action Space: 0: Local, 1: Edge, 2: Cloud
-        self.action_space = spaces.Discrete(3)
+        # Action Space: 
+        # 0: Local (100% Device)
+        # 1: 25% Edge (75% Device / 25% Edge)
+        # 2: 50% Edge (50% Device / 50% Edge)
+        # 3: 75% Edge (25% Device / 75% Edge)
+        # 4: Full Edge (100% Edge)
+        # 5: Full Cloud (100% Cloud)
+        self.action_space = spaces.Discrete(6)
         
         # State Space: [SNR, Task Size, CPU Cycles, Battery %, Edge Load]
         # Normalized values between 0 and 1
@@ -46,8 +52,8 @@ class OffloadingEnv(gym.Env):
             self.current_task = Task(
                 id=random.randint(0, 9999),
                 creation_time=0,
-                size_bits=random.uniform(1e5, 10e6), # 100kb to 10Mb
-                cpu_cycles=random.uniform(1e8, 1e10), # 100M to 10G cycles
+                size_bits=random.uniform(5e4, 10e6), # Smaller tasks possible
+                cpu_cycles=random.uniform(5e7, 1e10), # 50M to 10G cycles
                 task_type=random.choice(list(TaskType)),
                 deadline=random.uniform(0.5, 5.0)
             )
@@ -65,61 +71,83 @@ class OffloadingEnv(gym.Env):
     def step(self, action):
         """
         Executes the offloading decision and returns reward with LLM-guided Shaping.
+        Supports Binary and Partial Offloading.
         """
         if self.current_task is None or self.current_device is None:
             return self._get_obs(), 0, True, False, {}
 
-        # 1. Calculate Base Metrics
-        # (This logic mirrors what's in IoTDevice.run in simulation_env.py)
-        # For training efficiency, we simulate the outcome instead of running full SimPy processes
+        # 1. Base Parameters
+        if self.edge_servers:
+            closest_edge = min(self.edge_servers, key=lambda e: math.dist(self.current_device.location, e.location))
+            datarate, _ = self.channel.calculate_datarate(self.current_device, closest_edge)
+        else:
+            datarate = 10e6 # Mock for training
+            closest_edge = None
+
+        transmission_time_full = self.current_task.size_bits / datarate
+        tx_energy_pred_full = 0.5 * transmission_time_full # TRANSMISSION_POWER=0.5
+        local_comp_energy_pred_full = 1e-28 * (1e9 ** 2) * self.current_task.cpu_cycles # KAPPA=1e-28, FREQ=1e9
         
-        closest_edge = min(self.edge_servers, key=lambda e: math.dist(self.current_device.location, e.location))
-        datarate, distance = self.channel.calculate_datarate(self.current_device, closest_edge)
-        
-        # Power & Energy Pred
-        transmission_time = self.current_task.size_bits / datarate
-        tx_energy_pred = 0.5 * transmission_time # TRANSMISSION_POWER=0.5
-        local_comp_energy_pred = 1e-28 * (1e9 ** 2) * self.current_task.cpu_cycles # KAPPA=1e-28, FREQ=1e9
-        
-        # 2. Reward Calculation (Penalty based)
         delay = 0
         energy = 0
         
-        if action == 0: # LOCAL
+        # 2. Split Logic based on Action
+        # Action mappings: 0:Local, 1:25% Edge, 2:50% Edge, 3:75% Edge, 4:Full Edge, 5:Full Cloud
+        edge_ratios = {0: 0.0, 1: 0.25, 2: 0.5, 3: 0.75, 4: 1.0, 5: 1.0}
+        ratio = edge_ratios[action]
+        
+        if action == 0: # 100% LOCAL
             delay = self.current_task.cpu_cycles / 1e9
-            energy = local_comp_energy_pred
-        elif action == 1: # EDGE
-            delay = transmission_time + (self.current_task.cpu_cycles / (2e9)) # Edge faster 2GHz
-            energy = tx_energy_pred
-        else: # CLOUD
-            delay = transmission_time + 0.1 + (self.current_task.cpu_cycles / (5e9)) # Cloud 5GHz + 100ms
-            energy = tx_energy_pred
+            energy = local_comp_energy_pred_full
+        elif action == 5: # 100% CLOUD (No partial)
+            delay = transmission_time_full + 0.1 + (self.current_task.cpu_cycles / 5e9)
+            energy = tx_energy_pred_full
+        else: # EDGE cases (Full or Partial)
+            # Local part processing
+            local_part_lat = ((1 - ratio) * self.current_task.cpu_cycles) / 1e9
+            local_part_en = (1 - ratio) * local_comp_energy_pred_full
+            
+            # Edge part processing (Parallel)
+            edge_tx_lat = (ratio * self.current_task.size_bits) / datarate
+            edge_comp_lat = (ratio * self.current_task.cpu_cycles) / 2e9
+            edge_tx_en = 0.5 * edge_tx_lat
+            
+            # Parallel Delay: The task is finished when BOTH parts are complete
+            delay = max(local_part_lat, edge_tx_lat + edge_comp_lat)
+            energy = local_part_en + edge_tx_en
 
+        # 3. Reward Calculation
         # Base Reward: Minimize Delay and Energy
-        # Normalization: We want to balance Latency vs. Energy. 
-        # 1s Delay = -20 reward. 1 Joule = -2.0 reward.
         reward = -(delay * 20.0) - (energy * 2.0)
         
-        # 3. SPECIAL PENALTIES & SHAPING
-        # Cloud Usage Cost (Cloud is expensive in terms of monetary/resource cost)
-        if action == 2:
-            reward -= 15.0 # Constant penalty for using the most remote tier
+        # Special penalties (Transitioned from previous version)
+        if action == 5:
+            reward -= 25.0 # Increased Cloud cost penalty to discourage bias
+            
         semantic = self.current_task.semantic_analysis
         priority_score = semantic['priority_score'] if semantic else 0.5
         
         # Deadline Penalty
         if delay > self.current_task.deadline:
-            penalty = -50.0 * priority_score # Critical tasks suffer more from missing deadline
-            reward += penalty
+            reward -= 50.0 * priority_score # Critical tasks suffer more
             
         # Battery Awareness
-        battery_pct = (self.current_device.battery / 10000.0) * 100
+        battery_pct = (self.current_device.battery / 10000.0) * 100 if hasattr(self.current_device, 'battery') else 100
         if battery_pct < 15 and action == 0:
             reward -= 20.0 # Heavy penalty for local processing on low battery
             
-        # Edge/Cloud Preference for High Data
-        if self.current_task.task_type.name == "HIGH_DATA" and action != 0:
-            reward += 5.0 # Positive reinforcement for offloading data-heavy tasks
+        # Partial Offloading Bonus (Gradularized)
+        if 1 <= action <= 3:
+            local_only_delay = self.current_task.cpu_cycles / 1e9
+            if delay < local_only_delay:
+                # Bonus based on how much faster it is
+                improvement = (local_only_delay - delay) / local_only_delay
+                reward += 10.0 * improvement + 2.0 # More reward for partial success
+
+        # 4. Energy/Local Processing Reward
+        if action == 0 and energy < 0.1: # If local and low energy
+             reward += 5.0 # Explicit reward for successful local execution
+             if battery_pct > 50: reward += 3.0 # Extra bonus for maintaining healthy battery
 
         # Transition to "Next Task" state (randomized for training)
         done = True 

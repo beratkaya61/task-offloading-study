@@ -1,0 +1,28 @@
+şimdi gui de şunu görmek istiyorum, şuan her task için LLM feature extractor, PPO ise decision maker olarak çalışıyor ya, ben her task için LLM e gelen veri nedir ve onun sonucu da nedir yani LLM analyzer ın sonucu nedir, onu da akış içerisinde görmek isiyorum, bunu semantic decision feed de gösterebilirsin json olarak
+
+ayrıca şuanda kod binary task offloading mekanizmasıyla çalışıyor, ben aynı zamanda partital offloading yapmakta istiyorum, yani gelen taskın hem binary offloading hem de partital offloading farkını görmek istiyorum, bana bunun kıyasını da gösterecek mimariyi kurgular mısın, yalnız partital offloading mekanizması kurarken, partital offloading ile alakalı olan kodları ayrı bir fonksiynda tanımlayalım ki binary offloading ile karışmasın,
+bunu şuan guideki ortadaki paneli 2 parçaya bölerek gösterebilirsin, soldaki şuan ki gibi (binary offloading e ait olsun), sağdaki partital offloading e ait olsun
+
+partital offloading yaparken nelerin arasında yapıldığını da söyler misin (mesela device-edge), literatür de device+edge+cloud aynı anda yapmanın zor olacağını söylüyor, çünkü hepsinin aynı anda bitmesini garantilemek gerekiyor ancak cloud task ı çok hızlı bitirebiliyor bu durumda cihaz da uyku durumuna geçemeyeceğine göre idle energy harcar ver bu da partital offloading'in hız ve enerji konusunda sağlamış olduğu faydaya ters düşer
+
+bizim yapımızda cloud'u partital offloading mekanizmasına katmak mantıklı mı değil, değilse neden değil
+  
+ayrı hadi device ve edge arasında partital offloading yaptık diyelim, bu durumda PPO ajanının aksiyon stratejisi nasıl olacak mesela literatürde örnek olarak gördüğüm;
+
+PPO Ajanının aksiyonlarına (Action Space) şöyle yansıtabiliriz:
+
+0: Local Processing (Hepsi Cihazda)
+
+1: Partial Edge %25
+
+2: Partial Edge %50
+
+3: Partial Edge %75
+
+4: Full Edge (%100 Edge)
+
+5: Full Cloud (%100 Cloud) -> Burada partial yok.
+
+burada aklıma şöyle bir problem takıldı, n tane dge cihaz olduğu durumda 1,2,3,4 aksiyonları için edge cihazlar arasında paylaşımı neye göre yapacağız,
+
+tüm bunları sırasıyla halledelim, benim için partital offloading çok önemli, yani oraya LLM + PPO ajanı (hybrid yapı) ile müdahale etmek çok önemli, hadi başlayalım

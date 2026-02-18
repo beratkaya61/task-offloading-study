@@ -31,16 +31,16 @@ SIDE_PANEL_WIDTH = 400
 
 class TaskParticle:
     """Visual representation of a task being offloaded"""
-    def __init__(self, start_pos, end_pos, color, task_id):
+    def __init__(self, start_pos, end_pos, color, task_id, is_partial=False):
         self.pos = list(start_pos)
         self.target = end_pos
         self.color = color
         self.task_id = task_id
-        self.speed = 7 # Slightly faster for better flow
+        self.speed = 7
         self.alive = True
+        self.is_partial = is_partial
         
     def update(self):
-        # Move towards target
         dx = self.target[0] - self.pos[0]
         dy = self.target[1] - self.pos[1]
         dist = math.sqrt(dx**2 + dy**2)
@@ -56,10 +56,13 @@ class TaskParticle:
         sx = MAP_X + (self.pos[0] * zoom_level) + offset[0]
         sy = (self.pos[1] * zoom_level) + offset[1]
         
-        # Only draw if within map bounds
         if MAP_X <= sx <= SIDE_PANEL_X:
+            # For partial offloading, draw a 'ghost' trail or split look
+            if self.is_partial:
+                pygame.draw.circle(screen, self.color, (int(sx)-3, int(sy)-3), int(4 * zoom_level), 1)
+            
             pygame.draw.circle(screen, self.color, (int(sx), int(sy)), int(5 * zoom_level))
-            # Draw Task ID pill (scaled)
+            
             id_text = font.render(f"T-{self.task_id}", True, WHITE)
             text_rect = id_text.get_rect(center=(int(sx), int(sy) - 15))
             pygame.draw.rect(screen, self.color, text_rect.inflate(4, 2), border_radius=3)
@@ -74,6 +77,8 @@ class SimulationGUI:
         self.font = pygame.font.SysFont("Arial", 14) # Increased base font
         self.small_font = pygame.font.SysFont("Arial", 12)
         self.title_font = pygame.font.SysFont("Arial", 18, bold=True) # Increased title font
+        self.feed_bold_font = pygame.font.SysFont("Arial", 14, bold=True) # For feedback labels
+        self.json_font = pygame.font.SysFont("Consolas", 13) # Monospaced for JSON
         
         # Robust Unicode Symbols (Fallbacks for Windows/Unusual Fonts)
         # 📡 = (U+1F4E1), ⚡ = (U+26A1), 🧠 = (U+1F9E0), 🤖 = (U+1F916), 🎓 = (U+1F393), 🏆 = (U+1F3C6)
@@ -152,15 +157,33 @@ class SimulationGUI:
                     self.map_offset[0] = (self.map_offset[0] - (mx - MAP_X)) * zoom_factor + (mx - MAP_X)
                     self.map_offset[1] = (self.map_offset[1] - my) * zoom_factor + my
 
-    def add_task_particle(self, start, end, color, task_id):
+    def add_task_particle(self, start_pos, end_pos, color, task_id, is_partial=False):
         """Add animated particle for task flow with ID"""
-        self.particles.append(TaskParticle(start, end, color, task_id))
+        self.particles.append(TaskParticle(start_pos, end_pos, color, task_id, is_partial))
 
-    def add_decision_log(self, task_id, message, color=BLACK):
-        """Add a detailed decision reasoning to the chat log"""
-        self.decision_log.append({"id": task_id, "msg": message, "color": color, "time": self.env.now})
-        # Removed hard pop to allow scrolling through history
-        if len(self.decision_log) > 100: # Keep a reasonable buffer
+    def add_decision_log(self, task_id, message, color=BLACK, is_json=False, metadata=None):
+        """Add a detailed decision reasoning with optional JSON metadata"""
+        if not hasattr(self, 'ppo_action_history'): self.ppo_action_history = []
+        
+        if is_json and message:
+            try:
+                import json
+                data = json.loads(message)
+                action_str = data.get("ppo_logic", {}).get("action", "ACTION_0")
+                action_id = int(action_str.split("_")[-1])
+                self.ppo_action_history.append(action_id)
+                if len(self.ppo_action_history) > 100: self.ppo_action_history.pop(0)
+            except: pass
+
+        self.decision_log.append({
+            "id": task_id, 
+            "msg": message, 
+            "color": color, 
+            "time": self.env.now,
+            "is_json": is_json,
+            "metadata": metadata
+        })
+        if len(self.decision_log) > 100:
             self.decision_log.pop(0)
 
     def draw_grid(self):
@@ -239,8 +262,8 @@ class SimulationGUI:
         y_offset += 16
         
         for i, edge in enumerate(self.edge_servers):
-            count = self.stats.get(f'edge_{i}', 0)
-            e_surf = self.small_font.render(f"➤ Edge Node-{i}: {count}", True, GREEN)
+            count = self.stats.get(f'edge_{edge.id}', 0)
+            e_surf = self.small_font.render(f"➤ Edge-{edge.id}: {count}", True, GREEN)
             self.screen.blit(e_surf, (SIDE_PANEL_X + 45, y_offset))
             y_offset += 16
 
@@ -258,14 +281,18 @@ class SimulationGUI:
         
         sections = [
             ("KABLOSUZ AĞ (Shannon)", CYAN, [
-                "Yöntem: Shannon-Hartley Kapasite modeli.",
+                "Yöntem: Shannon-Hartley modeli.",
+                "Uygulama: Cihaz ve Edge server arasındaki",
+                "kablosuz kanal kapasitesini belirler.",
                 "Bilimsel Veri: SNR ve mesafe bazlı anlık",
-                "bant genişliği dalgalanmalarını simüle eder."
+                "iletişim dalgalanmalarını hesaplar."
             ]),
             ("ENERJİ (DVFS Modeli)", CYAN, [
                 "Yöntem: Dinamik Voltaj ve Frekans Ölçekleme.",
-                "Bilimsel Veri: Kararın batarya ömrüne etkisi",
-                "P=k*f³ formülü ile saniyelik hesaplanır."
+                "Amaç: Edge Server işlem gücü verimliliğini",
+                "optimize etmek için bu tarafta modellenir.",
+                "Not: Bulut tarafı sınırsız kaynak kabul",
+                "edildiği için enerji modellemesi gerekmez."
             ]),
             ("SEMANTİK YAPAY ZEKA (LLM)", ACID_GREEN, [
                 "Yöntem: NLP bazlı görev önceliklendirme.",
@@ -322,6 +349,30 @@ class SimulationGUI:
             d_surf = self.small_font.render(desc, True, GRAY)
             self.screen.blit(d_surf, (35, y + 16))
             y += 35
+
+        # --- ACTION SUMMARY TABLE (Moved to Left Panel) ---
+        y += 20
+        pygame.draw.circle(self.screen, PURPLE, (25, y+10), 5)
+        summary_title = sub_header_font.render("PPO STRATEGY FREQUENCY", True, PURPLE)
+        self.screen.blit(summary_title, (40, y))
+        y += 30
+        
+        action_map = {
+            0: ("0: Local Processing", WHITE),
+            1: ("1: Partial Edge (%25)", ORANGE),
+            2: ("2: Partial Edge (%50)", ORANGE),
+            3: ("3: Partial Edge (%75)", ORANGE),
+            4: ("4: Full Edge (%100)", GREEN),
+            5: ("5: Full Cloud (%100)", BLUE)
+        }
+        counts = self.stats.get('action_counts', {i: 0 for i in range(6)})
+        for act_id, (label, color) in action_map.items():
+            count = counts.get(act_id, 0)
+            act_surf = self.small_font.render(label, True, color)
+            cnt_surf = self.small_font.render(f"Count: {count}", True, WHITE)
+            self.screen.blit(act_surf, (35, y))
+            self.screen.blit(cnt_surf, (280, y))
+            y += 18
             
     def draw_knowledge_base(self):
         """Redesigned panel for Node-specific Health Status - Pushed down to avoid overlap"""
@@ -350,63 +401,108 @@ class SimulationGUI:
             e_color = GREEN if q < 4 else (ORANGE if q < 8 else RED)
             pygame.draw.circle(self.screen, e_color, (SIDE_PANEL_X + 45, y + 8), 6)
             e_status = "STABLE" if q < 4 else ("BUSY" if q < 8 else "HEAVY")
-            e_health = self.font.render(f"Edge Node {i}: {e_status} (Q:{q})", True, WHITE)
+            e_health = self.font.render(f"Edge-{edge.id}: {e_status} (Queue Length: {q})", True, WHITE)
             self.screen.blit(e_health, (SIDE_PANEL_X + 65, y))
             y += 20
 
     def draw_decision_log(self):
-        """Draw Professional AI Decision Feed in its own space with Scrolling"""
+        """Draw Professional AI Decision Feed as requested in Screenshot"""
         panel_y = 535
         panel_h = 445
         
-        # Log background with glass effect
         self.screen.blit(self.log_panel_surf, (SIDE_PANEL_X + 10, panel_y))
         pygame.draw.rect(self.screen, CYAN, (SIDE_PANEL_X + 10, panel_y, SIDE_PANEL_WIDTH - 20, panel_h), 1, border_radius=5)
         
         title_surf = self.title_font.render("SEMANTIC DECISION FEED", True, ACID_GREEN)
         self.screen.blit(title_surf, (SIDE_PANEL_X + 25, panel_y + 15))
         
-        # Create a clipping surface for the log entries
         clip_rect = pygame.Rect(SIDE_PANEL_X + 15, panel_y + 50, SIDE_PANEL_WIDTH - 30, panel_h - 60)
-        log_surface = pygame.Surface((clip_rect.width, 5000), pygame.SRCALPHA) # Large enough for many logs
+        log_surface = pygame.Surface((clip_rect.width, 5000), pygame.SRCALPHA)
         
         y_cursor = 0
-        entry_h = 100
+        entry_sep = 300 # Massive clearance for multi-line analysis + JSON
+        max_w = clip_rect.width - 40
         
-        # Draw from newest to oldest in the log_surface
         for entry in self.decision_log[::-1]:
-            # Entry border/indicator
-            pygame.draw.line(log_surface, entry['color'], (5, y_cursor), (5, y_cursor + entry_h - 20), 3)
+            # Indicator line - Dynamic height (approximate)
+            pygame.draw.line(log_surface, entry['color'], (5, y_cursor), (5, y_cursor + entry_sep - 15), 3)
             
-            # Time & ID
+            # Header
             header = f"Task-{entry['id']} | T: {entry['time']:.1f}s"
-            header_surf = self.font.render(header, True, entry['color'])
-            log_surface.blit(header_surf, (15, y_cursor))
+            log_surface.blit(self.small_font.render(header, True, entry['color']), (15, y_cursor))
             
-            # Message lines
-            messages = entry['msg'].split('\n')
-            for i, line in enumerate(messages):
-                c = WHITE if i > 0 else entry['color']
-                if "Karar:" in line or "Decision:" in line: c = ACID_GREEN
+            # Main Analysis with Wrapping
+            raw_lines = entry['msg'].split('\n')
+            draw_y = y_cursor + 20
+            
+            for line in raw_lines:
+                c = WHITE
+                font = self.font # Use larger font for general readability
                 
-                line_surf = self.font.render(line, True, c)
-                log_surface.blit(line_surf, (20, y_cursor + 20 + (i * 14)))
+                if "LLM Analizi:" in line: 
+                    c = CYAN
+                    font = self.feed_bold_font
+                elif "AI Karar" in line: 
+                    c = ACID_GREEN
+                    font = self.feed_bold_font
+                elif "Metod:" in line: 
+                    c = GOLD
+                    font = self.feed_bold_font
+                elif "⚠️ Nöral Öncelik:" in line: 
+                    c = (255, 150, 50)
+                    font = self.feed_bold_font
+                
+                # Manual Wrap
+                words = line.split(' ')
+                current_line = ""
+                for word in words:
+                    test_line = current_line + word + " "
+                    if font.size(test_line)[0] < max_w:
+                        current_line = test_line
+                    else:
+                        line_surf = font.render(current_line, True, c)
+                        log_surface.blit(line_surf, (20, draw_y))
+                        draw_y += 15 # Adjusted for larger font
+                        current_line = word + " "
+                
+                line_surf = font.render(current_line, True, c)
+                log_surface.blit(line_surf, (20, draw_y))
+                draw_y += 16
             
-            y_cursor += entry_h
+            # Metadata JSON - Larger box
+            if entry.get('metadata'):
+                import json
+                try:
+                    js_str = json.dumps(entry['metadata'], indent=2, ensure_ascii=False)
+                    js_lines = js_str.split('\n')[:10] # Show more lines
+                    # Enormous Background for JSON block
+                    pygame.draw.rect(log_surface, (15, 25, 35), (20, draw_y + 5, clip_rect.width - 40, 130), border_radius=4)
+                    pygame.draw.rect(log_surface, (70, 70, 90), (20, draw_y + 5, clip_rect.width - 40, 130), 1, border_radius=4) 
+                    for j, js_l in enumerate(js_lines):
+                        # Enhanced Syntax highlighting
+                        if ":" in js_l:
+                            key, val = js_l.split(":", 1)
+                            k_surf = self.json_font.render(key + ":", True, (130, 220, 220))
+                            v_surf = self.json_font.render(val, True, (255, 220, 100))
+                            log_surface.blit(k_surf, (30, draw_y + 12 + (j * 12)))
+                            log_surface.blit(v_surf, (30 + k_surf.get_width(), draw_y + 12 + (j * 12)))
+                        else:
+                            js_surf = self.json_font.render(js_l, True, (200, 200, 200))
+                            log_surface.blit(js_surf, (30, draw_y + 12 + (j * 12)))
+                except: pass
+
+            y_cursor += entry_sep
         
-        # Update max scroll
         total_content_h = y_cursor
         self.max_scroll = min(0, clip_rect.height - total_content_h)
         
-        # Blit the log surface to screen with scroll offset (with CLIPPING)
         self.screen.set_clip(clip_rect)
         self.screen.blit(log_surface, (clip_rect.x, clip_rect.y + self.scroll_y))
         self.screen.set_clip(None)
         
-        # Draw scroll hint if content exceeds panel
         if total_content_h > clip_rect.height:
-            hint = self.font.render("↕ Scroll for history", True, GRAY)
-            self.screen.blit(hint, (SIDE_PANEL_X + SIDE_PANEL_WIDTH - 120, panel_y + 15))
+            hint = self.small_font.render("↕ Scroll for history", True, GRAY)
+            self.screen.blit(hint, (SIDE_PANEL_X + SIDE_PANEL_WIDTH - 150, panel_y + 15))
 
     def draw(self):
         if not self.running: return
@@ -419,7 +515,7 @@ class SimulationGUI:
         
         self.draw_grid()
         
-        # Draw Cloud (Top Right in world coords, e.g., 900, 100)
+        # Draw Cloud
         cx, cy = 900, 100
         csx = MAP_X + (cx * self.zoom_level) + self.map_offset[0]
         csy = (cy * self.zoom_level) + self.map_offset[1]
@@ -446,8 +542,8 @@ class SimulationGUI:
             pygame.draw.rect(self.screen, cloud_queue_color, (cloud_queue_x, cloud_queue_y, int(cloud_queue_width * cloud_queue_ratio), cloud_queue_height), border_radius=3)
             pygame.draw.rect(self.screen, CYAN, (cloud_queue_x, cloud_queue_y, cloud_queue_width, cloud_queue_height), 1, border_radius=3)
             
-            cloud_queue_text = self.font.render(f"Q: {self.cloud_server.queue_length} | Load: {self.cloud_server.current_load}", True, WHITE)
-            self.screen.blit(cloud_queue_text, (csx - 45, csy + 38))
+            cloud_queue_text = self.font.render(f"Queue Length: {self.cloud_server.queue_length} | Load: {self.cloud_server.current_load}", True, WHITE)
+            self.screen.blit(cloud_queue_text, (csx - 65, csy + 38))
         
         # Draw Edge Servers
         for edge in self.edge_servers:
@@ -461,7 +557,7 @@ class SimulationGUI:
                 self.screen.blit(icon, rect)
                 
                 # Load indicator
-                load_text = self.font.render(f"E-{self.edge_servers.index(edge)} Load: {edge.current_load}", True, WHITE)
+                load_text = self.font.render(f"Edge-{edge.id} Load: {edge.current_load}", True, WHITE)
                 self.screen.blit(load_text, (x-35, y+20))
             
             # Queue length bar
@@ -483,8 +579,8 @@ class SimulationGUI:
             pygame.draw.rect(self.screen, ACID_GREEN, (queue_x, queue_y, queue_bar_width, queue_bar_height), 1, border_radius=3)
             
             # Queue text
-            queue_text = self.font.render(f"Q: {queue_length}", True, WHITE)
-            self.screen.blit(queue_text, (x - 15, y + 48))
+            queue_text = self.font.render(f"Queue Length: {queue_length}", True, WHITE)
+            self.screen.blit(queue_text, (x - 25, y + 48))
             
             # CPU frequency bar
             freq_ratio = edge.current_freq / edge.max_freq
@@ -501,26 +597,23 @@ class SimulationGUI:
             
             if MAP_X - 50 <= x <= SIDE_PANEL_X + 50:
                 # Battery status color (normalize to percentage)
-                battery_pct = (device.battery / 10000.0) * 100 
-                battery_pct = max(0, min(100, battery_pct))
+                battery_pct = max(0, min(100, (device.battery / 10000.0) * 100))
                 
+                status_color = GREEN
+                status_icon = "✓"
                 if battery_pct < 20:
                     status_color = RED
                     status_icon = "⚠️"
                 elif battery_pct < 50:
                     status_color = ORANGE
                     status_icon = "⚡"
-                else:
-                    status_color = GREEN
-                    status_icon = "✓"
                 
                 # Draw larger device icon with background circle
                 bg_radius = int(25 * self.zoom_level)
                 if bg_radius < 5: bg_radius = 5
-                pygame.draw.circle(self.screen, (240, 240, 240), (int(x), int(y)), bg_radius)  # Background
-                pygame.draw.circle(self.screen, status_color, (int(x), int(y)), bg_radius, 2)  # Status ring
+                pygame.draw.circle(self.screen, (240, 240, 240), (int(x), int(y)), bg_radius)
+                pygame.draw.circle(self.screen, status_color, (int(x), int(y)), bg_radius, 2)
                 
-                # Device icon (scaled)
                 if self.zoom_level > 0.7:
                     device_icon = self.icon_font.render("🚗", True, BLACK)
                     rect = device_icon.get_rect(center=(int(x), int(y)))
@@ -528,39 +621,28 @@ class SimulationGUI:
                 
                 battery_text = self.font.render(f"{int(battery_pct)}%", True, status_color)
                 self.screen.blit(battery_text, (int(x) - 15, int(y) + bg_radius + 5))
-            
-            # Battery bar with gradient effect (transformed)
-            bar_width, bar_height = int(40 * self.zoom_level), int(6 * self.zoom_level)
-            bar_x, bar_y = int(x - bar_width/2), int(y - bg_radius - bar_height - 10)
-            
-            if bar_width > 5:
-                # Background
-                pygame.draw.rect(self.screen, GRAY, (bar_x, bar_y, bar_width, bar_height))
+                # Battery bar
+                bar_width, bar_height = int(40 * self.zoom_level), int(6 * self.zoom_level)
+                if bar_width > 5:
+                    bar_x, bar_y = int(x - bar_width/2), int(y - bg_radius - bar_height - 10)
+                    pygame.draw.rect(self.screen, GRAY, (bar_x, bar_y, bar_width, bar_height))
+                    fill_width = int(bar_width * (battery_pct / 100.0))
+                    pygame.draw.rect(self.screen, status_color, (bar_x, bar_y, fill_width, bar_height))
+                    pygame.draw.rect(self.screen, BLACK, (bar_x, bar_y, bar_width, bar_height), 1)
+                    
+                if self.zoom_level > 0.8:
+                    status_surf = self.small_icon_font.render(status_icon, True, status_color)
+                    self.screen.blit(status_surf, (int(x - bg_radius), int(y - bg_radius)))
                 
-                # Filled portion
-                fill_width = int(bar_width * (battery_pct / 100.0))
-                pygame.draw.rect(self.screen, status_color, (bar_x, bar_y, fill_width, bar_height))
-                
-                # Border
-                pygame.draw.rect(self.screen, BLACK, (bar_x, bar_y, bar_width, bar_height), 1)
-                
-            # Status icon (smaller, top left of device)
-            if self.zoom_level > 0.8:
-                status_surf = self.small_icon_font.render(status_icon, True, status_color)
-                self.screen.blit(status_surf, (int(x - bg_radius), int(y - bg_radius)))
-            
-            # Draw Active Links (Lines)
-            if device.current_target and MAP_X <= x <= SIDE_PANEL_X:
-                if hasattr(device.current_target, 'location'):
-                    twx, twy = device.current_target.location
-                else:
-                    twx, twy = 900, 100 # Cloud
-                
-                tx = MAP_X + (twx * self.zoom_level) + self.map_offset[0]
-                ty = (twy * self.zoom_level) + self.map_offset[1]
-                
-                line_color = ORANGE if device.current_task_type == "HIGH_DATA" else BLUE
-                pygame.draw.line(self.screen, line_color, (int(x), int(y)), (int(tx), int(ty)), 2)
+                if device.current_target:
+                    if hasattr(device.current_target, 'location'):
+                        twx, twy = device.current_target.location
+                    else:
+                        twx, twy = 900, 100 # Cloud
+                    tx = MAP_X + (twx * self.zoom_level) + self.map_offset[0]
+                    ty = (twy * self.zoom_level) + self.map_offset[1]
+                    line_color = ORANGE if device.current_task_type == "HIGH_DATA" else BLUE
+                    pygame.draw.line(self.screen, line_color, (int(x), int(y)), (int(tx), int(ty)), 2)
 
         # Update and draw particles
         for particle in self.particles[:]:
@@ -607,93 +689,103 @@ class SimulationGUI:
         title_surf = self.title_font.render("🏆 AI PERFORMANCE COMPARISON: WHY PPO IS BETTER?", True, ACID_GREEN)
         self.screen.blit(title_surf, (MAP_X + 50, panel_y + 15))
         
-        # Data Retrieval - Using Averages to avoid extreme cumulative bias
+        # Data Retrieval
         count = max(1, self.stats['tasks_offloaded'])
-        ppo_lat_avg = self.stats['ppo_lat'] / count
-        greedy_lat_avg = self.stats['greedy_lat'] / count
+        ppo_lat_avg = self.stats.get('partial_lat', 0) / count
+        binary_lat_avg = self.stats.get('binary_lat', 0) / count
         
-        ppo_en_avg = self.stats['ppo_en'] / count
-        greedy_en_avg = self.stats['greedy_en'] / count
+        ppo_en_avg = self.stats.get('ppo_en', 0) / count
+        greedy_en_avg = self.stats.get('greedy_en', 1.0) / count
         
         def get_gain(ppo, base):
             if base <= 0: return 0
-            # Ensure we don't show crazy numbers if samples are unbalanced
             gain = ((base - ppo) / base) * 100
-            if gain < -100: return -100 # Clamp for UI sanity
+            if gain < -100: return -100
             return gain
         
-        lat_gain_greedy = get_gain(ppo_lat_avg, greedy_lat_avg)
-        en_save_greedy = get_gain(ppo_en_avg, greedy_en_avg)
+        lat_gain = get_gain(ppo_lat_avg, binary_lat_avg)
+        en_save = get_gain(ppo_en_avg, greedy_en_avg)
         
         # Font styling for emphasis
         gain_font = pygame.font.SysFont("Arial", 22, bold=True)
         small_bold = pygame.font.SysFont("Arial", 14, bold=True)
         med_font = pygame.font.SysFont("Arial", 16)
         
-        # --- SECTION 1: TIMING PROFIT (LATENCY) ---
+        # --- SECTION 1: ZAMANSAL KAZANÇ (LATENCY) ---
         col1_x = MAP_X + 40
         pygame.draw.rect(self.screen, (30, 45, 80), (col1_x - 10, panel_y + 45, 230, 110), border_radius=8)
-        # Robust Icon: Blue Circle
         pygame.draw.circle(self.screen, BLUE, (col1_x + 10, panel_y + 58), 5)
         self.screen.blit(small_bold.render("ZAMANSAL KAZANÇ", True, BLUE), (col1_x + 25, panel_y + 53))
         
-        prefix = "HIZLI" if lat_gain_greedy >= 0 else "YAVAŞ"
-        gain_text = f"%{abs(lat_gain_greedy):.1f} {prefix}"
-        g_surf = gain_font.render(gain_text, True, GREEN if lat_gain_greedy > 0 else RED)
+        prefix = "HIZLI" if lat_gain >= 0 else "YAVAŞ"
+        gain_text = f"%{abs(lat_gain):.1f} {prefix}"
+        g_surf = gain_font.render(gain_text, True, GREEN if lat_gain > 0 else RED)
         self.screen.blit(g_surf, (col1_x + 10, panel_y + 80))
         self.screen.blit(self.small_font.render("(vs Greedy Baseline)", True, GRAY), (col1_x + 10, panel_y + 115))
         
-        # --- SECTION 2: ENERGY PROFIT (BATTERY) ---
+        # --- SECTION 2: ENERJİ TASARRUFU (BATTERY) ---
         col2_x = col1_x + 245
         pygame.draw.rect(self.screen, (30, 45, 80), (col2_x - 10, panel_y + 45, 230, 110), border_radius=8)
-        # Robust Icon: Golden Circle
         pygame.draw.circle(self.screen, GOLD, (col2_x + 10, panel_y + 58), 5)
         self.screen.blit(small_bold.render("ENERJİ TASARRUFU", True, GOLD), (col2_x + 25, panel_y + 53))
         
-        prefix_en = "VERİMLİ" if en_save_greedy >= 0 else "SAVURGAN"
-        en_text = f"%{abs(en_save_greedy):.1f} {prefix_en}"
-        e_surf = gain_font.render(en_text, True, GREEN if en_save_greedy > 0 else RED)
+        prefix_en = "VERİMLİ" if en_save >= 0 else "SAVURGAN"
+        en_text = f"%{abs(en_save):.1f} {prefix_en}"
+        e_surf = gain_font.render(en_text, True, GREEN if en_save > 0 else RED)
         self.screen.blit(e_surf, (col2_x + 10, panel_y + 80))
         self.screen.blit(self.small_font.render("(Batarya Koruma Oranı)", True, GRAY), (col2_x + 10, panel_y + 115))
         
-        # --- SECTION 3: SCIENTIFIC INSIGHT ---
+        # --- SECTION 3: BİLİMSEL ANALİZ ---
         col3_x = col2_x + 245
-        # Robust Icon: Orange Circle
         pygame.draw.circle(self.screen, ORANGE, (col3_x, panel_y + 58), 5)
         self.screen.blit(small_bold.render("BİLİMSEL ANALİZ", True, ORANGE), (col3_x + 15, panel_y + 53))
         
         insight_title = "PPO Avantaj Analizi:"
-        if self.stats['tasks_offloaded'] < 3:
-            insight_body = "Veri toplanıyor..."
-            insight_foot = ""
-        elif lat_gain_greedy > 5:
-            insight_body = "PPO, Edge düğümlerindeki"
-            insight_foot = "yoğunluğu öngördü."
-        else:
-            insight_body = "Cihaz batarya sağlığı için"
-            insight_foot = "offload kararı optimize edildi."
+        insight_body = "Cihaz batarya sağlığı için"
+        insight_foot = "offload kararı optimize edildi."
             
         self.screen.blit(med_font.render(insight_title, True, WHITE), (col3_x, panel_y + 75))
         self.screen.blit(med_font.render(insight_body, True, LIGHT_GRAY), (col3_x, panel_y + 98))
         if insight_foot: self.screen.blit(med_font.render(insight_foot, True, LIGHT_GRAY), (col3_x, panel_y + 118))
 
         # --- SECTION 4: QoS & FAIRNESS ---
-        col4_x = col3_x + 215 # Tightest spacing (Total X around 1350)
-        # Robust Icon: Purple Circle
+        col4_x = col3_x + 215
         pygame.draw.circle(self.screen, PURPLE, (col4_x, panel_y + 58), 5)
         self.screen.blit(small_bold.render("QoS & FAIRNESS", True, PURPLE), (col4_x + 15, panel_y + 53))
         
         fairness = self.stats.get('fairness_index', 1.0)
-        jitter = self.stats.get('jitter_avg', 0.0)
         qoe = self.stats.get('qoe_score', 100.0)
         
-        f_text = self.small_font.render(f"Jain's Fairness: {fairness:.2f}", True, LIGHT_GRAY)
-        j_text = self.small_font.render(f"Avg Jitter: {jitter:.3f}s", True, LIGHT_GRAY)
-        q_text = self.small_font.render(f"QoE Score: {qoe:.1f}/100", True, ACID_GREEN if qoe > 70 else ORANGE)
+        self.screen.blit(self.small_font.render(f"Jain's Fairness: {fairness:.2f}", True, LIGHT_GRAY), (col4_x, panel_y + 75))
+        self.screen.blit(self.small_font.render(f"Avg Jitter: {self.stats.get('jitter_avg', 0):.3f}s", True, LIGHT_GRAY), (col4_x, panel_y + 95))
+        self.screen.blit(self.small_font.render(f"QoE Score: {qoe:.1f}/100", True, ACID_GREEN if qoe > 70 else ORANGE), (col4_x, panel_y + 115))
+
+    def draw_ppo_strategy_monitor(self, x, y):
+        """Draw PPO Strategy Trend Indicator"""
+        width, height = 300, 100
+        s = pygame.Surface((width, height), pygame.SRCALPHA)
+        s.fill((15, 25, 45, 180))
+        self.screen.blit(s, (x, y))
+        pygame.draw.rect(self.screen, CYAN, (x, y, width, height), 1, border_radius=10)
         
-        self.screen.blit(f_text, (col4_x, panel_y + 75))
-        self.screen.blit(j_text, (col4_x, panel_y + 95))
-        self.screen.blit(q_text, (col4_x, panel_y + 115))
+        self.screen.blit(self.small_font.render("PPO STRATEGY MONITOR", True, ACID_GREEN), (x + 10, y + 10))
+        
+        if not hasattr(self, 'ppo_action_history') or not self.ppo_action_history:
+            self.screen.blit(self.small_font.render("Eğitim verisi bekleniyor...", True, GRAY), (x + 10, y + 40))
+            return
+
+        last_10 = self.ppo_action_history[-10:]
+        local_c = last_10.count(0)
+        partial_c = sum(1 for a in last_10 if 1 <= a <= 3)
+        edge_c = sum(1 for a in last_10 if a >= 4)
+        
+        msg, clr = "KARMA (PARTIAL)", ACID_GREEN
+        if local_c > 5: msg, clr = "BATARYA KORUMA", YELLOW
+        elif edge_c > 5: msg, clr = "PERFORMANS", BLUE
+             
+        self.screen.blit(self.font.render(msg, True, clr), (x + 10, y + 35))
+        for i, action in enumerate(last_10):
+            pygame.draw.circle(self.screen, clr, (x + 20 + i*25, y + 80 - action*6), 3)
 
     def show_toast(self, message, duration=90):
         """Trigger a toast notification"""

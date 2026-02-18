@@ -113,25 +113,33 @@ class SemanticAnalyzer:
                          complexity * 0.2)
         
         # Recommendation logic
+        # Recommendations
         if task.task_type.name == "CRITICAL":
-            # Critical tasks prefer low-latency edge
             recommended_target = "edge"
+            llm_summary = f"LLM Analizi: Bu görev (CRITICAL) düşük gecikme gerektiriyor. Edge kullanımı öneriliyor."
         elif bandwidth_need > 0.7:
-            # High bandwidth tasks go to cloud
             recommended_target = "cloud"
+            llm_summary = f"LLM Analizi: Görev boyutu ({task.size_bits/1e6:.1f}MB) ve kritiklik seviyesi ({priority_score:.2f}) 'Bulut' için uygun."
         elif complexity < 0.3:
-            # Simple tasks can run locally
             recommended_target = "local"
+            llm_summary = f"LLM Analizi: Düşük karmaşıklık ({complexity:.1f}) nedeniyle yerel işlem (Local) batarya tasarrufu sağlar."
         else:
             recommended_target = "edge"
+            llm_summary = f"LLM Analizi: Bu görev ({task.task_type.name}) orta segment gecikme toleransına sahip. Yakın sunucu (Edge) ideal."
         
         return {
-            "priority_score": priority_score,
-            "urgency": deadline_urgency,
-            "complexity": complexity,
-            "bandwidth_need": bandwidth_need,
+            "priority_score": round(priority_score, 2),
+            "urgency": round(deadline_urgency, 2),
+            "complexity": round(complexity, 2),
+            "bandwidth_need": round(bandwidth_need, 2),
             "recommended_target": recommended_target,
-            "analysis_method": "rule-based"
+            "analysis_method": "Semantic Analyzer (LLM Feature Extractor)",
+            "llm_summary": llm_summary,
+            "reason": f"Görev tipi {task.task_type.name} ve {task.deadline:.1f}sn deadline kısıtı göz önüne alındığında {recommended_target} önceliği verildi.",
+            "raw_stats": {
+                "size_mb": round(task.size_bits / 1e6, 2),
+                "cpu_ghz": round(task.cpu_cycles / 1e9, 2)
+            }
         }
     
     def _llm_analyze(self, task):

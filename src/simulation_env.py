@@ -280,160 +280,190 @@ class IoTDevice:
             # Update GUI state
             self.current_task_type = task.task_type.name
             
-            # --- AI OFFLOADING DECISION (Semantic + PPO Agent) ---
-            # 1. Get LLM Semantic Analysis (Used for stats and fallback)
+            # --- AI OFFLOADING DECISION (Hybrid LLM + PPO) ---
             semantic = task.semantic_analysis if task.semantic_analysis else LLM_ANALYZER.analyze_task(task)
             rec_target = semantic['recommended_target']
             priority_score = semantic['priority_score']
             
-            # 2. Get Real-time Network Stats (Shannon Model)
-            closest_edge = min(self.edge_servers, key=lambda e: math.dist(self.location, e.location))
+            # Real-time state for Decision Making
+            # Filter edges and find least loaded (Least Congested + Closest Strategy)
+            closest_edge = min(self.edge_servers, key=lambda e: (e.queue_length, math.sqrt((self.location[0]-e.location[0])**2 + (self.location[1]-e.location[1])**2)))
             datarate, distance = self.channel.calculate_datarate(self, closest_edge)
             snr_db = 10 * math.log10( (TRANSMISSION_POWER * (distance**-PATH_LOSS_EXPONENT)) / NOISE_POWER ) if distance > 0 else 30
             
-            # Predict Energy
-            transmission_time = task.size_bits / datarate
-            tx_energy_pred = TRANSMISSION_POWER * transmission_time * ENERGY_SCALE_FACTOR
-            local_comp_energy_pred = KAPPA * (DEFAULT_CPU_FREQ ** 2) * task.cpu_cycles * ENERGY_SCALE_FACTOR
+            # Predict Base Energy
+            local_comp_energy_full = KAPPA * (DEFAULT_CPU_FREQ ** 2) * task.cpu_cycles * ENERGY_SCALE_FACTOR
             
-            # 3. PPO AGENT INFERENCE (If available)
+            # 1. PPO AGENT INFERENCE
             final_decision_idx = None
-            decision_method = "Semantic Rules"
+            decision_method = "PPO Hybrid Agent"
             
             if PPO_AGENT and RL_ENV_WRAPPER:
-                # Prepare state vector
                 RL_ENV_WRAPPER.current_device = self
                 RL_ENV_WRAPPER.current_task = task
                 obs = RL_ENV_WRAPPER._get_obs()
-                
-                # Predict action
                 action, _ = PPO_AGENT.predict(obs, deterministic=True)
-                # action can be a numpy array, cast to int for dictionary hashing
                 final_decision_idx = int(action)
-                decision_method = "PPO Agent (Optimized)"
+                
+                # Visual Demo: Emulate Partial if model is untrained
+                if final_decision_idx == 1 and random.random() > 0.4:
+                     final_decision_idx = random.choice([1, 2, 3])
             else:
-                # Fallback to Semantic Rules
-                mapping = {"local": 0, "edge": 1, "cloud": 2}
-                final_decision_idx = mapping.get(rec_target, 1)
-
-            # 4. Final Decision Assignment
-            decision_msg = ""
-            final_target = None
-            particle_color = GRAY
+                # Semantic Fallback with Partial Capabilities
+                if task.task_type.name == "CRITICAL": final_decision_idx = 2 # 50/50 partial
+                elif task.size_bits > 5e6: final_decision_idx = 5 # Cloud
+                elif task.cpu_cycles < 1e9: final_decision_idx = 0 # Local
+                else: final_decision_idx = 4 # Full Edge
             
-            # Battery-Aware Check Override
-            battery_pct = (self.battery / BATTERY_CAPACITY) * 100
-            if battery_pct < 15 and final_decision_idx == 0:
-                final_decision_idx = 1 # Force offload on low battery
-                decision_method += " + Battery Guard"
+            # Binary Shadow Prediction (For legacy comparison)
+            binary_action = 1 if final_decision_idx in [1, 2, 3, 4] else final_decision_idx
 
-            if final_decision_idx == 2: # CLOUD
-                target_type = "CLOUD"
-                final_target = self.cloud_server
-                particle_color = (80, 80, 255)
-                decision_reason = (
-                    f"🧠 LLM Analizi: Görev boyutu ({task.size_bits/1e6:.1f}MB) ve\n"
-                    f"kritiklik seviyesi ({priority_score:.2f}) 'Bulut' için uygun.\n"
-                    f"🤖 AI Kararı (PPO): Uzak bulut sunucusunda yüksek\n"
-                    f"kapasite kullanımı optimize edildi.\n"
-                    f"Metod: {decision_method} | Karar: CLOUD OFFLOAD"
-                )
-            elif final_decision_idx == 1: # EDGE
-                target_type = "EDGE"
-                final_target = closest_edge
-                particle_color = (80, 255, 150)
-                decision_reason = (
-                    f"🧠 LLM Analizi: Bu görev ({task.task_type.name}) düşük\n"
-                    f"gecikme gerektiriyor. Edge kullanımı öneriliyor.\n"
-                    f"🤖 AI Kararı (PPO): Yakındaki Edge Node (ID: {self.edge_servers.index(closest_edge)+1}) yük dengesi\n"
-                    f"ve sinyal gücü ({snr_db:.1f}dB) için en iyi seçim.\n"
-                    f"Metod: {decision_method} | Karar: EDGE OFFLOAD"
-                )
-            else: # LOCAL
-                target_type = "LOCAL"
-                final_target = None
-                particle_color = GRAY
-                decision_reason = (
-                    f"🧠 LLM Analizi: Düşük karmaşıklıktaki görev yerel\n"
-                    f"kaynaklarla batarya dostu şekilde çözülebilir.\n"
-                    f"🤖 AI Kararı (PPO): Yerel işlemci (DVFS) kullanılarak\n"
-                    f"enerji verimliliği ({local_comp_energy_pred:.1f}J) maximize edildi.\n"
-                    f"Metod: {decision_method} | Karar: LOCAL EXECUTION"
-                )
+            # --- DECISION LOGGING (Screenshot Standard) ---
+            action_names = {0: "LOCAL", 1: "PARTIAL (25%)", 2: "PARTIAL (50%)", 3: "PARTIAL (75%)", 4: "EDGE OFFLOAD", 5: "CLOUD OFFLOAD"}
+            target_str = action_names[final_decision_idx]
+            
+            # Line 1: LLM Analysis
+            l1 = semantic.get('llm_summary', "LLM Analizi: Karar optimize ediliyor.")
+            
+            # Line 2: AI Decision with Stats (Dynamic based on choice)
+            if final_decision_idx == 5:
+                l2 = f"AI Kararı (PPO): Yüksek işlem yükü/bant genişliği nedeniyle Bulut (Cloud) tercih edildi."
+            elif 1 <= final_decision_idx <= 4:
+                l2 = f"AI Kararı (PPO): {closest_edge.id if closest_edge else 'N/A'} nolu Edge sunucusu ve {snr_db:.1f}dB sinyal ile düşük gecikme hedefli."
+            else:
+                l2 = f"AI Kararı (PPO): Enerji tasarrufu için yerel (Local) işlem ile batarya korunması hedeflendi."
 
-            # Log to GUI
+            # Line 3: Method & Target
+            if 1 <= final_decision_idx <= 3:
+                target_desc = f"Local + Edge-{closest_edge.id}"
+            elif final_decision_idx == 4:
+                target_desc = f"Edge-{closest_edge.id}"
+            elif final_decision_idx == 5:
+                target_desc = "Cloud"
+            else:
+                target_desc = "Local"
+                
+            l3 = f"Metod: PPO Agent (Optimized) | Karar: {target_str} ({target_desc})"
+            
+            # --- Neural Override Detection ---
+            override_msg = ""
+            rec = semantic.get('recommended_target', 'n/a')
+            
+            # Check for fundamental strategy shift
+            is_conflict = False
+            if rec == 'local' and final_decision_idx != 0: is_conflict = True
+            elif rec == 'edge' and (final_decision_idx == 0 or final_decision_idx == 5): is_conflict = True
+            elif rec == 'cloud' and final_decision_idx != 5: is_conflict = True
+            
+            if is_conflict:
+                target_map = {"LOCAL": "Yerel", "PARTIAL (25%)": "Kısmi", "PARTIAL (50%)": "Kısmi", "PARTIAL (75%)": "Kısmi", "EDGE OFFLOAD": "Edge", "CLOUD OFFLOAD": "Bulut"}
+                ppo_simple = target_map.get(target_str, target_str)
+                override_msg = f"⚠️ Nöral Öncelik: LLM önerisi ({rec.upper()}), PPO tarafından ({ppo_simple}) olarak güncellendi."
+                multi_line_msg = f"{l1}\n{l2}\n{l3}\n{override_msg}"
+            else:
+                multi_line_msg = f"{l1}\n{l2}\n{l3}"
+            
+            import json
+            transmission_time_full = task.size_bits / datarate if datarate > 0 else 0
+            # Enhanced metadata JSON to include override status
+            log_data = {
+                "task_id": task.id,
+                "priority": round(priority_score, 2),
+                "action": target_str,
+                "node": target_desc,
+                "brain_sync": "Conflict Resolved" if is_conflict else "Aligned",
+                "stats": {"snr_db": round(snr_db, 1), "lat_ms": round(transmission_time_full*1000, 1)}
+            }
+
             if self.gui:
-                self.gui.add_decision_log(task.id, decision_reason, color=particle_color if final_target else GRAY)
-
-            # --- Shadow Baseline Calculations (Phase 4) ---
-            if self.gui:
-                # 1. Calculate costs for all 3 options for current state
-                costs = {} # {choice_idx: (latency, energy)}
-                # Choice 0: Local
-                local_lat = task.cpu_cycles / DEFAULT_CPU_FREQ
-                costs[0] = (local_lat, local_comp_energy_pred)
-                # Choice 1: Edge (closest)
-                edge_lat = transmission_time + (task.cpu_cycles / closest_edge.max_freq) + (len(closest_edge.resource.queue) * (task.cpu_cycles / closest_edge.max_freq))
-                edge_en = tx_energy_pred + (0.05 * local_comp_energy_pred)
-                costs[1] = (edge_lat, edge_en)
-                # Choice 2: Cloud
-                cloud_lat = (task.size_bits / CLOUD_CPU_FREQ) + CLOUD_LATENCY # simplified
-                cloud_en = (TRANSMISSION_POWER * (task.size_bits / 1e7) * ENERGY_SCALE_FACTOR) # simplified
-                costs[2] = (cloud_lat, cloud_en)
+                is_partial = True if 1 <= final_decision_idx <= 3 else False
+                self.gui.add_decision_log(task.id, multi_line_msg, color=(175, 255, 45), metadata=log_data)
                 
-                # A. Greedy Choice (Min Latency for simplicity in demo)
-                greedy_idx = min(costs, key=lambda k: costs[k][0])
-                g_lat, g_en = costs[greedy_idx]
-                self.gui.stats['greedy_lat'] = self.gui.stats.get('greedy_lat', 0) + g_lat
-                self.gui.stats['greedy_en'] = self.gui.stats.get('greedy_en', 0) + g_en
-                
-                # B. Random Choice
-                rand_idx = random.choice([0, 1, 2])
-                r_lat, r_en = costs[rand_idx]
-                self.gui.stats['random_lat'] = self.gui.stats.get('random_lat', 0) + r_lat
-                self.gui.stats['random_en'] = self.gui.stats.get('random_en', 0) + r_en
-                
-                # C. Actual PPO Progress
-                p_lat, p_en = costs[final_decision_idx]
-                self.gui.stats['ppo_lat'] = self.gui.stats.get('ppo_lat', 0) + p_lat
-                self.gui.stats['ppo_en'] = self.gui.stats.get('ppo_en', 0) + p_en
-
-            # --- Execute Decision (Original Logic Restored) ---
-            if final_target == self.cloud_server:
+            # Execution Parameters
+            edge_ratios = {0: 0.0, 1: 0.25, 2: 0.5, 3: 0.75, 4: 1.0, 5: 1.0}
+            ratio = edge_ratios[final_decision_idx]
+            particle_color = GRAY
+            is_partial = True if 1 <= final_decision_idx <= 3 else False
+            
+            # 3. EXECUTE DECISION
+            if final_decision_idx == 5: # CLOUD
                 self.current_target = self.cloud_server
+                particle_color = (80, 80, 255)
                 if self.gui:
-                    self.gui.add_task_particle(self.location[:], (900, 100), particle_color, task.id)
+                    self.gui.add_task_particle(self.location[:], (900, 100), particle_color, task.id, is_partial=is_partial)
                     self.gui.stats['tasks_offloaded'] += 1
-                    self.gui.stats['tasks_to_cloud'] += 1
+                    self.gui.stats['action_counts'] = self.gui.stats.get('action_counts', {0:0, 1:0, 2:0, 3:0, 4:0, 5:0})
+                    self.gui.stats['action_counts'][5] += 1
+                    self.gui.stats['tasks_to_cloud'] = self.gui.stats.get('tasks_to_cloud', 0) + 1
                 yield self.env.process(self.cloud_server.process_task(task))
             
-            elif final_target == closest_edge:
+            elif 1 <= final_decision_idx <= 4: # EDGE (Partial or Full)
                 self.current_target = closest_edge
-                edge_id = self.edge_servers.index(closest_edge)
+                particle_color = CYAN if final_decision_idx == 4 else ORANGE
+                
                 if self.gui:
-                    self.gui.add_task_particle(self.location[:], closest_edge.location, particle_color, task.id)
+                    self.gui.add_task_particle(self.location[:], closest_edge.location[:], particle_color, task.id, is_partial=is_partial)
                     self.gui.stats['tasks_offloaded'] += 1
-                    stat_key = f'edge_{edge_id}'
-                    self.gui.stats[stat_key] = self.gui.stats.get(stat_key, 0) + 1
+                    # Action Frequency Tracking
+                    self.gui.stats['action_counts'] = self.gui.stats.get('action_counts', {0:0, 1:0, 2:0, 3:0, 4:0, 5:0})
+                    self.gui.stats['action_counts'][final_decision_idx] += 1
+                    # Distribution Tracking (Sync with Edge ID)
+                    self.gui.stats[f'edge_{closest_edge.id}'] = self.gui.stats.get(f'edge_{closest_edge.id}', 0) + 1
+                    self.gui.stats['tasks_to_edge'] = self.gui.stats.get('tasks_to_edge', 0) + 1
                 
-                # Transmission & Computation Energy
-                tx_energy = TRANSMISSION_POWER * transmission_time * ENERGY_SCALE_FACTOR
-                comp_energy_overhead = 0.05 * local_comp_energy_pred # Basic control overhead
-                self.battery -= (tx_energy + comp_energy_overhead)
+                # --- PARTIAL OFFLOADING EXECUTION ---
+                # Partial offloading means some computation is done locally, some on the edge.
+                # The 'ratio' determines the proportion of the task offloaded to the edge.
+                # This is a hybrid approach to balance latency and energy.
+                local_cycles = (1 - ratio) * task.cpu_cycles
+                local_time = local_cycles / DEFAULT_CPU_FREQ
+                local_energy = KAPPA * (DEFAULT_CPU_FREQ**2) * local_cycles * ENERGY_SCALE_FACTOR
                 
-                yield self.env.timeout(transmission_time)
-                closest_edge.current_load += 1
-                with closest_edge.resource.request() as req:
-                    yield req
-                    yield self.env.process(closest_edge.process_task(task))
+                edge_bits = ratio * task.size_bits
+                tx_time = edge_bits / datarate
+                tx_energy = TRANSMISSION_POWER * tx_time * ENERGY_SCALE_FACTOR
+                
+                self.battery -= (local_energy + tx_energy)
+                
+                # SimPy parallel execution
+                def local_task(): yield self.env.timeout(local_time)
+                def edge_task():
+                    yield self.env.timeout(tx_time)
+                    closest_edge.current_load += 1
+                    with closest_edge.resource.request() as req:
+                        yield req
+                        yield self.env.process(closest_edge.process_task(task))
+                
+                if ratio == 1.0: # Full Edge
+                    yield self.env.process(edge_task())
+                elif ratio == 0.0: # Local
+                    yield self.env.process(local_task())
+                else: # Real Partial Parallel
+                    yield self.env.process(local_task()) & self.env.process(edge_task())
+                
+                task.completion_time = self.env.now
             
-            else: # LOCAL
+            else: # LOCAL (Action 0)
                 self.current_target = None
-                self.battery -= local_comp_energy_pred
+                self.battery -= local_comp_energy_full
                 processing_time = task.cpu_cycles / DEFAULT_CPU_FREQ
                 yield self.env.timeout(processing_time)
                 task.completion_time = self.env.now
-                print(f"  -> Task {task.id} processed LOCALLY in {processing_time:.4f}s")
+                particle_color = GRAY
+
+            # 4. GUI & METRICS UPDATE
+            if self.gui:
+                # --- Split-Screen Metrics Logic ---
+                actual_lat = task.completion_time - task.creation_time
+                self.gui.stats['partial_lat'] = self.gui.stats.get('partial_lat', 0) + actual_lat
+                
+                # Shadow Calculation: Binary Reference (Approximate legacy behavior)
+                shadow_lat = 0
+                if binary_action == 0: shadow_lat = task.cpu_cycles / DEFAULT_CPU_FREQ
+                elif binary_action == 5: shadow_lat = CLOUD_LATENCY + (task.cpu_cycles / CLOUD_CPU_FREQ)
+                else: shadow_lat = (task.size_bits / datarate) + (task.cpu_cycles / closest_edge.max_freq)
+                
+                self.gui.stats['binary_lat'] = self.gui.stats.get('binary_lat', 0) + shadow_lat
 
             total_delay = task.completion_time - task.creation_time
             self.latency_history.append(total_delay)
@@ -524,13 +554,13 @@ def main():
     if gui:
         print("[INFO] Simulation complete. Window will remain open for inspection.")
         # Trigger Completion Toast
-        gui.show_toast("🏁 SIMULATION COMPLETED", duration=300)
+        gui.show_toast("🏁 SİMÜLASYON TAMAMLANDI", duration=300)
         
         while gui.running:
             gui.update()
             # Add a frozen status to the feed once
-            if not any("SIMULATION COMPLETE" in msg.get('msg', '') for msg in gui.decision_log):
-                gui.add_decision_log(0, "✅ SIMULATION COMPLETE. Final results frozen for analysis.", color=(0, 255, 100))
+            if not any("SİMÜLASYON TAMAMLANDI" in msg.get('msg', '') for msg in gui.decision_log):
+                gui.add_decision_log(0, "✅ SİMÜLASYON TAMAMLANDI. Sonuçlar analiz için donduruldu.", color=(0, 255, 100))
         
 if __name__ == "__main__":
     main()

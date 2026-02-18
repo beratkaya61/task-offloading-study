@@ -26,6 +26,10 @@ gantt
     section Test & Doğrulama (Faz 3)
     Baseline Kıyaslamaları (Random/Greedy):test1, 2026-03-05, 3d
     Ablaasyon Çalışmaları (Ablation Study) :test2, 2026-03-08, 3d
+    section Partial Offloading (Faz 9)
+    Action Space Expansion (6 Actions)    :active, p9_1, 2026-03-01, 2d
+    Parallel SimPy Engine (Splitting)     :active, p9_2, 2026-03-03, 3d
+    GUI Split-Screen Comparison UI        :p9_3, 2026-03-06, 2d
     
     section Makale Yazımı
     Taslak Yazımı & Grafiklerin Üretimi    :write1, 2026-03-12, 5d
@@ -52,11 +56,12 @@ flowchart TD
         
         subgraph RL_Logic ["Deep Reinforcement Learning (PPO)"]
             E["State Vector S(t)"] -->|"SNR, Load, Battery, Cycles"| F["PPO Agent (Policy)"]
-            F -->|"Action A(t): [L, E, C]"| G["Action Decoder"]
+            F -->|"Action A(t): [0...5]"| G["Action Decoder"]
         end
         
         D -->|"Rule-based Flow"| E
-        G -->|"Final Choice"| H["Offloading Executor"]
+        G -->|"Ratio & Target"| H["Offloading Executor"]
+        H -->|"Load Balancing"| LS["Least Congested Edge Selection"]
         
         subgraph Reward_Shaping ["LLM-Guided Reward Shaping"]
             H -->|"Delay/Energy Outcome"| J["Reward Calculator"]
@@ -67,9 +72,9 @@ flowchart TD
 
     subgraph InfrastructureLayer ["3. Multi-Tier Execution"]
         direction LR
-        H -- 0: Local --> K["IoT CPU (DVFS Model)"]
-        H -- 1: Edge --> L["Edge Server (M/M/1 Queue)"]
-        H -- 2: Cloud --> M["Cloud Center (Infinite Cap)"]
+        H -- "Actions 0-3 (Local Part)" --> K["IoT CPU (DVFS Model)"]
+        LS -- "Actions 1-4 (Remote Part)" --> L["Edge Server (M/M/1 Queue)"]
+        H -- "Action 5" --> M["Cloud Center (Infinite Cap)"]
     end
 
     subgraph MetricsLayer ["4. Performance Tracking"]
@@ -102,7 +107,15 @@ Artık elimizde görevin özellikleri ve ağın durumu var. Burada **PPO (Deep R
 *   **Neden?**: Klasik yöntemler (Greedy) sadece o anki en iyiye odaklanır. PPO ise gelecekteki ödülleri de düşünerek "akıllı" bir politika izler.
 *   **Nasıl?**: 
     - **S(t) State Vector**: Ajan; SNR (sinyal kalitesi), batarya yüzdesi ve sunucu yükü gibi verileri bir "durum" olarak okur.
-    - **A(t) Action**: Ajan bu duruma bakarak üç karardan birini verir: `0: Yerel (Local)`, `1: Edge Server`, `2: Cloud`.
+    - **A(t) Action (Genişletilmiş Aksiyon Kümesi)**: Ajan bu duruma bakarak 6 farklı karardan birini verir:
+        - `0: %100 Yerel (Local)` - Düşük veri, yüksek batarya durumu.
+        - `1: %25 Edge + %75 Local` - Kısmi offloading başlangıcı.
+        - `2: %50 Edge + %50 Local` - Dengeli paralel işlem.
+        - `3: %75 Edge + %25 Local` - Yoğun dış kaynak kullanımı.
+        - `4: %100 Edge Server` - Tam offloading.
+        - `5: %100 Cloud` - En yüksek hesaplama gücü (Partial Offloading kapsamı dışı).
+        
+    - **Load Balancing (Yük Dengeleme)**: 1, 2, 3 veya 4 numaralı aksiyonlar (Edge içeren kararlar) tercih edildiğinde, sistem **"Least Congested Edge"** (En Az Yoğun Edge) algoritmasını çalıştırır. Tüm mevcut Edge sunucuları arasından kuyruk uzunluğu en kısa olanı otomatik olarak seçilir, böylece ağ genelinde dinamik bir yük dengeleme sağlanır.
 
 ### 4. Adım: Ödül Şekillendirme (Reward Shaping)
 Ajanın verdiği kararın iyi mi kötü mü olduğu burada ölçülür. Burada **LLM Destekli Ödül Şekillendirme** kullanılır.
