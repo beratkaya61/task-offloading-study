@@ -50,7 +50,7 @@ ORANGE = (255, 165, 0)
 RED = (200, 50, 50)
 
 # Battery Model
-BATTERY_CAPACITY = 20000.0  # Increased for longer demo
+BATTERY_CAPACITY = 5000.0  # Reduced to force agent to learn action diversity (lokal, kısmi offloading)
 IDLE_POWER = 1.0  # Reduced to prevent premature death
 ENERGY_SCALE_FACTOR = 50.0  # Multiplier to make energy consumption visible
 
@@ -356,7 +356,7 @@ class IoTDevice:
             elif rec == 'cloud' and final_decision_idx != 5: is_conflict = True
             
             if is_conflict:
-                target_map = {"LOCAL": "Yerel", "PARTIAL (25%)": "Kısmi", "PARTIAL (50%)": "Kısmi", "PARTIAL (75%)": "Kısmi", "EDGE OFFLOAD": "Edge", "CLOUD OFFLOAD": "Bulut"}
+                target_map = {"LOCAL": "Yerel", "PARTIAL (25%)": "PARTIAL", "PARTIAL (50%)": "PARTIAL", "PARTIAL (75%)": "PARTIAL", "EDGE OFFLOAD": "Edge", "CLOUD OFFLOAD": "Bulut"}
                 ppo_simple = target_map.get(target_str, target_str)
                 override_msg = f"⚠️ Nöral Öncelik: LLM önerisi ({rec.upper()}), PPO tarafından ({ppo_simple}) olarak güncellendi."
                 multi_line_msg = f"{l1}\n{l2}\n{l3}\n{override_msg}"
@@ -365,14 +365,52 @@ class IoTDevice:
             
             import json
             transmission_time_full = task.size_bits / datarate if datarate > 0 else 0
-            # Enhanced metadata JSON to include override status
+            
+            # ENHANCED metadata JSON with FULL semantic payload visibility
+            # Priority label determination
+            priority_val = priority_score
+            if priority_val >= 0.8:
+                priority_label = "CRITICAL"
+            elif priority_val >= 0.6:
+                priority_label = "HIGH"
+            elif priority_val >= 0.4:
+                priority_label = "MEDIUM"
+            else:
+                priority_label = "LOW"
+            
+            # Extract all semantic fields
+            urgency_val = round(semantic.get('urgency', 0.5), 2)
+            complexity_val = round(semantic.get('complexity', 0.5), 2)
+            bandwidth_val = round(semantic.get('bandwidth_need', 0.5), 2)
+            llm_rec = semantic.get('recommended_target', 'N/A').upper()
+            reason_val = semantic.get('reason', 'Task analysis completed')
+            
+            # Determine sync status - LLM recommendation vs PPO decision alignment
+            sync_status = "ALIGNED" if not is_conflict else "CONFLICT"
+            
+            # Prepare comprehensive metadata
             log_data = {
                 "task_id": task.id,
                 "priority": round(priority_score, 2),
+                "priority_label": priority_label,
+                "urgency": urgency_val,
+                "complexity": complexity_val,
+                "bandwidth_need": bandwidth_val,
                 "action": target_str,
                 "node": target_desc,
-                "brain_sync": "Conflict Resolved" if is_conflict else "Aligned",
-                "stats": {"snr_db": round(snr_db, 1), "lat_ms": round(transmission_time_full*1000, 1)}
+                "sync": sync_status,
+                "llm_recommendation": llm_rec,
+                "reason": reason_val,
+                "stats": {
+                    "snr_db": round(snr_db, 1),
+                    "lat_ms": round(transmission_time_full*1000, 1),
+                    "size_mb": round(task.size_bits / 1e6, 2),
+                    "cpu_ghz": round(task.cpu_cycles / 1e9, 2),
+                    "battery_pct": round((self.battery / 5000.0) * 100, 1),
+                    "edge_queue": closest_edge.queue_length if closest_edge else 0,
+                    "deadline_s": round(task.deadline, 2),
+                    "task_type": task.task_type.name
+                }
             }
 
             if self.gui:

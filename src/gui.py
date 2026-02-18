@@ -420,20 +420,21 @@ class SimulationGUI:
         log_surface = pygame.Surface((clip_rect.width, 5000), pygame.SRCALPHA)
         
         y_cursor = 0
-        entry_sep = 300 # Massive clearance for multi-line analysis + JSON
+        entry_sep = 180 # Reduced for compact metadata display (more entries visible)
         max_w = clip_rect.width - 40
         
         for entry in self.decision_log[::-1]:
-            # Indicator line - Dynamic height (approximate)
-            pygame.draw.line(log_surface, entry['color'], (5, y_cursor), (5, y_cursor + entry_sep - 15), 3)
+            # Start of entry block
+            entry_start_y = y_cursor
             
             # Header
             header = f"Task-{entry['id']} | T: {entry['time']:.1f}s"
             log_surface.blit(self.small_font.render(header, True, entry['color']), (15, y_cursor))
+            y_cursor += 20
             
             # Main Analysis with Wrapping
             raw_lines = entry['msg'].split('\n')
-            draw_y = y_cursor + 20
+            draw_y = y_cursor
             
             for line in raw_lines:
                 c = WHITE
@@ -469,29 +470,125 @@ class SimulationGUI:
                 log_surface.blit(line_surf, (20, draw_y))
                 draw_y += 16
             
-            # Metadata JSON - Larger box
+            # Metadata JSON - ENHANCED for full visibility
+            metadata_y = draw_y + 10  # Space after text
+            metadata_end_y = draw_y  # Will be updated if metadata exists
             if entry.get('metadata'):
-                import json
                 try:
-                    js_str = json.dumps(entry['metadata'], indent=2, ensure_ascii=False)
-                    js_lines = js_str.split('\n')[:10] # Show more lines
-                    # Enormous Background for JSON block
-                    pygame.draw.rect(log_surface, (15, 25, 35), (20, draw_y + 5, clip_rect.width - 40, 130), border_radius=4)
-                    pygame.draw.rect(log_surface, (70, 70, 90), (20, draw_y + 5, clip_rect.width - 40, 130), 1, border_radius=4) 
-                    for j, js_l in enumerate(js_lines):
-                        # Enhanced Syntax highlighting
-                        if ":" in js_l:
-                            key, val = js_l.split(":", 1)
-                            k_surf = self.json_font.render(key + ":", True, (130, 220, 220))
-                            v_surf = self.json_font.render(val, True, (255, 220, 100))
-                            log_surface.blit(k_surf, (30, draw_y + 12 + (j * 12)))
-                            log_surface.blit(v_surf, (30 + k_surf.get_width(), draw_y + 12 + (j * 12)))
+                    meta = entry['metadata']
+                    
+                    # Create formatted JSON lines for display - COMPLETE FIELDS
+                    # Use larger font for JSON
+                    json_font = self.font  # Larger than small_font
+                    max_width = clip_rect.width - 80  # Leave margin for wrapping
+                    
+                    json_lines = []
+                    json_lines.append("{")
+                    json_lines.append(f'  "task_id": {meta.get("task_id", "?")},')
+                    json_lines.append(f'  "priority": {meta.get("priority", "?")} [{meta.get("priority_label", "?")}],')
+                    json_lines.append(f'  "urgency": {meta.get("urgency", "?")}, "complexity": {meta.get("complexity", "?")},')
+                    json_lines.append(f'  "bandwidth_need": {meta.get("bandwidth_need", "?")},')
+                    json_lines.append(f'  "action": "{meta.get("action", "?")}" → "{meta.get("node", "?")}",')
+                    # sync field - show alignment between LLM recommendation and PPO decision
+                    sync_val = meta.get("sync", "?")
+                    sync_desc = "LLM↔PPO Aligned" if sync_val == "ALIGNED" else "LLM↔PPO Conflict"
+                    json_lines.append(f'  "sync": "{sync_desc}", "llm_recommendation": "{meta.get("llm_recommendation", "?")}",')
+                    
+                    # Handle reason field with smart wrapping
+                    reason_full = meta.get("reason", "N/A")
+                    if len(reason_full) > 70:
+                        # Split into chunks that fit the box width
+                        words = reason_full.split()
+                        current_line = '  "reason": "'
+                        reason_lines = []
+                        for word in words:
+                            test_line = current_line + word + " "
+                            test_surf = json_font.render(test_line, True, (200, 200, 200))
+                            if test_surf.get_width() < max_width:
+                                current_line = test_line
+                            else:
+                                reason_lines.append(current_line.rstrip() + '\n')
+                                current_line = '             ' + word + " "
+                        reason_lines.append(current_line.rstrip() + '",')
+                        json_lines.extend(reason_lines)
+                    else:
+                        json_lines.append(f'  "reason": "{reason_full}",')
+                    
+                    # Stats sub-object - ALL FIELDS
+                    stats = meta.get('stats', {})
+                    json_lines.append(f'  "stats": {{')
+                    json_lines.append(f'    "snr_db": {stats.get("snr_db", "?")}, "lat_ms": {stats.get("lat_ms", "?")},')
+                    json_lines.append(f'    "size_mb": {stats.get("size_mb", "?")}, "cpu_ghz": {stats.get("cpu_ghz", "?")},')
+                    json_lines.append(f'    "battery_pct": {stats.get("battery_pct", "?")}%, "edge_queue": {stats.get("edge_queue", "?")},')
+                    json_lines.append(f'    "deadline_s": {stats.get("deadline_s", "?")}, "task_type": "{stats.get("task_type", "?")}"')
+                    json_lines.append(f'  }}')
+                    json_lines.append("}")
+                    
+                    # Calculate box height - ADJUSTED FOR ACTUAL LINE COUNT
+                    box_height = len(json_lines) * 16 + 25
+                    
+                    # Draw background box with enhanced border
+                    pygame.draw.rect(log_surface, (15, 25, 35), (20, metadata_y - 5, clip_rect.width - 40, box_height), border_radius=4)
+                    pygame.draw.rect(log_surface, (100, 140, 160), (20, metadata_y - 5, clip_rect.width - 40, box_height), 2, border_radius=4)
+                    
+                    # Render JSON lines with syntax highlighting - CLEANER
+                    json_y = metadata_y + 8
+                    for line in json_lines:
+                        # Skip empty lines from wrapping
+                        if not line.strip():
+                            json_y += 16
+                            continue
+                        
+                        # Color based on content
+                        if line.startswith("{") or line.startswith("}"):
+                            color = (180, 180, 180)  # Gray for braces
+                            line_surf = json_font.render(line, True, color)
+                            log_surface.blit(line_surf, (35, json_y))
                         else:
-                            js_surf = self.json_font.render(js_l, True, (200, 200, 200))
-                            log_surface.blit(js_surf, (30, draw_y + 12 + (j * 12)))
-                except: pass
-
-            y_cursor += entry_sep
+                            # For key-value pairs, split smartly at first ": "
+                            if '": ' in line:
+                                key_idx = line.find('": ')
+                                if key_idx != -1:
+                                    key_part = line[:key_idx + 2]  # Include the ":"
+                                    val_part = line[key_idx + 2:]
+                                    
+                                    # Render key (cyan)
+                                    key_surf = json_font.render(key_part, True, (120, 200, 220))
+                                    log_surface.blit(key_surf, (35, json_y))
+                                    
+                                    # Render value (gold)
+                                    val_surf = json_font.render(val_part, True, (200, 180, 100))
+                                    log_surface.blit(val_surf, (35 + key_surf.get_width(), json_y))
+                                else:
+                                    # Fallback: render as white
+                                    line_surf = json_font.render(line, True, (200, 200, 200))
+                                    log_surface.blit(line_surf, (35, json_y))
+                            else:
+                                # Other lines (no key-value)
+                                color = (200, 200, 200)  # White for other
+                                line_surf = json_font.render(line, True, color)
+                                log_surface.blit(line_surf, (35, json_y))
+                        
+                        json_y += 16  # Fixed line height for larger font
+                    
+                    # Update draw_y for next entry
+                    draw_y = metadata_y + box_height
+                    metadata_end_y = draw_y
+                    
+                except Exception as e:
+                    import traceback
+                    print(f"[ERROR] Metadata render failed: {e}")
+                    traceback.print_exc()
+            else:
+                # No metadata, use current draw_y
+                metadata_end_y = draw_y
+            
+            # Add vertical indicator line - now using actual height
+            entry_height = metadata_end_y - entry_start_y + 15
+            pygame.draw.line(log_surface, entry['color'], (5, entry_start_y), (5, entry_start_y + entry_height), 3)
+            
+            # Move to next entry with spacing
+            y_cursor = entry_start_y + entry_height + 20
         
         total_content_h = y_cursor
         self.max_scroll = min(0, clip_rect.height - total_content_h)

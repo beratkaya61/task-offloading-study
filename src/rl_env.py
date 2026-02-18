@@ -131,23 +131,32 @@ class OffloadingEnv(gym.Env):
         if delay > self.current_task.deadline:
             reward -= 50.0 * priority_score # Critical tasks suffer more
             
-        # Battery Awareness
-        battery_pct = (self.current_device.battery / 10000.0) * 100 if hasattr(self.current_device, 'battery') else 100
-        if battery_pct < 15 and action == 0:
-            reward -= 20.0 # Heavy penalty for local processing on low battery
-            
-        # Partial Offloading Bonus (Gradularized)
+        # Battery Awareness - ENHANCED for action diversity
+        battery_pct = (self.current_device.battery / 5000.0) * 100 if hasattr(self.current_device, 'battery') else 100
+        
+        # Heavy incentive to preserve battery via local/partial offloading
+        if battery_pct < 30:
+            if action == 0:  # Local processing on low battery
+                reward += 15.0 * (1.0 - battery_pct/100.0)  # More bonus as battery gets lower
+            elif 1 <= action <= 3:  # Partial offloading on low battery
+                reward += 10.0 * (1.0 - battery_pct/100.0)
+            else:  # Full cloud on low battery (discourage)
+                reward -= 30.0 * (1.0 - battery_pct/100.0)
+        
+        # Partial Offloading Bonus (Gradularized) - ENHANCED
         if 1 <= action <= 3:
             local_only_delay = self.current_task.cpu_cycles / 1e9
             if delay < local_only_delay:
                 # Bonus based on how much faster it is
                 improvement = (local_only_delay - delay) / local_only_delay
-                reward += 10.0 * improvement + 2.0 # More reward for partial success
+                reward += 10.0 * improvement + 3.0 # Increased base bonus
+            # Energy efficiency bonus for partial offloading
+            reward += 2.0 * (1.0 - energy / (local_comp_energy_pred_full * 0.5))
 
-        # 4. Energy/Local Processing Reward
+        # 4. Energy/Local Processing Reward - ENHANCED
         if action == 0 and energy < 0.1: # If local and low energy
-             reward += 5.0 # Explicit reward for successful local execution
-             if battery_pct > 50: reward += 3.0 # Extra bonus for maintaining healthy battery
+             reward += 8.0 # Increased explicit reward for successful local execution
+             if battery_pct > 40: reward += 5.0 # Extra bonus for maintaining healthy battery
 
         # Transition to "Next Task" state (randomized for training)
         done = True 
