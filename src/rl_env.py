@@ -21,10 +21,13 @@ class OffloadingEnv(gym.Env):
         # 5: Full Cloud (100% Cloud)
         self.action_space = spaces.Discrete(6)
         
-        # State Space: [SNR, Task Size, CPU Cycles, Battery %, Edge Load]
+        # State Space: [SNR, Task Size, CPU Cycles, Battery %, Edge Load, LLM-Local, LLM-Edge, LLM-Cloud]
         # Normalized values between 0 and 1
+        # Updated from (6,) to (8,) - LLM recommendation now one-hot encoded
+        # Features 0-4: Physical/Network metrics
+        # Features 5-7: LLM one-hot encoding [local_flag, edge_flag, cloud_flag]
         self.observation_space = spaces.Box(
-            low=0, high=1, shape=(5,), dtype=np.float32
+            low=0, high=1, shape=(8,), dtype=np.float32
         )
         
         self.devices = devices
@@ -116,23 +119,43 @@ class OffloadingEnv(gym.Env):
             delay = max(local_part_lat, edge_tx_lat + edge_comp_lat)
             energy = local_part_en + edge_tx_en
 
-        # 3. Reward Calculation
-        # Base Reward: Minimize Delay and Energy
-        reward = -(delay * 20.0) - (energy * 2.0)
+        # 3. Reward Calculation - IMPROVED with LLM Alignment
+        # Base success reward (starting point is positive)
+        base_reward = 100.0
+        reward = base_reward
         
-        # Special penalties (Transitioned from previous version)
-        if action == 5:
-            reward -= 25.0 # Increased Cloud cost penalty to discourage bias
-            
+        # Core penalties: Minimize delay and energy
+        reward -= (delay * 20.0)
+        reward -= (energy * 2.0)
+        
+        # 🎯 NEW: LLM Alignment Bonus - Model learns to follow good LLM recommendations
+        # ✅ OPTION B: Confidence-scaled rewards for reliable learning
         semantic = self.current_task.semantic_analysis
-        priority_score = semantic['priority_score'] if semantic else 0.5
+        llm_rec = semantic.get('recommended_target', 'edge') if semantic else 'edge'
+        llm_confidence = semantic.get('confidence', 0.5) if semantic else 0.5  # ✅ Get confidence
+        
+        # Confidence-scaled alignment bonus - high confidence → higher reward
+        if llm_rec == 'local' and action == 0:
+            reward += 20.0 * llm_confidence  # Strong incentive, scaled by confidence
+        elif llm_rec == 'edge' and 1 <= action <= 4:
+            reward += 15.0 * llm_confidence  # Medium incentive, scaled by confidence
+        elif llm_rec == 'cloud' and action == 5:
+            reward += 15.0 * llm_confidence  # Medium incentive, scaled by confidence
+        else:
+            reward -= 10.0 * llm_confidence  # Penalty also scaled - unreliable LLM less impact
+        
+        # Special penalties
+        if action == 5:
+            reward -= 25.0 # Cloud cost penalty (additional to LLM penalty if misaligned)
+            
+        priority_score = semantic.get('priority_score', 0.5) if semantic else 0.5
         
         # Deadline Penalty
         if delay > self.current_task.deadline:
             reward -= 50.0 * priority_score # Critical tasks suffer more
             
         # Battery Awareness - ENHANCED for action diversity
-        battery_pct = (self.current_device.battery / 5000.0) * 100 if hasattr(self.current_device, 'battery') else 100
+        battery_pct = (self.current_device.battery / 10000.0) * 100 if hasattr(self.current_device, 'battery') else 100
         
         # Heavy incentive to preserve battery via local/partial offloading
         if battery_pct < 30:
@@ -168,13 +191,25 @@ class OffloadingEnv(gym.Env):
             closest_edge = min(self.edge_servers, key=lambda e: math.dist(self.current_device.location, e.location))
             datarate, _ = self.channel.calculate_datarate(self.current_device, closest_edge)
             
-            # Feature Normalization
+            # Feature Normalization (Features 0-4)
             snr_norm = min(1.0, datarate / 50e6) # Normalize by 50 Mbps max
             size_norm = min(1.0, self.current_task.size_bits / 10e6)
             cpu_norm = min(1.0, self.current_task.cpu_cycles / 1e10)
             batt_norm = self.current_device.battery / 10000.0
             load_norm = min(1.0, closest_edge.current_load / 10.0)
             
-            return np.array([snr_norm, size_norm, cpu_norm, batt_norm, load_norm], dtype=np.float32)
+            # 🎯 NEW: One-Hot Encoding for LLM Recommendation (Features 5-7)
+            # Model can better distinguish between discrete LLM categories
+            llm_rec = self.current_task.semantic_analysis.get('recommended_target', 'edge') if self.current_task.semantic_analysis else 'edge'
+            
+            if llm_rec == 'local':
+                llm_onehot = [1.0, 0.0, 0.0]  # [local, edge, cloud]
+            elif llm_rec == 'edge':
+                llm_onehot = [0.0, 1.0, 0.0]
+            else:  # cloud
+                llm_onehot = [0.0, 0.0, 1.0]
+            
+            # Return extended observation: 5 continuous + 3 one-hot = 8 features
+            return np.array([snr_norm, size_norm, cpu_norm, batt_norm, load_norm] + llm_onehot, dtype=np.float32)
         
-        return np.zeros((5,), dtype=np.float32)
+        return np.zeros((8,), dtype=np.float32)

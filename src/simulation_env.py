@@ -46,12 +46,13 @@ CLOUD_LATENCY = 0.1    # 100ms fixed latency for Cloud
 GRAY = (100, 100, 100)
 GREEN = (50, 200, 50)
 BLUE = (50, 50, 200)
+CYAN = (0, 255, 255)
 ORANGE = (255, 165, 0)
 RED = (200, 50, 50)
 
 # Battery Model
-BATTERY_CAPACITY = 5000.0  # Reduced to force agent to learn action diversity (lokal, kısmi offloading)
-IDLE_POWER = 1.0  # Reduced to prevent premature death
+BATTERY_CAPACITY = 10000.0  # Increased to allow more tasks (was 5000J), forces agent to still consider LOCAL for efficiency
+IDLE_POWER = 0.5  # Reduced to prevent premature death
 ENERGY_SCALE_FACTOR = 50.0  # Multiplier to make energy consumption visible
 
 
@@ -193,7 +194,7 @@ RL_ENV_WRAPPER = None
 def load_ai_models(edge_servers, cloud, channel):
     global LLM_ANALYZER, PPO_AGENT, RL_ENV_WRAPPER
     print("[INIT] Loading AI Models...")
-    LLM_ANALYZER = SemanticAnalyzer()
+    LLM_ANALYZER = SemanticAnalyzer(model_name="distilbert-base-uncased", use_llm=True)  # ✅ Enable LLM analysis
     
     if RL_AVAILABLE:
         # Consistency: Always look for models in src/models
@@ -246,12 +247,13 @@ class IoTDevice:
             # 1. Update Mobility
             self.update_mobility()
             
-            # 2. Task Generation (Poisson Process)
-            yield self.env.timeout(random.expovariate(1.0/10.0)) # Avg one task every 10s (slower)
+            # 2. Task Generation (Poisson Process) - ✅ INCREASED RATE for faster testing
+            task_interval = 1.5  # Generate task every 1.5 seconds (was 5.0s) - 3.3x faster
+            yield self.env.timeout(random.expovariate(1.0 / task_interval))
             
             # Idle power consumption (accumulated over time interval)
             # This simulates background power drain
-            time_interval = 10.0  # Average time between tasks
+            time_interval = task_interval
             idle_energy = IDLE_POWER * time_interval
             self.battery -= idle_energy
             
@@ -271,7 +273,24 @@ class IoTDevice:
             
             # LLM Semantic Analysis
             if LLM_ANALYZER:
-                task.semantic_analysis = LLM_ANALYZER.analyze_task(task)
+                # ✅ OPTION B: Zenginleştirilmiş Context ile LLM Analizi
+                # Closest edge'i bul (context bilgisi için)
+                closest_edge_temp = min(self.edge_servers, key=lambda e: (e.queue_length, math.sqrt((self.location[0]-e.location[0])**2 + (self.location[1]-e.location[1])**2)))
+                datarate_temp, distance_temp = self.channel.calculate_datarate(self, closest_edge_temp)
+                
+                # Device ve network context hesapla
+                device_battery_pct = (self.battery / BATTERY_CAPACITY) * 100.0
+                network_quality_pct = min(100.0, (datarate_temp / 50e6) * 100.0)  # Normalized to 50Mbps
+                edge_load_pct = min(100.0, (closest_edge_temp.current_load / 10.0) * 100.0)  # Normalized to 10.0
+                
+                # LLM'ye context ile çağır (zenginleştirilmiş input)
+                task.semantic_analysis = LLM_ANALYZER.analyze_task(
+                    task,
+                    device_battery_pct=device_battery_pct,
+                    network_quality_pct=network_quality_pct,
+                    edge_load_pct=edge_load_pct,
+                    cloud_latency=0.5
+                )
                 priority_label = LLM_ANALYZER.get_priority_label(task.semantic_analysis['priority_score'])
                 print(f"[Device-{self.id}] Generated Task {task.id} (Type: {task.task_type.name}, Priority: {priority_label}) at pos {self.location}")
             else:
@@ -319,19 +338,25 @@ class IoTDevice:
             binary_action = 1 if final_decision_idx in [1, 2, 3, 4] else final_decision_idx
 
             # --- DECISION LOGGING (Screenshot Standard) ---
-            action_names = {0: "LOCAL", 1: "PARTIAL (25%)", 2: "PARTIAL (50%)", 3: "PARTIAL (75%)", 4: "EDGE OFFLOAD", 5: "CLOUD OFFLOAD"}
+            action_names = {0: "Full Local", 1: "PARTIAL (25%)", 2: "PARTIAL (50%)", 3: "PARTIAL (75%)", 4: "EDGE OFFLOAD", 5: "CLOUD OFFLOAD"}
             target_str = action_names[final_decision_idx]
             
-            # Line 1: LLM Analysis
-            l1 = semantic.get('llm_summary', "LLM Analizi: Karar optimize ediliyor.")
+            # ✅ VERBOSE LLM Recommendation with detailed reasoning
+            llm_rec = semantic.get('recommended_target', 'N/A').upper()
+            llm_confidence = semantic.get('confidence', 0.5)
+            llm_reason = semantic.get('reason', 'Analysis completed')
+            l1 = f"LLM Analizi: {llm_rec} öneriliyor ({llm_reason}) [Güven: {llm_confidence:.0%}]"
             
-            # Line 2: AI Decision with Stats (Dynamic based on choice)
+            # ✅ VERBOSE PPO Decision with detailed reasoning
             if final_decision_idx == 5:
-                l2 = f"AI Kararı (PPO): Yüksek işlem yükü/bant genişliği nedeniyle Bulut (Cloud) tercih edildi."
-            elif 1 <= final_decision_idx <= 4:
-                l2 = f"AI Kararı (PPO): {closest_edge.id if closest_edge else 'N/A'} nolu Edge sunucusu ve {snr_db:.1f}dB sinyal ile düşük gecikme hedefli."
+                l2 = f"PPO Karar: Bulut tercih. Sebep: SNR düşük ({snr_db:.1f}dB), veri büyük ({task.size_bits/1e6:.1f}MB), Edge yoğun ({closest_edge.queue_length} task bekliyor)."
+            elif final_decision_idx == 4:
+                l2 = f"PPO Karar: Full Edge. Sebep: Orta işlem ({task.cpu_cycles/1e9:.2f}GHz), iyi sinyal ({snr_db:.1f}dB), Edge uygun durumda."
+            elif 1 <= final_decision_idx <= 3:
+                partial_pct = {1: 25, 2: 50, 3: 75}[final_decision_idx]
+                l2 = f"PPO Karar: Partial {partial_pct}% Offload. Sebep: Batarya {self.battery/BATTERY_CAPACITY*100:.0f}%, yerel+edge hybrid ile enerji tasarrufu."
             else:
-                l2 = f"AI Kararı (PPO): Enerji tasarrufu için yerel (Local) işlem ile batarya korunması hedeflendi."
+                l2 = f"PPO Karar: Full Local. Sebep: Basit görev ({task.cpu_cycles/1e9:.2f}GHz), batarya koruması ({self.battery/BATTERY_CAPACITY*100:.0f}%), ağ tasarrufu."
 
             # Line 3: Method & Target
             if 1 <= final_decision_idx <= 3:
@@ -524,6 +549,11 @@ class IoTDevice:
             total_delay = task.completion_time - task.creation_time
             self.latency_history.append(total_delay)
             
+            # --- LLM vs Rule-Based Stats Update ---
+            if self.gui and hasattr(LLM_ANALYZER, 'llm_success_count'):
+                self.gui.stats['llm_success_count'] = LLM_ANALYZER.llm_success_count
+                self.gui.stats['rule_based_fallback_count'] = LLM_ANALYZER.rule_based_fallback_count
+            
             # --- Advanced Metrics Update (Phase 5) ---
             if self.gui:
                 # 1. Update Jitter (Std Dev of latency)
@@ -600,6 +630,12 @@ def main():
     
     while env.now < until:
         env.run(until=env.now + step)
+        
+        # ✅ Update LLM stats every frame (not just on task completion)
+        if gui and hasattr(LLM_ANALYZER, 'llm_success_count'):
+            gui.stats['llm_success_count'] = LLM_ANALYZER.llm_success_count
+            gui.stats['rule_based_fallback_count'] = LLM_ANALYZER.rule_based_fallback_count
+        
         if gui:
             gui.update()
             if not gui.running: break

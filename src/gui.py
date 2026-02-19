@@ -122,6 +122,11 @@ class SimulationGUI:
         self.min_zoom = 0.5
         self.max_zoom = 3.0
         
+        # ✅ Mouse Drag (Pan) State for Map
+        self.is_dragging = False
+        self.drag_start = None
+        self.drag_start_offset = None
+        
         # Scrolling State for Feed
         self.scroll_y = 0
         self.max_scroll = 0
@@ -156,6 +161,29 @@ class SimulationGUI:
                     zoom_factor = self.zoom_level / old_zoom
                     self.map_offset[0] = (self.map_offset[0] - (mx - MAP_X)) * zoom_factor + (mx - MAP_X)
                     self.map_offset[1] = (self.map_offset[1] - my) * zoom_factor + my
+            
+            # ✅ Mouse Drag (Pan) for Map Navigation
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = pygame.mouse.get_pos()
+                # Enable drag only on map area (not on side panels)
+                if METHOD_PANEL_WIDTH < mx < SIDE_PANEL_X:
+                    self.is_dragging = True
+                    self.drag_start = (mx, my)
+                    self.drag_start_offset = list(self.map_offset)
+            
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self.is_dragging = False
+                self.drag_start = None
+                self.drag_start_offset = None
+            
+            elif event.type == pygame.MOUSEMOTION and self.is_dragging and self.drag_start and self.drag_start_offset:
+                mx, my = pygame.mouse.get_pos()
+                dx = mx - self.drag_start[0]
+                dy = my - self.drag_start[1]
+                
+                # Update offset based on drag
+                self.map_offset[0] = self.drag_start_offset[0] + dx
+                self.map_offset[1] = self.drag_start_offset[1] + dy
 
     def add_task_particle(self, start_pos, end_pos, color, task_id, is_partial=False):
         """Add animated particle for task flow with ID"""
@@ -209,34 +237,9 @@ class SimulationGUI:
         self.screen.blit(header_text, (SIDE_PANEL_X + 25, y_offset))
         y_offset += 35
         
-        # --- Infrastructure Card ---
-        infra_rect = pygame.Rect(SIDE_PANEL_X + 20, y_offset, SIDE_PANEL_WIDTH - 40, 150)
-        pygame.draw.rect(self.screen, (30, 35, 60), infra_rect, border_radius=8)
-        pygame.draw.rect(self.screen, CYAN, infra_rect, 1, border_radius=8)
+        # ✅ SIMPLIFIED LAYOUT: Remove Infrastructure Status, consolidate to Offload Distribution
         
-        sub_title = self.font.render("INFRASTRUCTURE STATUS", True, CYAN)
-        self.screen.blit(sub_title, (SIDE_PANEL_X + 35, y_offset + 10))
-        y_offset += 40
-        
-        # Changed icons to standard symbols for better compatibility
-        legends = [
-            ("[D]", "V-IoT Device", WHITE, (100, 100, 100)),
-            ("[E]", "Edge Compute Node", GREEN, (50, 200, 50)),
-            ("[C]", "Remote Cloud", BLUE, (80, 80, 255)),
-        ]
-        
-        for icon, label, color, dot_color in legends:
-            # Draw a colored dot and text instead of emojis
-            pygame.draw.circle(self.screen, dot_color, (SIDE_PANEL_X + 45, y_offset + 10), 8)
-            icon_surf = self.font.render(icon, True, color)
-            self.screen.blit(icon_surf, (SIDE_PANEL_X + 65, y_offset + 2))
-            text = self.font.render(label, True, WHITE)
-            self.screen.blit(text, (SIDE_PANEL_X + 110, y_offset + 3))
-            y_offset += 30
-
-        # --- Performance Metrics Card ---
-        y_offset += 25
-        # Total Metrics
+        # --- Performance Metrics Card (Top) ---
         stats_list = [
             ("Uptime:", f"{self.env.now:.1f}s", ACID_GREEN),
             ("Total Tasks:", f"{self.stats['tasks_offloaded']}", WHITE),
@@ -250,21 +253,40 @@ class SimulationGUI:
             self.screen.blit(val_surf, (SIDE_PANEL_X + 180, y_offset + 10))
             y_offset += 20
 
-        # Detailed Breakdown - Reduced vertical footprint to avoid overlap
-        y_offset += 10
+        # Detailed Breakdown - Offload Distribution (Main section)
+        y_offset += 15
         breakdown_title = self.font.render("OFFLOAD DISTRIBUTION", True, CYAN)
         self.screen.blit(breakdown_title, (SIDE_PANEL_X + 35, y_offset))
         y_offset += 20
         
-        cloud_count = self.stats.get('tasks_to_cloud', 0)
-        c_surf = self.small_font.render(f"➤ Cloud Gateway: {cloud_count}", True, BLUE)
-        self.screen.blit(c_surf, (SIDE_PANEL_X + 45, y_offset))
-        y_offset += 16
+        # Get action counts from stats
+        action_counts = self.stats.get('action_counts', {i: 0 for i in range(6)})
+        action_labels = {
+            0: "Full Local",
+            1: "Partial Local 75% Edge 25%",
+            2: "Partial Local 50% Edge 50%",
+            3: "Partial Local 25% Edge 75%",
+            4: "Full Edge",
+            5: "Full Cloud"
+        }
         
-        for i, edge in enumerate(self.edge_servers):
-            count = self.stats.get(f'edge_{edge.id}', 0)
-            e_surf = self.small_font.render(f"➤ Edge-{edge.id}: {count}", True, GREEN)
-            self.screen.blit(e_surf, (SIDE_PANEL_X + 45, y_offset))
+        # Show all action distributions
+        for action_id in range(6):
+            count = action_counts.get(action_id, 0)
+            label = action_labels.get(action_id, f"Action {action_id}")
+            
+            # Color coding based on action type
+            if action_id == 0:
+                color = GOLD  # Full Local - battery saving
+            elif 1 <= action_id <= 3:
+                color = (150, 200, 100)  # Partial - balanced
+            elif action_id == 4:
+                color = GREEN  # Edge - moderate offload
+            else:  # 5
+                color = BLUE  # Cloud - full offload
+            
+            task_surf = self.small_font.render(f"{action_id}: {label}: {count}", True, color)
+            self.screen.blit(task_surf, (SIDE_PANEL_X + 45, y_offset))
             y_offset += 16
 
     def draw_methodology_panel(self):
@@ -350,34 +372,41 @@ class SimulationGUI:
             self.screen.blit(d_surf, (35, y + 16))
             y += 35
 
-        # --- ACTION SUMMARY TABLE (Moved to Left Panel) ---
+        # --- LLM vs RULE-BASED USAGE STATS ---
         y += 20
-        pygame.draw.circle(self.screen, PURPLE, (25, y+10), 5)
-        summary_title = sub_header_font.render("PPO STRATEGY FREQUENCY", True, PURPLE)
-        self.screen.blit(summary_title, (40, y))
-        y += 30
+        pygame.draw.circle(self.screen, ACID_GREEN, (25, y+10), 5)
+        llm_title = sub_header_font.render("SEMANTIC ANALYZER", True, ACID_GREEN)
+        self.screen.blit(llm_title, (40, y))
+        y += 25
         
-        action_map = {
-            0: ("0: Local Processing", WHITE),
-            1: ("1: Partial Edge (%25)", ORANGE),
-            2: ("2: Partial Edge (%50)", ORANGE),
-            3: ("3: Partial Edge (%75)", ORANGE),
-            4: ("4: Full Edge (%100)", GREEN),
-            5: ("5: Full Cloud (%100)", BLUE)
-        }
-        counts = self.stats.get('action_counts', {i: 0 for i in range(6)})
-        for act_id, (label, color) in action_map.items():
-            count = counts.get(act_id, 0)
-            act_surf = self.small_font.render(label, True, color)
-            cnt_surf = self.small_font.render(f"Count: {count}", True, WHITE)
-            self.screen.blit(act_surf, (35, y))
-            self.screen.blit(cnt_surf, (280, y))
-            y += 18
+        # Get LLM stats from simulator
+        llm_success = self.stats.get('llm_success_count', 0)
+        rule_based_fallback = self.stats.get('rule_based_fallback_count', 0)
+        total_analyses = llm_success + rule_based_fallback
+        
+        if total_analyses > 0:
+            llm_rate = (llm_success / total_analyses) * 100
+        else:
+            llm_rate = 0
+        
+        # Display stats
+        llm_stat = self.small_font.render(f"✓ LLM Success: {llm_success} ({llm_rate:.1f}%)", True, ACID_GREEN)
+        fallback_stat = self.small_font.render(f"↺ Rule-Based: {rule_based_fallback}", True, ORANGE)
+        total_stat = self.small_font.render(f"Total: {total_analyses}", True, WHITE)
+        
+        self.screen.blit(llm_stat, (35, y))
+        y += 18
+        self.screen.blit(fallback_stat, (35, y))
+        y += 18
+        self.screen.blit(total_stat, (35, y))
+        y += 18
             
     def draw_knowledge_base(self):
-        """Redesigned panel for Node-specific Health Status - Pushed down to avoid overlap"""
-        panel_y = 380 # Pushed from 360
-        panel_h = 145 # Slimmed down
+        """✅ Redesigned panel for Node-specific Health Status - positioned after Offload Distribution"""
+        # Position adjusted after removing Infrastructure Status
+        # Now shows right after action counts (around y=300 area)
+        panel_y = 350  # Adjusted: was 380 when Infrastructure Status was above
+        panel_h = 145  # Slimmed down
         booklet_rect = pygame.Rect(SIDE_PANEL_X + 20, panel_y, SIDE_PANEL_WIDTH - 40, panel_h)
         pygame.draw.rect(self.screen, (35, 40, 65), booklet_rect, border_radius=8)
         pygame.draw.rect(self.screen, GOLD, booklet_rect, 1, border_radius=8)
@@ -407,8 +436,9 @@ class SimulationGUI:
 
     def draw_decision_log(self):
         """Draw Professional AI Decision Feed as requested in Screenshot"""
-        panel_y = 535
-        panel_h = 445
+        # ✅ Adjusted: after NODE HEALTH STATUS moved down, feed starts at 515 (was 535)
+        panel_y = 515
+        panel_h = 465  # Increased height to use available space better
         
         self.screen.blit(self.log_panel_surf, (SIDE_PANEL_X + 10, panel_y))
         pygame.draw.rect(self.screen, CYAN, (SIDE_PANEL_X + 10, panel_y, SIDE_PANEL_WIDTH - 20, panel_h), 1, border_radius=5)
@@ -416,8 +446,9 @@ class SimulationGUI:
         title_surf = self.title_font.render("SEMANTIC DECISION FEED", True, ACID_GREEN)
         self.screen.blit(title_surf, (SIDE_PANEL_X + 25, panel_y + 15))
         
-        clip_rect = pygame.Rect(SIDE_PANEL_X + 15, panel_y + 50, SIDE_PANEL_WIDTH - 30, panel_h - 60)
-        log_surface = pygame.Surface((clip_rect.width, 5000), pygame.SRCALPHA)
+        # ✅ Increased clip area: from (panel_h - 60) to (panel_h - 50) for better visibility
+        clip_rect = pygame.Rect(SIDE_PANEL_X + 15, panel_y + 50, SIDE_PANEL_WIDTH - 30, panel_h - 50)
+        log_surface = pygame.Surface((clip_rect.width, 8000), pygame.SRCALPHA)  # Increased surface height
         
         y_cursor = 0
         entry_sep = 180 # Reduced for compact metadata display (more entries visible)
@@ -443,7 +474,7 @@ class SimulationGUI:
                 if "LLM Analizi:" in line: 
                     c = CYAN
                     font = self.feed_bold_font
-                elif "AI Karar" in line: 
+                elif "PPO Karar:" in line: 
                     c = ACID_GREEN
                     font = self.feed_bold_font
                 elif "Metod:" in line: 
@@ -877,7 +908,7 @@ class SimulationGUI:
         edge_c = sum(1 for a in last_10 if a >= 4)
         
         msg, clr = "KARMA (PARTIAL)", ACID_GREEN
-        if local_c > 5: msg, clr = "BATARYA KORUMA", YELLOW
+        if local_c > 5: msg, clr = "BATARYA KORUMA", GOLD
         elif edge_c > 5: msg, clr = "PERFORMANS", BLUE
              
         self.screen.blit(self.font.render(msg, True, clr), (x + 10, y + 35))
