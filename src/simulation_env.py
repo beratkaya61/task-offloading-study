@@ -349,19 +349,37 @@ class IoTDevice:
             override_msg = ""
             rec = semantic.get('recommended_target', 'n/a')
             
-            # Check for fundamental strategy shift
+            # Check for fundamental strategy shift (IMPROVED: More intelligent alignment check)
+            # PARTIAL offloading (Actions 1-3) is aligned with LOCAL recommendation (resource saving intent)
             is_conflict = False
-            if rec == 'local' and final_decision_idx != 0: is_conflict = True
-            elif rec == 'edge' and (final_decision_idx == 0 or final_decision_idx == 5): is_conflict = True
-            elif rec == 'cloud' and final_decision_idx != 5: is_conflict = True
+            
+            if rec == 'local':
+                # LOCAL recommendation = resource conservation
+                # ALIGNED: Action 0 (Local) or Actions 1-3 (Partial - mostly local)
+                # CONFLICT: Action 4 (Full Edge) or Action 5 (Cloud)
+                is_conflict = final_decision_idx in [4, 5]
+            elif rec == 'edge':
+                # EDGE recommendation = balance performance & resources
+                # ALIGNED: Actions 1-4 (Partial or Full Edge)
+                # CONFLICT: Action 0 (full Local - ignores edge capability) or Action 5 (full Cloud - too much)
+                is_conflict = final_decision_idx in [0, 5]
+            elif rec == 'cloud':
+                # CLOUD recommendation = prioritize performance (large data/complex task)
+                # ALIGNED: Action 5 (Cloud)
+                # CONFLICT: Actions 0-4 (tries to process locally/edge when cloud is needed)
+                is_conflict = final_decision_idx in [0, 1, 2, 3, 4]
             
             if is_conflict:
                 target_map = {"LOCAL": "Yerel", "PARTIAL (25%)": "PARTIAL", "PARTIAL (50%)": "PARTIAL", "PARTIAL (75%)": "PARTIAL", "EDGE OFFLOAD": "Edge", "CLOUD OFFLOAD": "Bulut"}
                 ppo_simple = target_map.get(target_str, target_str)
-                override_msg = f"⚠️ Nöral Öncelik: LLM önerisi ({rec.upper()}), PPO tarafından ({ppo_simple}) olarak güncellendi."
+                override_msg = f"⚠️ Nöral Çelişki: LLM önerisi ({rec.upper()}), PPO tarafından ({ppo_simple}) olarak seçildi. Farklı stratejiler uygulanıyor."
                 multi_line_msg = f"{l1}\n{l2}\n{l3}\n{override_msg}"
             else:
+                # Aligned: LLM and PPO agree on strategy
                 multi_line_msg = f"{l1}\n{l2}\n{l3}"
+                if 1 <= final_decision_idx <= 3:
+                    # PARTIAL alignment explanation
+                    multi_line_msg += f"\n✓ Uyumlu: LLM ({rec.upper()}) + PPO (PARTIAL) → Batarya koruma stratejisi"
             
             import json
             transmission_time_full = task.size_bits / datarate if datarate > 0 else 0
