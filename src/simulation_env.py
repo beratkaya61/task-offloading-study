@@ -4,6 +4,8 @@ import math
 import dataclasses
 import os
 from enum import Enum
+
+import torch
 from llm_analyzer import SemanticAnalyzer
 try:
     from stable_baselines3 import PPO
@@ -194,7 +196,16 @@ RL_ENV_WRAPPER = None
 def load_ai_models(edge_servers, cloud, channel):
     global LLM_ANALYZER, PPO_AGENT, RL_ENV_WRAPPER
     print("[INIT] Loading AI Models...")
-    LLM_ANALYZER = SemanticAnalyzer(model_name="distilbert-base-uncased", use_llm=True)  # ✅ Enable LLM analysis
+
+    device= "cuda" if torch.cuda.is_available() else "cpu"
+
+    print(f"[INIT] Using device: {device} for LLM analysis.")
+    
+    LLM_ANALYZER = SemanticAnalyzer(
+        model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0", 
+        use_llm=True,
+        device=device
+        )  # ✅ Enable LLM analysis
     
     if RL_AVAILABLE:
         # Consistency: Always look for models in src/models

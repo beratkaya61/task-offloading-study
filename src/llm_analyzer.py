@@ -36,7 +36,7 @@ class SemanticAnalyzer:
     Analyzes tasks semantically to determine priority, complexity, and resource requirements.
     """
     
-    def __init__(self, use_llm=False, model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0"):
+    def __init__(self, use_llm=False, model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0", device=None):
         """
         Initialize the analyzer.
         
@@ -49,13 +49,22 @@ class SemanticAnalyzer:
         self.tokenizer = None
         self.llm_success_count = 0
         self.rule_based_fallback_count = 0
+
+        # --- OTOMATİK GPU/CPU SEÇİMİ ---
+        if device is None:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = device
         
         if self.use_llm:
             try:
                 print(f"[LLM] Loading model: {model_name}...")
                 # Use TinyLlama - instruction-tuned (talimat izleyen) model
                 self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-                self.model = AutoModelForCausalLM.from_pretrained(model_name)
+
+                # GPU varsa float16 kullanarak belleği yarı yarıya düşür ve hızı artır
+                torch_dtype = torch.float16 if self.device == "cuda" else torch.float32
+                self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch_dtype,low_cpu_mem_usage=True).to(self.device)
                 
                 # Set pad token for batch processing
                 if self.tokenizer.pad_token is None:
@@ -95,11 +104,13 @@ class SemanticAnalyzer:
                                      edge_load_pct, cloud_latency)
             # Increment LLM success counter
             self.llm_success_count += 1
+            result["analysis_method"] = "LLM-Based Analysis"  # Analiz yöntemini ekliyoruz
         else:
             result = self._rule_based_analyze(task, device_battery_pct, network_quality_pct, 
                                            edge_load_pct, cloud_latency)
             # Increment rule-based counter
             self.rule_based_fallback_count += 1
+            result["analysis_method"] = "Rule-Based Analysis"  # Analiz yöntemini ekliyoruz
         
         return result
     
