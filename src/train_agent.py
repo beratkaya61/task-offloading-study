@@ -2,6 +2,7 @@ import os
 import random
 import simpy
 from stable_baselines3 import PPO
+import torch
 from rl_env import OffloadingEnv
 from simulation_env import WirelessChannel, EdgeServer, CloudServer, IoTDevice, Task, TaskType, LLM_ANALYZER
 
@@ -37,7 +38,7 @@ def train():
         batch_size=64,
         n_epochs=10,
         gamma=0.99,
-        device="cpu" # Hardware check
+        device= "cuda" if torch.cuda.is_available() else "cpu"
     )
     
     # 3. Training Loop (Single call for better PPO stability)

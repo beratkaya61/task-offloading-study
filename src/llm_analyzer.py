@@ -60,11 +60,11 @@ class SemanticAnalyzer:
             try:
                 print(f"[LLM] Loading model: {model_name}...")
                 # Use TinyLlama - instruction-tuned (talimat izleyen) model
-                self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+                self.tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
 
                 # GPU varsa float16 kullanarak belleği yarı yarıya düşür ve hızı artır
                 torch_dtype = torch.float16 if self.device == "cuda" else torch.float32
-                self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch_dtype,low_cpu_mem_usage=True).to(self.device)
+                self.model = AutoModelForCausalLM.from_pretrained(model_name, local_files_only=True,torch_dtype=torch_dtype,low_cpu_mem_usage=True).to(self.device)
                 
                 # Set pad token for batch processing
                 if self.tokenizer.pad_token is None:
