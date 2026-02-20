@@ -55,7 +55,7 @@ class SemanticAnalyzer:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device = device
-        
+
         if self.use_llm:
             try:
                 print(f"[LLM] Loading model: {model_name}...")
@@ -97,15 +97,17 @@ class SemanticAnalyzer:
                 - recommended_target: str ("local", "edge", "cloud")
                 - confidence: float (0-1, LLM confidence in recommendation)
         """
-        
+
         # ✅ Track which method is used
         if self.use_llm:
+            print(f"[DEBUG] Using LLM for Task {task.id}")
             result = self._llm_analyze(task, device_battery_pct, network_quality_pct, 
                                      edge_load_pct, cloud_latency)
             # Increment LLM success counter
             self.llm_success_count += 1
             result["analysis_method"] = "LLM-Based Analysis"  # Analiz yöntemini ekliyoruz
         else:
+            print(f"[DEBUG] Using Rule-Based for Task {task.id}")
             result = self._rule_based_analyze(task, device_battery_pct, network_quality_pct, 
                                            edge_load_pct, cloud_latency)
             # Increment rule-based counter
