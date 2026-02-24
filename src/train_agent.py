@@ -26,7 +26,16 @@ def train():
         cloud_server=cloud,
         channel=channel
     )
-    
+
+
+
+    # Bir Çatışmaya Dikkat!
+    # Burada ilginç bir durum var:
+
+    # LLM (TinyLlama): GPU'da (cuda) çalışması çok daha iyidir (yoksa çok yavaş analiz yapar).
+
+    # RL Agent (PPO): SB3'e göre CPU'da çalışması daha verimlidir.
+
     # 2. Setup PPO Agent
     print("[TRAIN] Instantiating PPO Agent (MLP Policy)...")
     model = PPO(
@@ -38,7 +47,7 @@ def train():
         batch_size=64,
         n_epochs=10,
         gamma=0.99,
-        device= "cuda" if torch.cuda.is_available() else "cpu"
+        device= "cpu"
     )
     
     # 3. Training Loop (Single call for better PPO stability)

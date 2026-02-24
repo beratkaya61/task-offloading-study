@@ -103,8 +103,6 @@ class SemanticAnalyzer:
             print(f"[DEBUG] Using LLM for Task {task.id}")
             result = self._llm_analyze(task, device_battery_pct, network_quality_pct, 
                                      edge_load_pct, cloud_latency)
-            # Increment LLM success counter
-            self.llm_success_count += 1
             result["analysis_method"] = "LLM-Based Analysis"  # Analiz yöntemini ekliyoruz
         else:
             print(f"[DEBUG] Using Rule-Based for Task {task.id}")
@@ -293,18 +291,28 @@ Analysis:
                 max_length=1500, 
                 truncation=True,
                 padding=True
-            )
+            ).to(self.device) # <--- .to(self.device) ekleyerek veriyi GPU'ya taşıyoruz.
             
             with torch.no_grad():
+                # Ayrıca sadece input_ids yerine **inputs kullanarak 
+                # attention_mask gibi diğer gerekli verileri de modele iletmek daha sağlıklıdır.
                 outputs = self.model.generate(
-                    inputs.input_ids,
+                    **inputs, # input_ids yerine tüm sözlüğü (unpacked) gönderiyoruz
                     max_new_tokens=150,  # Increased for full analysis
                     temperature=0.3,      # Lower temperature for consistency
                     top_p=0.9,
                     do_sample=True,
                     eos_token_id=self.tokenizer.eos_token_id
                 )
+
             
+            # Neden **inputs kullanmalısınız?
+            # Kodunuzda padding=True kullandığınız için tokenizer sadece input_ids değil, 
+            # aynı zamanda attention_mask de üretir. Eğer modele sadece inputs.input_ids gönderirseniz, 
+            # model hangi kelimelerin dolgu (padding) olduğunu anlamayabilir. 
+            # **inputs yazarak tüm bu bilgileri (cihaza taşınmış halde) 
+            # modele tek seferde ve doğru formatta iletmiş olursunuz.
+                        
             # Decode response
             response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
             

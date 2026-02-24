@@ -1,3 +1,4 @@
+import threading
 import simpy
 import random
 import math
@@ -213,7 +214,7 @@ def load_ai_models(edge_servers, cloud, channel):
         if os.path.exists(model_path):
             try:
                 print(f"[INIT] Loading PPO Agent from {model_path}...")
-                PPO_AGENT = PPO.load(model_path)
+                PPO_AGENT = PPO.load(model_path, device="cpu")
                 from rl_env import OffloadingEnv
                 # Create a lightweight env wrapper only for normalization logic
                 RL_ENV_WRAPPER = OffloadingEnv(edge_servers=edge_servers, cloud_server=cloud, channel=channel)
@@ -283,7 +284,7 @@ class IoTDevice:
             )
             
             # LLM Semantic Analysis
-            if LLM_ANALYZER:
+            if LLM_ANALYZER and getattr(LLM_ANALYZER, "model", None):
                 # ✅ OPTION B: Zenginleştirilmiş Context ile LLM Analizi
                 # Closest edge'i bul (context bilgisi için)
                 closest_edge_temp = min(self.edge_servers, key=lambda e: (e.queue_length, math.sqrt((self.location[0]-e.location[0])**2 + (self.location[1]-e.location[1])**2)))
@@ -305,6 +306,9 @@ class IoTDevice:
                 priority_label = LLM_ANALYZER.get_priority_label(task.semantic_analysis['priority_score'])
                 print(f"[Device-{self.id}] Generated Task {task.id} (Type: {task.task_type.name}, Priority: {priority_label}) at pos {self.location}")
             else:
+                # # LLM yükleniyor, rule-based ile analiz et
+                # print(f"[Device-{self.id}] LLM not ready, using rule-based analysis for Task {task.id} while loading LLM...")
+                # task.semantic_analysis = SemanticAnalyzer(use_llm=False).analyze_task(task)
                 print(f"[Device-{self.id}] Generated Task {task.id} (Type: {task.task_type.name}) at pos {self.location}")
             
             # Update GUI state
@@ -618,8 +622,11 @@ def main():
         EdgeServer(env, 3, (500, 800), 2.2e9)
     ]
     
-    # 2. Setup AI Models
+    # 2. Setup AI Models (thread ile)
     load_ai_models(edge_servers, cloud_server, channel)
+    
+    # ai_thread = threading.Thread(target=load_ai_models, args=(edge_servers, cloud_server, channel))
+    # ai_thread.start()
     
     # GUI Setup (Step 1: Init without devices)
     gui = None
