@@ -1,0 +1,1940 @@
+1
+AgentVNE: LLM-Augmented Graph Reinforcement Learning for
+Affinity-Aware Multi-Agent Placement in Edge Agentic AI
+Runze Zheng, Yuqing Zheng, Zhengyi Cheng, Long Luo, Haoxiang Luo,
+Gang Sun, Senior Member, IEEE, Hongfang Yu, Senior Member, IEEE and Dusit Niyato, Fellow, IEEE
+Abstract—The Internet of Agents is propelling edge com-
+puting toward agentic AI and edge general intelligence (EGI).
+However, deploying multi-agent service (MAS) on resource-
+constrained edge infrastructure presents severe challenges. MAS
+service workflows are driven by complex cross-node interactions,
+dynamic memory accumulation, and collaborative tool usage.
+Exhibiting chain-like topological dependencies and strict affinity
+constraints, these workflows demand real-time responsiveness
+that exceeds the capabilities of traditional VNE algorithms
+designed for static resources. To address this, we propose
+AgentVNE, a cloud-edge collaborative framework utilizing a
+dual-layer architecture. First, AgentVNE employs a large lan-
+guage model (LLM) to identify implicit semantic constraints
+and generate affinity-based resource augmentation to resolve
+physical dependency issues. Second, it constructs a resource
+similarity-aware neural network, utilizing a pre-training and
+PPO fine-tuning strategy to precisely capture topological simi-
+larities between dynamic workflows and heterogeneous networks.
+By coupling semantic perception with topological reasoning, this
+mechanism effectively bridges the gap between dynamic service
+requirements and physical infrastructure. Simulation results
+demonstrate that AgentVNE reduces workflow communication
+latency to less than 40% of baselines and improves the service
+acceptance rate by approximately 5%–10% under high-load
+scenarios. Ultimately, this work provides a foundational solution
+for the semantic-aware deployment of agentic AI.
+Index Terms—Muti-Agent system, resource allocation, edge
+general intelligence, agentic AI, deep reinforcement learning
+I. INTRODUCTION
+A. Background
+With the convergence of 6G networks and Internet of Things
+(IoT) technologies, the computing paradigm is undergoing
+a fundamental shift from centralized cloud intelligence to
+decentralized edge general intelligence (EGI) [1], [2], [3].
+Traditional edge intelligence often relies on static, task-specific
+models, making it difficult to cope with dynamic edge envi-
+ronments [4], [5], [6]. However, breakthrough advancements
+in multimodal large language models (LLMs) have catalyzed
+the emergence of agentic AI. Unlike traditional AI that pas-
+sively responds to instructions, agentic AI possesses a closed-
+loop capability of Perception-Reasoning-Action, enabling it
+to autonomously decompose complex goals, utilize tools, and
+This work was supported in part by National Natural Science Foundation
+of China (62394324).
+R. Zheng, Y. Zheng, Z. Cheng, L. Luo, H. Luo, G. Sun, and H. Yu are
+with the School of Information and Communication Engineering, University
+of Electronic Science and Technology of China, Chengdu 611731, China
+(e-mail: zrz uestc@163.com; zyq uestcz@163.com; chengzywork@163.com;
+llong@uestc.edu.cn; lhx991115@163.com; {gangsun, yuhf}@uestc.edu.cn).
+D. Niyato is with the College of Computing and Data Science, Nanyang
+Technological University, Singapore 639798 (e-mail: dniyato@ntu.edu.sg).
+The corresponding authors: Long Luo and Haoxiang Luo .
+perform multi-step reasoning [7], [8]. This leap in capability
+drives the evolution from the Internet of Everything (IoE) to
+the Internet of Agents (IoA) [9], [10].
+In the vision of the IoA, billions of heterogeneous
+agents would coexist at the network edge, collaborating
+autonomously via semantic-aware communication protocols
+[10]. According to Gartner forecasts1, by 2028, at least 15% of
+daily work decisions will be made autonomously by AI agents.
+This proliferation necessitates a paradigm shift from the tra-
+ditional passive IoT to a proactive IoA, where edge nodes are
+empowered to perceive, reason, plan, and act independently
+in real-time through continuous perception-reasoning-action
+loops [1], [10]. Crucially, this agentification process serves as
+a fundamental enabler for EGI, allowing resource-constrained
+devices to achieve multi-task generalization and cognitive au-
+tonomy, thereby significantly reducing reliance on centralized
+cloud infrastructures while enhancing adaptability in dynamic
+environments [11], [12].
+The deployment strategies of agentic AI across the cloud-
+edge-end continuum significantly impact service latency and
+quality. Although service placement in edge computing and
+VNE has been widely studied, existing solutions struggle to
+adapt to the unique workload characteristics and lifecycle
+dynamics of multi-agent service (MAS) [6]. Traditional VNE
+algorithms are predominantly based on static topology as-
+sumptions, presupposing that service requests possess fixed
+resource demands and dependency graphs [13], [14], [15].
+However, agent systems reason through planning modules,
+where execution paths and required sub-tasks are dynamically
+generated at runtime [16], [7]. This high uncertainty triggers
+real-time deformation of the service topology during the
+inference process. Consequently, traditional algorithms relying
+on static pre-planning become ineffective. In particular, they
+fail to adapt to the resource demand drift induced by agent
+self-iteration [17].
+To date, the industry lacks specialized research on em-
+bedding multi-agent workflows in cloud-edge-endpoint envi-
+ronments. Existing studies exhibit the following limitations:
+Lin et al. [4] investigated service placement and resource
+allocation in mobile edge intelligence, but focused on general
+computation time and energy optimization, neglecting the
+collaboration logic between agents; Wang et al. [6] combined
+ant colony algorithms or caching strategies for AI Agent
+placement, but often considered only single-agent capacity
+matching or specific content access costs, lacking modeling of
+1www.gartner.com/smarterwithgartner/what-edge-computing-means-for-i
+nfrastructure-and-operations-leaders
+arXiv:2601.02021v1  [cs.NI]  5 Jan 2026
+2
+holistic MAS characteristics. Chen et al. [18] and Li et al. [19]
+proposed efficient task offloading paradigms, but their task
+models were limited to single-node offloading, failing to meet
+the essential communication and collaboration needs between
+agents. Furthermore, Fan et al. [20] proposed a dynamic
+resource allocation scheme for distributed training. However,
+due to the fundamental differences in traffic patterns between
+training tasks and agent inference tasks, this method cannot
+be directly migrated to agentic system deployment scenarios.
+B. Research Motivations
+Addressing these issues is not merely an optimization of
+existing network slicing or resource scheduling technologies,
+but a key cornerstone for building the future intelligent so-
+ciety. First, it is essential for guaranteeing the scalability
+and real-time performance of EGI. As agent services grow
+exponentially, edge networks face immense pressure regarding
+computing power and bandwidth. Efficient topology embed-
+ding strategies are critical pathways to reducing large model
+inference latency and improving service acceptance rates.
+Researching agent-oriented network embedding can promote
+the dynamic self-organization and semantic interconnection
+of heterogeneous agents on physical networks, driving the
+evolution from a human-centric Internet to an agent-centric in-
+frastructure [2], [10]. Second, it is vital for enhancing resource
+efficiency and privacy security. Precisely placing inference and
+memory modules at the user-side edge significantly reduces
+the bandwidth consumption of transmitting data to the cloud.
+Moreover, this approach ensures that sensitive context data
+remains within the local trusted domain. Consequently, it satis-
+fies the increasingly stringent privacy compliance requirements
+in the IoA ecosystem [21].
+However, efficiently deploying AI agents in edge intelli-
+gence systems faces three severe challenges:
+• Challenge 1: Dual Heterogeneity of Virtual Nodes and
+Physical Infrastructure Resources. The deployment
+environment for agent services is no longer a cloud data
+center with uniform hardware, but a complex cloud-edge
+network composed of mobile devices, base stations, and
+edge servers. Underlying physical nodes vary vastly in
+multi-dimensional resource ratios, including computing,
+storage, and communication resources. Simultaneously,
+in the IoA, agents’ roles are highly subdivided, leading
+to distinct resource demand ratios [22], [9]. This dual
+resource heterogeneity on both the demand and supply
+sides significantly increases the difficulty of resource
+matching [23]. Thus, it requires deployment strategies
+with finer granularity to maximize system throughput.
+• Challenge 2: High Dynamics of Topology Structure
+and Resource Demand. Unlike the relatively fixed
+resource partitioning in traditional VNE problems, the
+deployment of MAS possesses high uncertainty. On the
+one hand, as the system operates, the agent’s memory
+module continuously accumulates, leading to dynamic
+changes in resource occupancy [3], [24]. More critically,
+the MAS may automatically generate sub-tasks or invoke
+external tools during inference. Then, the system will
+Multi-Agent Workflow 
+Cloud-Edge-Endpoint Infrastructure
+Perception 
+Agent
+Controller/Planner 
+Agent
+Memory Agent
+Action Agent
+Reasoning & 
+Tool-use Agent
+Dynamic Sub-task 
+Agent
+Cloud Layer
+Edge Layer
+Endpoint Layer
+Legend:
+AI Agent
+Physical Infrastructure Node
+Data Flow
+Deployment Embedding
+Data Center
+MEC
+Server
+Secure Edge 
+Node
+(TEE enabled)
+Fig. 1.
+An illustration of the MAS embedding scenario within the Cloud-
+Edge-Endpoint collaborative infrastructure. It depicts the mapping of hetero-
+geneous autonomous agents onto physically distributed resources ranging from
+cloud data centers to edge devices.
+make the service topology to dynamically expand at run-
+time, creating additional node placement requirements.
+Furthermore, the frequent joining and leaving of physical
+nodes in edge networks requires placement algorithms to
+timely cope with environmental changes and make rapid,
+adaptive adjustments [25].
+• Challenge 3: Hard Physical Constraints and Specific
+Resource Affinity. Some agent tasks often have strong
+dependencies on underlying hardware, a constraint rarely
+considered in traditional VNE. For instance, for privacy
+compliance, agent nodes involving sensitive data must
+be placed on physical nodes with Trusted Execution
+Environments (TEE) [26], [27]; similarly, video stream
+processing Agents must be deployed on edge nodes
+connected to cameras to reduce bandwidth consumption.
+How to fully satisfy these hard constraints while balanc-
+ing global service quality and latency optimization during
+large-scale node mapping is an obstacle that traditional
+algorithms find difficult to surmount.
+C. Our Contributions
+To address the aforementioned challenges, this paper pro-
+poses an MAS embedding method oriented towards cloud-
+edge collaboration, AgentVNE. This method adopts a dual-
+layer architecture design. The first layer is LLM-assisted
+constraint recognition and resource bias generation, which
+leverages LLMs to identify task constraints and generate
+resource bias2 for physical nodes. The second layer is deep
+reinforcement learning (DRL)-based topology embedding,
+which utilizes deep neural networks to extract topological
+features and optimize placement strategies for minimizing
+service latency. To the best of our knowledge, this is the first
+2Resource bias refers to an LLM-generated guidance signal that virtually
+augments the attributes of specific physical nodes to prioritize them for
+hardware affinity constraints. A formal definition is provided in Section III-
+B-2.
+3
+work to investigate the affinity-aware service embedding prob-
+lem specifically for MAS in cloud-edge-endpoint collaborative
+networks. The main contributions of this paper are summarized
+as follows:
+• An LLM-Assisted Physical Constraint Perception
+Mechanism: To address the strong dependency of agent
+systems on specific hardware, we propose an LLM-
+assisted judgment mechanism. This mechanism automat-
+ically identifies constraint relationships between agent
+nodes and physical nodes and invokes a bias genera-
+tor to create a resource bias for target physical nodes.
+Specifically, this mechanism concentrates the sampling
+probability density around the affinity-constrained nodes
+and their topological neighbors. This ensures that these
+spatial regions are assigned higher priorities during the
+node selection process, thereby inducing the workflow
+placement to gravitate toward the affinity-constrained
+physical nodes.
+• Graph Similarity-Based Neural Network: We design a
+deep neural network model fusing a column-wise neural
+tensor network and self-attention mechanisms. This archi-
+tecture extracts features of the agentic workflow (virtual
+network) and substrate network through parallel graph
+neural network (GNN) branches, respectively. Further-
+more, it utilizes a Transformer encoder to capture long-
+range dependencies, calculating a deep similarity matrix
+between nodes. This enables the model to precisely per-
+ceive the degree of matching between the physical node
+resource distribution and the virtual topology structure,
+effectively coping with the dual heterogeneity challenge.
+• Two-Stage Evolutionary Learning Paradigm: To over-
+come convergence difficulties caused by the vast solution
+space, we adopt a supervised pre-training and fine-tuning
+training strategy. First, we use heuristic algorithms to
+generate large-scale datasets for pre-training, allowing
+the model to quickly capture basic topology mapping
+rules. Subsequently, we use Proximal Policy Optimization
+(PPO) to fine-tune the model in a dynamic simulation
+environment. This enables the model to adapt to the un-
+certainty of task dynamic arrival and expansion, achieving
+global performance optimization.
+• Comprehensive Performance Evaluation: Simulation
+results demonstrate that AgentVNE significantly outper-
+forms existing baseline algorithms in terms of commu-
+nication latency, service acceptance rate, and resource
+utilization. Specifically, the communication latency of
+workflows deployed via AgentVNE is reduced to less
+than 40% of that yielded by GAL-VNE and metaheuristic
+algorithms. Under high-load scenarios, the task accep-
+tance rate improves by approximately 5%. Furthermore,
+the proposed framework exhibits robust scalability, main-
+taining rapid solving times even in large-scale network
+environments.
+D. Structure of This Work
+The remainder of this paper is organized as follows: Section
+II introduces the system model and problem formulation. Sec-
+tion III details the system architecture and design. Section IV
+TABLE I
+SUMMARY OF IMPORTANT NOTATIONS
+Symbol
+Description
+Symbol
+Description
+Bmax
+ls
+Link capacity
+Breq
+l
+Bandwidth demand
+Dprop
+ls
+Propagation delay
+fl
+uv
+Link mapping var.
+GS
+Substrate graph
+GV
+Agentic workflow
+Hs, Hv
+Global embeddings
+lv
+Virtual link
+NS, ES
+Substrate nodes/links
+NV , EV
+Virtual nodes/links
+ns
+Substrate node
+nv
+Virtual node (Agent)
+NR(u)
+NodeRank value
+Pij
+Matching probability
+Pu,v
+Physical path
+rt
+Weighted avg. hops
+Rnv
+Resource demand
+Us, Uv
+Local embeddings
+W
+NTN tensor weights
+xi,u
+Node mapping var.
+Zji
+Similarity score
+Ωns
+Resource attributes
+Ψnv
+Affinity constraints
+σi,j
+Data Stream
+evaluates the proposed algorithm through extensive simulation
+experiments. Finally, Section VI concludes the paper. Our
+work will be open at: https://github.com/zrzuestc/AgentVNE.
+II. SYSTEM MODEL AND PROBLEM FORMULATION
+This section formally defines the MAS embedding problem
+within a cloud-edge collaborative environment. We model the
+physical infrastructure as an substrate network and the multi-
+agent collaborative task as a virtual network. The core of the
+problem lies in finding a mapping function from the virtual
+network to the substrate network that minimizes the end-to-end
+latency of the MAS and optimizes resource utilization, subject
+to constraints on computation, storage, communication, and
+specific hardware affinities.
+A. Substrate Network Model
+The underlying physical infrastructure hosting services con-
+sists of geographically distributed heterogeneous nodes, in-
+cluding centralized cloud data centers, regional Mobile Edge
+Computing (MEC) servers, and user-side End Devices [28].
+We model the substrate network as a weighted undirected
+graph GS = (N S, ES), where N S represents the set of
+physical nodes, and ES represents the set of physical links.
+1) Physical Node Attributes and Resource Vectors: Each
+physical node ns ∈N S in the set N S = {ns
+1, ns
+2, . . . , ns
+|N S|}
+exhibits a high degree of heterogeneity. To accurately de-
+scribe its capability to host LLM agents, we define a multi-
+dimensional attribute tuple Ωns to characterize its resource
+capacity,
+Ωns =
+
+Ccpu
+ns , Cmem
+ns , Cdisk
+ns , Lns
+
+.
+(1)
+The academic definitions of these terms are as follows:
+• Computational capacity Ccpu
+ns : Represents the general
+computing capability of the node, typically measured
+in CPU cycles (Cycles/s) or floating point operations
+per second (FLOPS). This determines the rate at which
+the node processes tasks such as data preprocessing and
+routine logic control.
+• Memory capacity Cmem
+ns : Represents the available memory
+capacity (GB) of the node. Each agent must individually
+manage its own unique context, the length of which
+fluctuates dynamically during interactions.
+4
+• Storage capacity Cdisk
+ns : Represents the persistent storage
+space of the node, used for storing massive knowledge
+bases, long-term memory logs, and container images.
+• Location & Affinity attributes Lns : This is a discrete set
+of attributes describing the physical location features or
+special hardware functionalities of the node, which is key
+to handling hard constraints. It is defined as
+Lns ⊆{Camera, TEE, LiDAR, . . . }.
+(2)
+For example, the label TEE indicates that the node
+supports Intel SGX or ARM TrustZone, enabling it to run
+privacy-sensitive agents [26]; the label Camera indicates
+that the node is physically connected to camera sensors.
+2) Physical Link Attributes and Communication Model:
+Each link ls = (u, v) ∈ES in the physical link set ES
+represents a communication channel between two physical
+nodes. Each link ls is defined by an attribute vector Φls,
+Φls =
+
+Bmax
+ls , Dprop
+ls
+
+.
+(3)
+• Bandwidth capacity Bmax
+ls
+: This parameter represents
+the maximum bandwidth capacity of the link (Mbps).
+In cloud-edge collaborative environments, core network
+links usually possess extremely high Bmax, whereas wire-
+less links from the edge to the endpoint are relatively
+constrained and precious.
+• Propagation delay Dprop
+ls : The fixed propagation de-
+lay caused by signal transmission through the physical
+medium, primarily determined by physical distance.
+In the substrate network, the communication path Pu,v
+between any two non-directly connected nodes u and v
+consists of a series of connected physical links. We assume
+the substrate network runs OSPF; therefore, the equivalent
+bandwidth and latency for ls = (u, v) ∈ES are pre-calculated
+for simulation purposes.
+B. Multi-Agent Service Network Model
+Upper-layer applications are modeled as MAS. Unlike tradi-
+tional microservice architectures, nodes in the MAS are Agents
+with autonomous reasoning capabilities, and their interactions
+constitute a directed workflow [29]. We consider an MAS
+service request to be a request to deploy a directed graph,
+denoted as GV = (N V , EV ).
+1) Virtual Nodes (Agents) and Dynamic Resource De-
+mands: The set N V
+= {nv
+1, nv
+2, . . . , nv
+|N V |} contains all
+agents participating in the task (e.g., planner, coder, and
+reviewer). Each virtual node nv ∈N V represents a functional
+unit, and its resource demand is defined as Rnv,
+Rnv =
+
+Rcpu
+nv , Rmem
+nv , Rdisk
+nv , Ψnv
+
+.
+(4)
+In this model, we must emphasize the dynamism and speci-
+ficity of LLM agent resource demands:
+• Rmem
+nv : The memory usage of an agent. Instead, it fluctu-
+ates slightly as the task proceeds [6].
+• Ψnv: This is the set of hard affinity constraints of the
+agent regarding the underlying nodes. If agent nv pro-
+cesses highly confidential data, then TEE ∈Ψnv [27]; if
+nv is responsible for real-time video stream analysis, then
+Camera ∈Ψnv [30]. These constraints define mandatory
+mapping rules from virtual nodes to physical nodes.
+2) Latency Modeling: The set EV represents the logical in-
+teraction relationships between agents. A directed virtual link
+lv = (i, j) ∈EV represents a communication demand from
+agent i to agent j, where the content of the communication is
+data or a prompt processed by that Agent.
+• Communication latency Tcomm: Based on the assumption
+of equal division of underlying link bandwidth, we con-
+struct a communication latency model.
+For a virtual link lv = (i, j), assuming agent i and agent
+j are mapped to physical nodes u and v respectively,
+and the physical path is Pu,v, the communication latency
+consists of transmission delay and propagation delay,
+given as follows:
+Tcomm(i, j) =
+X
+e∈Pu,v
+ σi,j
+Balloc
+e
++ Dprop
+e
+
+,
+(5)
+where σi,j is the amount of data transmitted. Balloc
+e
+is
+the actual bandwidth allocated by physical link e to this
+virtual link.
+• Total service latency: The total latency of the multi-
+agent service depends on the sum of the workflow’s
+communication latency and the processing latency of all
+agents, given as follows:
+Ttotal =
+X
+nv∈NV
+Tproc(nv) +
+X
+lv∈EV
+Tcomm(lv),
+(6)
+where the processing latency Tproc is primarily determined
+by the response speed of the LLM services invoked by
+the agents and the complexity of the tasks. As this latency
+depends on the external model’s processing capability, its
+optimization falls outside the scope of this paper.
+C. Problem Formulation
+We formalize an optimization of service placement decision
+as a Mixed-Integer Non-Linear Programming (MINLP) prob-
+lem. The objective is to find a mapping scheme M to embed
+the virtual network GV into the substrate network GS.
+The mapping M consists of two parts, including node
+mapping MN : N V →N S, and link mapping ML : EV →
+P(GS).
+We define the binary decision variable xi,u to represent the
+node mapping relationship,
+xi,u =
+(
+1,
+if node i ∈N V is mapped to u ∈N S,
+0,
+otherwise.
+(7)
+We define the variable f l
+uv to represent the virtual link
+mapping relationship,
+f l
+uv =
+(
+1,
+if l ∈EV traverses (u, v) ∈ES,
+0,
+otherwise.
+(8)
+The specific constraints are as follows:
+5
+Agent n-1:
+Data Injestion
+Agent n+1:
+Storage
+Agent n:
+Privicy-Sensitive 
+(Needs TEE)
+Interface Server
+Data Server
+Security Server
+Allowed mapping
+Fig. 2. Schematic representation of hard physical constraints and hardware
+affinity in agentic workflows. Specifically, a privacy-sensitive agent requires
+exclusive mapping to a physical node equipped with a TEE, rendering other
+mappings invalid.
+1) Multi-dimensional Resource Capacity Constraint: For
+any physical node u, the sum of the resource demands of all
+agents that it hosts must not exceed its physical capacity.
+X
+i∈N V
+xi,u · Rk
+i ≤Ck
+u,
+∀u ∈N S,
+∀k ∈{cpu, mem, disk, acc}.
+(9)
+2) Uniqueness Constraint: Each virtual agent must be
+mapped to exactly one physical node,
+X
+u∈N S
+xi,u = 1,
+∀i ∈N V .
+(10)
+3) Hard Affinity and Hardware Dependency Constraints:
+This is a key distinction between AgentVNE and traditional
+VNE. If agent i has a specific set of hardware requirements
+Ψi, it can be placed only on physical nodes that satisfy this
+constraint,
+xiu · I (α /∈Lu) = 0,
+∀i ∈N V , ∀α ∈Ψi, ∀u ∈N S (11)
+where I(·) is the indicator function. Eq.(11) expresses that if
+the attribute set Lu of physical node u does not contain the
+attribute α required by the agent (e.g., TEE), then xi,u must
+be 0.
+4) Link Bandwidth Constraint and Bandwidth Sharing
+Mechanism: Unlike bandwidth slicing in traditional VNE,
+data flows between agents exhibit burstiness. In the generation
+phase, data is transmitted as a stream; during the reason-
+ing/thinking phase, the link remains idle. In fact, in realistic
+cloud-edge networks, it is rare for a service to permanently
+occupy the bandwidth of a link. In wireless channels at the
+edge, independent channels are assigned to each request via
+multiple access methods like OFDMA or TDMA; in the core
+network, bandwidth competition is managed via flow control
+and congestion control [31].
+When multiple virtual links are mapped onto the same
+physical link e ∈ES, they share the bandwidth Bmax
+e
+of that
+physical link. Let Fe = {l ∈EV |f l
+e = 1} be the set of virtual
+links passing through physical link e. Under the equal sharing
+model, the actual bandwidth Balloc
+e
+(l) obtained by each virtual
+link is
+Balloc
+e
+(l) = min
+
+Breq
+l , Bmax
+e
+|Fe|
+
+.
+(12)
+To ensure transmission feasibility, the physical link must be
+able to carry the minimum transmission requirements of all
+flows(or result in increased latency during congestion,
+X
+l∈EV
+f l
+e · Balloc
+e
+(l) ≤Bmax
+e
+,
+∀e ∈ES.
+(13)
+Then, our goal is to minimize a weighted cost function,
+which primarily includes the MAS communication latency and
+the degree of resource fragmentation, as follows:
+Minimize J = α ·
+1
+|EV |
+X
+(i,j)∈EV
+Hops(MN(i), MN(j))
+|
+{z
+}
+Communication Cost
++ β ·
+X
+u∈N S
+LB(u)
+|
+{z
+}
+Load Balancing Cost
+,
+(14)
+where communication cost Hops(u, v) represents the shortest
+path hop count between physical nodes u and v. When u = v
+(i.e., two associated agents are deployed on the same physical
+node), the hop count is 0, which is the ideal case as it
+eliminates network latency. The load balancing cost LB(u)
+penalizes the overload usage of nodes, encouraging balanced
+resource utilization to prevent the emergence of hotspots that
+could hinder the placement of subsequent requests.
+D. Problem Characteristics
+Based on the mathematical definitions above, the service
+embedding problem proposed by AgentVNE exhibits the fol-
+lowing significant characteristics:
+1) NP-Hard: This problem is reducible to the VNE prob-
+lem. It is known that the VNE problem encompasses Sub-
+graph Isomorphism [32] and Multi-Commodity Flow [33]
+problems, belonging to the NP-hard class. Furthermore, the
+node mapping phase involves a variant of the Quadratic
+Assignment Problem. The reason is that the cost of mapping
+agent i depends on the mapping location of its neighbor agent
+j. Specifically, the distance term Hops(M(i), M(j)) in the
+objective function. As the number of agents |N V | and physical
+nodes |N S| increases, the solution space grows exponentially
+(O(|N S||N V |)), making exact solutions infeasible within poly-
+nomial time.
+2) Sparse Feasibility Region and Hardware Affinity: Due
+to the introduction of hard affinity constraints (Eq.11), the
+space of feasible solutions becomes extremely discontinuous
+and sparse. Specific physical nodes exert a strong attraction
+on specific types of virtual nodes. This effect greatly limits
+the degrees of freedom for search algorithms. Traditional
+heuristic algorithms struggle to capture such constraints, po-
+tentially leading to the premature exhaustion of resources
+on constrained nodes. Thus, it will increase the resource
+fragmentation of the underlying network and decrease service
+capacity [23].
+6
+Input Zone
+Multi-Agent
+Service Request
+Agentic Workflow
+Trigger Remapping
+(Fluctuations)
+Dynamic Monitoring & Control Plane
+Layer 1: LLM-based Semantic Perception & Constraint Resolution
+Layer 2: Graph Similarity Deep Embedding & Policy Optimization
+Gradient
+Updates
+Probability Matrix
+Similarity-Aware
+DNN Module
+Two-Stage Training
+(Supervised + PPO)
+Graph
+Construction
+VN Graph
+SN Graph
+Constraint
+Check
+LLM
+Semantic
+Analyzer
+Virtual Topology Decoupling
+Resource Bias
+Generator
+Resource Usage
+Communication
+Substrate Network
+Placement
+Strategy
+Mapping
+Result
+Fig. 3. The overall framework of the proposed AgentVNE. The architecture consists of two key layers. (1) An LLM-based semantic perception layer for
+constraint resolution and resource bias generation. (2) A graph similarity-based deep embedding layer for adaptive placement optimization.
+3) Dynamic Topology Evolution: Unlike the relatively static
+topology structure of traditional network services, MASs
+possess high dynamism. The Chain-of-Thought (CoT) [34]
+of agents may dynamically generate new sub-tasks during
+inference, causing the node set N V and edge set EV of GV to
+change at runtime. Therefore, the problem formulation is no
+longer a one-time static optimization but potentially a time-
+varying graph embedding [29]. Then it will require algorithms
+to possess capabilities for incremental computation and rapid
+re-mapping.
+4) Resource Coupling: Computational resources and net-
+work resources are tightly coupled in the optimization ob-
+jective. To reduce communication latency, namely minimize
+hops, algorithms tend to centrally place all agents on a single
+powerful cloud node. However, this leads to instantaneous
+overloading of that node’s compute and memory resources
+(violating resources constraint). Conversely, distributed place-
+ment for load balancing purposes sharply increases com-
+munication latency. The MINLP formulation mathematically
+quantifies this trade-off through weights α and β in the
+objective function, as well as strict capacity constraints.
+III. SYSTEM ARCHITECTURE AND DESIGN DETAILS
+This section elaborates on the system architecture and
+core design of AgentVNE. As shown in Fig. 3, the system
+consists of two layers: (1) an LLM-based virtual-physical node
+correlation capture and bias generation module, and (2) a deep
+neural network-based decision module designed to encode
+heterogeneous graph features. The system generates specific
+node mapping schemes, and continuously optimizes policies
+driven by online learning.
+A. System Architecture and Workflow
+As illustrated in Fig. 3, AgentVNE establishes a dual-layer
+framework for the adaptive embedding of self-evolving MASs.
+The architecture operates through a dual-layer coupling mech-
+anism aimed at bridging the gap between semantic service
+requirements and heterogeneous physical infrastructure.
+1) Layer 1: Semantic Perception and Resource Bias Injec-
+tion: The first layer utilizes an LLM as a semantic parser
+to address the dual heterogeneity challenge. Upon receiving
+a MAS placement request, this layer analyzes the semantic
+context to identify implicit hard constraints. Instead of rigid
+rule matching, we introduce a topology decoupling and re-
+source bias mechanism. This mechanism transforms semantic
+constraints into graph-level features by decoupling restricted
+agents into anchor nodes and resource nodes, while simultane-
+ously injecting a resource bias into the substrate network. This
+preprocessing effectively guides the subsequent embedding
+probability density toward physical nodes that satisfy hard
+constraints.
+2) Layer 2: Deep Geometric Embedding with Evolutionary
+Optimization: The second layer serves as the core decision
+engine, employing a similarity-aware graph neural network.
+Taking the preprocessed virtual network and substrate network
+graphs as input, this module quantifies the high-order topo-
+logical similarity between the agent workflow and physical
+resources. To address the NP-hard nature of the embedding
+problem, we adopt a two-stage training paradigm consisting of
+supervised pre-training and PPO fine-tuning. This enables the
+model to rapidly capture basic topology mapping rules through
+supervised learning, and subsequently evolve its policy via
+PPO to maximize long-term returns in dynamic environments.
+3) Dynamic Closed-Loop Control: Finally, the system inte-
+grates a dynamic monitoring plane. When topology evolution
+or infrastructure fluctuations are detected, the control loop
+7
+triggers a re-reasoning process. For instance, this detection
+is triggered when new virtual nodes are generated during the
+execution of the multi-agent service. The updated graph state is
+fed back into the neural network to generate adaptive migration
+or expansion strategies, ensuring service continuity.
+B. LLM-based Semantic Perception and Constraint Resolution
+The first layer is the semantic perception and constraint
+resolution layer based on LLM. It is primarily responsible
+for the semantic matching of virtual nodes with physical
+resources and the handling of hard constraints. When a multi-
+agent service request arrives, the LLM first performs semantic
+analysis on the service type, e.g., real-time video surveillance
+stream, to identify whether strong resource affinity or location
+dependency constraints exist between virtual network and sub-
+strate network. For scenarios with hard physical constraints,
+such as a specific computational task that must be executed
+on an edge node equipped with a camera interface, the system
+introduces a topology reconstruction and resource injection
+mechanism:
+1) Virtual Topology Decoupling: The constrained virtual
+node is decoupled into a resource node, which executes
+computational tasks, and a communication anchor, which has
+zero resource demand. This anchor is forcibly mapped to the
+target physical node to anchor the spatial location of the logical
+topology.
+2) Resource Bias Injection: The resource bias generator
+is used to synthesize an affinity-based augmentation vector
+for the target physical node. These augmented attributes are
+then integrated into the feature matrix and fed into the neural
+network. This bias resource is then diffused around the con-
+strained node through resource iterative computation or Graph
+Convolutional Networks (GCN). Therefore, this significantly
+improves the selection priority of the constrained node and its
+neighboring nodes in subsequent random sampling processes.
+C. Similarity-Aware Feature Extraction Network
+In traditional VNE studies, most existing algorithms em-
+ploy heuristic or metaheuristic strategies [35]. They tend
+to prioritize mapping virtual nodes with large resource de-
+mands to physical nodes with the largest remaining capacities.
+This capacity-driven strategy is relatively effective in low-
+dimensional resource scenarios. However, it exhibits signif-
+icant limitations when facing the high-dimensional hetero-
+geneous resource demands of agent systems. It ignores the
+shape alignment between the virtual node demand vector and
+the physical node supply vector in multi-dimensional space.
+This oversight easily leads to the formation of unusable,
+fragmented resources on physical nodes, resulting in severe
+resource fragmentation, which in turn reduces the long-term
+service acceptance capability of the network [35].
+Inspired by SimGNN [36], we propose that an ideal node
+mapping should not only satisfy resource capacity constraints
+but also consider the structural and resource coherence be-
+tween virtual nodes and physical nodes with respect to their
+multi-dimensional resource profiles and topological character-
+istics. To this end, we design a deep neural network with both
+topological awareness and resource awareness. This network
+captures the deep-seated structural similarity between the
+virtual network graph GV and the substrate physical graph
+GS, guiding node placement toward regions with more sim-
+ilar resource dimension profiles and topological relationship
+similarity, thereby optimizing resource utilization efficiency.
+The specific architecture of the network is shown in Fig.
+4. It takes two graphs as input and outputs an association
+probability matrix between node pairs.
+1) Dual-Stream Graph Encoding: To extract high-order
+features from heterogeneous graphs, we design a dual-stream
+parallel encoding architecture. First, GCN [37] is employed to
+process GV and GS separately to aggregate local neighbor-
+hood information. For a physical node ns, its initial feature
+vector xns encapsulates the normalized residual capacities
+across diverse resource dimensions (e.g., CPU, memory, and
+bandwidth). After L layers of GCN aggregation, the node
+obtains the locally perceived feature Us,
+U (l+1)
+s
+= σ( ˜D−1
+2 ˜A ˜D−1
+2 U (l)
+s W (l)).
+(15)
+Similarly, the feature representation Uv for agent network
+nodes is obtained.
+Although GCNs excel at capturing local structures, they
+struggle to perceive topological dependencies across the en-
+tire graph [38]. Therefore, we further input Uv and Us
+into a Transformer encoder layer. Utilizing Multi-Head Self-
+Attention (MHSA) and Feed-Forward Networks (FFN), the
+model dynamically weights the correlations between different
+nodes, identifying global key nodes such as communication
+bottlenecks or resource hubs. For the virtual network feature
+Uv, its enhanced global context feature Hv after passing
+through the Transformer encoder [39] is calculated follows:
+U ′
+v = LayerNorm(Uv + MHSA(Uv)),
+Hv = LayerNorm(U ′
+v + FFN(U ′
+v)).
+(16)
+The generation process for the substrate network feature Hs
+is identical to that of Hv, with the input replaced by Us.
+Finally, Hv and Hs serve as high-dimensional embedding
+vectors rich in global topological semantics, which are input
+into the subsequent neural tensor network (NTN).
+2) Column-Wise Neural Tensor Network: After obtaining
+high-dimensional embeddings for the nodes, the core task is to
+compute the matching score between agent node i and physical
+node j. Thus, AgentVNE introduces a column-wise NTN as
+the core matching module. This module performs slice-level
+deep interaction on features through a learnable 3D tensor
+W ∈R|N S|×d×d as follows:
+Zji = hT
+j Wjhi + b,
+(17)
+where hj and hi are the enhanced feature vectors of the
+physical node and virtual node, respectively, and Wj is the
+slice weight matrix in the tensor corresponding to physical
+node j. This design allows the model to learn unique resource
+matching patterns for each physical node [36], thereby gener-
+ating a high-precision raw similarity matrix Z.
+8
+Output & Action
+Probability Matrix 
+(𝑵𝑽× 𝑵𝑺)
+P
+Z
+Placement Action
+BFS k-hop 
+Strategy
+Input Layer
+Encoder Module
+Matcher Module
+Column-Wise Neural 
+Tensor Network - NTN
+Deep Interaction / 
+Similarity Score
+𝒁𝒋𝒊= 𝒉𝒔𝒋
+𝑻𝑾[𝒋]𝒉𝒗𝒊
+𝑾∈ℝ𝑵𝑺×𝒅×𝒅
+𝑯𝒗
+𝑯𝒔
+𝑈𝑣
+Node-Level
+Embeddings
+Self-
+Attention
+GCN
+Layers
+Graph-Level
+Embeddings
+Virtual Network
+(VN) Graph
+Substrate Network 
+(SN) Graph with 
+Resource Bias
+Tools
+Exec
+Planner
+Token Flow
+Edge
+Node
+𝑈𝑠
+𝑾[𝟏]
+𝑾[𝑵𝑺]
+···
+𝒇
+Fig. 4.
+Detailed network structure of the similarity-aware feature extraction module. The architecture comprises dual-stream graph encoders for feature
+learning, a Column-Wise ntn for deep similarity interaction, and a heuristic placement strategy based on the output probability matrix.
+Finally, the output layer first uses the sigmoid activation
+function to map the arbitrary real values of the raw similarity Z
+to the non-linear interval (0, 1) to obtain matrix S as follows:
+Sij = σ(Zij) =
+1
+1 + e−Zij .
+(18)
+To eliminate dimensional differences between samples and
+generate a smooth probability distribution, we perform Row-
+wise L2 Normalization on S. The final matching probability
+Pij for mapping the i-th virtual node to the j-th physical node
+is defined as:
+Pij =
+Sij
+∥Si∥2
+=
+Sij
+qP|N S|
+k=1 S2
+ik + ϵ
+,
+(19)
+where ϵ is a small constant. This normalized probability matrix
+Pij is directly used to generate priority lists to guide the
+subsequent heuristic node mapping decisions.
+D. Placement Strategy
+The similarity matrix Z output by the network represents
+only potential matching probabilities. During the training
+phase, we sample from the row vectors of the similarity matrix
+for each virtual node to generate substrate node priority se-
+quences Lnv. In the runtime phase, the priority sequence Lnv
+is constructed by ranking all substrate nodes in descending
+order of their similarity probabilities.
+Subsequently, we employ a heuristic search algorithm to
+convert continuous probabilities into discrete actions. The
+specific steps are as follows:
+1) Priority List Generation: The construction of the can-
+didate priority list Lnv depends on the operational phase. For
+training, multiple samples are drawn stochastically based on
+P(·|nv). For inference, Lnv is generated by ranking all sub-
+strate nodes in descending order according to the magnitude
+of their matching probabilities in P.
+2) Greedy-based Breadth-First Search (BFS) Expansion
+Strategy: We adopt a greedy initialization where the anchor
+agent (highest resource demand and centrality) is directly
+mapped to the top-ranked physical node in Lanchor. Sub-
+sequently, the remaining agents are deployed via BFS. To
+greedily minimize communication latency, the strategy prior-
+itizes searching for available resources within the immediate
+k-hop neighborhood of the preceding physical node, starting
+with k = 1. The search radius is incrementally expanded
+(k ←k + 1) only if no feasible solution is found, ensuring
+a compact topology embedding. If an expansion step fails,
+the system triggers a rollback mechanism, releasing occupied
+resources, penalizing the probability of the current path.
+E. Two-Stage Evolutionary Training Framework
+Given the massive solution space of combinatorial opti-
+mization problems, direct use of Reinforcement Learning (RL)
+suffers from extremely slow cold-start convergence [35]. We
+adopt a two-stage training strategy, namely supervised pre-
+training and PPO fine-tuning.
+1) Stage
+1:
+Topology-Aware
+Pre-training:
+We
+utilize
+heuristic-based algorithms to generate a large number of
+⟨virtual network node, noderank⟩probability matrix samples.
+By minimizing the mean squared error (MSE) loss function,
+the model rapidly learns basic topology matching rules. That
+is, what type of agent structure should be mapped to what
+type of physical structure. According to the RW-BFS [40] and
+GAL-VNE [35] for the calculation of noderank to serve as
+labels for pre-training our network. The noderank algorithm
+aims to comprehensively consider the computational resources
+and network topology of nodes to quantify their importance
+in the network. The calculation process primarily consists of
+three phases, including initial resource assessment, iterative
+resource propagation, and ranking sharpening.
+Firstly, we define a resource assessment score H(u) for each
+node u ∈V in the network. This score reflects the raw pro-
+9
+cessing and transmission capabilities of the node, determined
+by the product of its CPU core count and communication
+bandwidth as follows:
+H(u) = CPU(u) × BWcomm(u),
+(20)
+where CPU(u) represents the number of CPU cores and
+BWcomm(u) represents the node’s communication bandwidth.
+By normalizing H(u) across the entire network, we obtain the
+initial ranking distribution r(0) from
+r(0)(u) =
+H(u)
+P
+v∈V H(v).
+(21)
+Secondly to capture the influence of topological structure,
+we construct a forward probability matrix PF . The matrix
+element PF (u, v) represents the probability of resource con-
+tribution from node u to neighbor v, which is proportional to
+the resource share of v among all neighbors of u,
+PF (u, v) =
+(
+H(v)
+P
+k∈N (u) H(k),
+if v ∈N(u),
+0,
+otherwise.
+(22)
+Based on this matrix, the algorithm performs iterative aggrega-
+tion. In each iteration t, node rankings aggregate the weighted
+contributions of neighbor nodes by introducing a propagation
+factor µ,
+˜r(t+1) = r(t) + µ(PF · r(t)).
+(23)
+After each update, the vector must be normalized by r(t+1) =
+˜r(t+1)/∥˜r(t+1)∥1. This process is repeated for a specific num-
+ber of iterations to fully fuse local topological features [40].
+Finally, to effectively identify high-priority nodes through
+differentiation
+and
+suppress
+interference
+from
+resource-
+deficient nodes—specifically those with insufficient capacity to
+host any agent—we introduce a non-linear cubic transforma-
+tion. The final noderank value NR(u) is calculated as follows:
+NR(u) =
+(r(u))3
+P
+v∈V (r(v))3 .
+(24)
+This sharpening step amplifies numerical differences, ensuring
+that nodes with high-quality aggregated resources are signifi-
+cantly distinguishable in the final ranking.
+2) Stage 2: Dynamic PPO Fine-tuning: Based on the pre-
+trained weights, we initialize the Actor-Critic architecture. The
+agent interacts with the environment and updates the policy
+network parameters using the PPO algorithm based on long-
+term cumulative rewards. This stage enables the model to adapt
+to system stochasticity and learn to leverage resource bias for
+global optimization.
+The RL reward function rt aims to minimize the average
+communication latency of all surviving tasks in the network
+while maximizing the service acceptance rate. rt is defined as
+follows:
+rt =
+(
+Pfail,
+if embedding fails,
+Rsys(t),
+success or no arrival,
+(25)
+where Pfail is a fixed penalty term for placement failure,
+which occurs when the system fails to locate sufficient re-
+sources to accommodate the agentic workflow. Rsys(t) rep-
+resents the system operational utility at time t, defined as the
+negative average congestion-weighted hops of all surviving
+workflows as follows,
+Rsys(t) = −
+1
+|Wt|
+X
+w∈Wt
+X
+lv∈EV
+w
+X
+e∈P(lv)
+Ce(t),
+(26)
+where Wt is the set of all surviving workflows in the network
+at time t; EV
+w is the set of virtual links in workflow w; P(lv) is
+the underlying physical path, namely the set of physical links,
+to which virtual link lv is mapped; Ce(t) denotes the number
+of workflows sharing physical link e at time t.
+By penalizing link congestion, this reward function guides
+agents to plan routing paths that are both short and avoid
+congestion. Thus, it can optimize global end-to-end latency.
+Algorithm 1 AgentVNE Inference Algorithm
+Require: Substrate Network GS, Agent Workflow GV ,
+Model Parameters θ
+Ensure: Mapping Scheme M
+1: Phase 1: Semantic Perception (LLM)
+2: Generate resource bias: Bbias ←LLM(GV )
+3: Update substrate attributes: Ωns ←Ωns + Bbias
+4: Phase 2: Deep Embedding & Matching
+5: for k ∈{S, V } do
+6:
+Uk ←GCN(Xk, ˜Ak);
+Hk ←Transformer(Uk)
+7: end for
+8: Compute interaction tensor Z:
+9:
+Zji ←hT
+j Wjhi + b,
+∀j ∈N S, i ∈N V
+10: Generate probability matrix P:
+11:
+Pji ←
+σ(Zji)
+√P
+k σ(Zki)2+ϵ
+12: Phase 3: Greedy-BFS Placement
+13: Map hard constraints;
+14: Map anchor agent (max resource) to top-ranked node.
+15: for each unmapped agent v in BFS order do
+16:
+upre ←M(Predecessor of v);
+17:
+Lv ←argsort↓(Pv,:).
+18:
+Search feasible u∗∈Lv starting from upre and incre-
+mentally expanding k.
+19:
+M(v) ←u∗.
+20: end for
+21: Map virtual links ML using Shortest Path on GS.
+22: return M
+The complete process of AgentVNE inference can be shown
+as Algorithm 1. The computational complexity of AgentVNE
+is primarily dominated by the neural network inference, specif-
+ically the self-attention and tensor matching mechanisms,
+which scale quadratically with the substrate network size as
+O(|N S|2). With matrix overheads masked by GPU paral-
+lelism, the runtime is dominated by CPU-side logic, ensuring
+robust scalability.
+IV. PERFORMANCE EVALUATION
+In this section, we evaluate the performance of AgentVNE
+through extensive simulations. We compare our framework
+against other relevant methods to analyze its efficacy in
+reducing latency, improving acceptance rates, and maintaining
+scalability.
+10
+TABLE II
+SIMULATION ENVIRONMENT AND HARDWARE SPECIFICATIONS
+Parameter
+Value/Description
+Substrate Network
+Topology Structure
+Waxman topo α = 0.5, β = 0.2
+Network Size
+10 ∼600 nodes
+Node Affinity Ratio
+∼10% Hardware affinity
+Agentic Workflow (VN)
+Network Size
+5 ∼7 nodes
+Arrival Rate (λ)
+Poisson(0.05∼0.5)
+Mean Lifetime (µ)
+Exp (15 ∼40)
+A. Experimental Setup and Baselines
+To evaluate the performance of AgentVNE, we established
+a cloud-edge-endpoint collaborative simulation environment.
+The substrate network is modeled as a weighted undirected
+graph consisting of heterogeneous nodes, including central-
+ized cloud data centers, regional MEC servers, and user-side
+end devices. The substrate network is generated by Waxman
+topology model [41] with α = 0.5, β = 0.2. To reflect
+the distinct characteristics of the IoA, approximately 10%
+of the substrate nodes are configured with specific hardware
+attributes to enforce hard affinity constraints. We utilize a
+locally deployed Qwen3-30B as the core for resource bias
+generation in the first stage.
+All simulations were implemented in Python 3.12 and
+conducted on a high-performance server equipped with an
+Intel Xeon® Silver 4310 CPU, an NVIDIA® Tesla® T4 GPU,
+and 64 GB of RAM.
+Regarding service requests, we synthesize four distinct types
+of MAS workflows based on real-world frameworks such as
+LangChain [42] to calibrate the actual resource consumption
+profiles. As detailed in Table III, the test workflows encompass
+two primary categories: Text search and image processing.
+These workflows feature a node scale ranging from 5 to 7
+agents and possess varying affinity requirements. In the simu-
+lation, agent task arrivals follow a Poisson process, while their
+service lifetimes obey an exponential distribution, simulating
+a dynamic execution environment [43]. The four workflow
+types follow a uniform distribution within the incoming task
+stream. The specific configurations of these workflows will be
+provided in the open-source repository.
+To demonstrate the effectiveness of AgentVNE, we compare
+it against the following baseline algorithms:
+• Greedy [44]: A magnitude-centric strategy that prioritizes
+physical nodes with the maximum residual resources for
+placement.
+• GA (Genetic Algorithm) [45]: Represents traditional
+meta-heuristic algorithms that utilize population evolution
+and iterative search mechanisms to identify near-optimal
+mapping schemes.
+• GAL-VNE [35]: A learning-based baseline employing
+a pre-training paradigm to calculate node scores, sub-
+sequently performing node mapping in an approximate
+greedy manner based on these rankings.
+TABLE III
+WORKFLOW TYPE
+Workflow ID
+Node Number
+Task Type1
+Affinity Nodes
+workflow 1
+6
+Text search
+No
+workflow 2
+7
+Text search
+Yes
+workflow 3
+5
+Image processing
+No
+workflow 4
+6
+Image processing
+Yes
+1 See https://github.com/zrzuestc/AgentVNE/tree/main/Workflow topo for
+details.
+B. Workflow Latency Analysis
+Communication latency within workflows significantly im-
+pacts the end-to-end response time of MASs. Therefore, we
+employ the workflow weighted average hops rt of all currently
+deployed tasks in the network as the core metric to measure
+the post-deployment communication overhead.
+1) Temporal Stability and Topology Aggregation: We first
+evaluate the stability of the algorithm over the temporal
+dimension. Setting the task arrival rate to 0.2 and the mean
+lifetime to 30 time units, the variation of rt over 10,000
+simulation steps is shown in Fig. 5a. The results indicate that
+AgentVNE consistently maintains the lowest average hops,
+exhibiting superior temporal stability.
+AgentVNE outperforms baselines in two dimensions. First,
+it reduces the average communication hops by approximately
+60% compared to algorithms like GAL-VNE and GA. More
+crucially, the variance of its latency fluctuation is restricted to
+merely 20% or less of the baseline algorithms. This minimal
+jitter demonstrates that AgentVNE provides not only lower
+latency but also significantly more stable and predictable
+communication performance.
+Furthermore, this significant improvement is attributed to
+the structural alignment capability of our dual-stream graph
+encoding architecture. Traditional baseline strategies often em-
+ploy a capacity-centric greedy logic. This logic tends to scatter
+nodes across physical nodes with the most residual resources,
+thereby disrupting workflow connectivity. In contrast, by inte-
+grating GNN and Transformer modules, AgentVNE captures
+the high-order topological isomorphism between the virtual
+workflow and the substrate network. This enables the algo-
+rithm to proactively preserve the locality of virtual links during
+the mapping process. It can ensure that logically connected
+agents are deployed onto physically proximal neighborhoods
+for compact topological embedding.
+2) Robustness under Traffic Surge: To evaluate the utility
+of the algorithm under different service request pressures, we
+fix the mean task lifetime at 15 time units and test performance
+across varying arrival rates. As illustrated in Fig. 5b, the
+average hops rt for all algorithms exhibit an upward trend
+as the arrival rate increases. This phenomenon occurs because
+high traffic volume exacerbates network congestion. It will
+deplete continuous idle resources and force workflows to be
+deployed across dispersed nodes.
+However, AgentVNE demonstrates superior resilience with
+the most gradual growth curve. Under high-load scenarios,
+AgentVNE maintains the weighted average hops at a signif-
+icantly lower level. It is approximately 30% of that yielded
+11
+(a)
+Long-term
+Weighted
+Average
+Hops
+(b) Arrival Rate
+(c) Workflow Mean Lifetime
+Fig. 5. Multi-agent workflow communication latency comparison, namely weighted average hop count performance in different scenarios.
+by the baseline algorithms, equivalent to a ∼70% reduction in
+communication overhead.
+Moreover, this performance advantage stems from two
+synergistic mechanisms:
+• RL-based Congestion Avoidance: The congestion penalty
+mechanism embedded in our RL reward function (Eq.
+26) enables the PPO agent to proactively identify and
+avoid potential network bottlenecks. It guides placements
+toward topologically compact regions.
+• LLM-driven Affinity Anchoring: The resource augmenta-
+tion mechanism captures affinity dependencies and injects
+virtual resource bias into constraint-satisfying physical
+nodes. This artificially elevates the ranking of these nodes
+and their neighbors in the candidate priority list. Thus, it
+creates a “gravitational pull” that guides the workflow
+toward these anchor nodes. Since specific agents are
+mandatorily bound to these affinity nodes. Then, we
+cluster the remaining virtual nodes in their vicinity to
+minimize the physical distance between agents. This
+further reduces the global communication hop count.
+3) Impact of Lifecycle and Anti-Fragmentation: We further
+investigate the impact of task duration by fixing the arrival rate
+at 0.2 and varying the workflow mean lifetime (Fig. 5c). As the
+task lifetime extends, the resource release cycle slows down
+and becomes unevenly distributed, leading to severe resource
+fragmentation.
+The performance gap widens as the mean lifetime increases
+from 15 to 40. In long-duration scenarios, AgentVNE main-
+tains the weighted average hops at approximately 44% of the
+level exhibited by baseline algorithms. It demonstrates superior
+anti-fragmentation capability.
+Meanwhile, this advantage stems from RL-driven long-term
+planning. The PPO agent learns a fragmentation-aware com-
+pact placement strategy. It proactively schedules smaller sub-
+tasks onto scattered resource fragments, thereby preserving
+large contiguous physical resource blocks for complex col-
+laborative workflows. In contrast, traditional greedy strategies,
+driven by myopic decision-making, tend to occupy large con-
+tiguous resource blocks indiscriminately for current requests.
+It forces subsequent tasks to be deployed across dispersed,
+fragmented nodes with high communication costs.
+C. Service Acceptance Ratio Analysis
+The service acceptance rate (SAR) is a crucial metric for
+evaluating the efficacy of the workflow placement strategy.
+This strategy aims to successfully deploy MASs. It also
+focuses on scheduling resources under constrained conditions.
+1) Temporal Stability and Constraint Adaptation: Fig. 6a il-
+lustrates the variation of SAR over simulation time. AgentVNE
+consistently maintains the highest acceptance rate throughout
+the cycle, significantly outperforming GAL-VNE and tradi-
+tional heuristics. AgentVNE’s resource bias bias mechanism
+effectively pre-resolves these matching challenges. Further-
+more, the PPO fine-tuning mechanism empowers the model
+to continuously adapt to dynamic traffic fluctuations, ensuring
+sustained high acceptance rates.
+2) Robustness under Traffic Surge: To evaluate SAR per-
+formance under varying service request pressures, we fix the
+mean task lifetime at 30 time units and test across different
+arrival rates, as shown in Fig. 6b. As the arrival rate increases
+from 0.2 to 0.4, network congestion intensifies, and idle
+resources become scarce, causing SAR to decline for all
+algorithms. However, AgentVNE exhibits the most gradual
+decrease, maintaining a SAR approximately 5%−10% higher
+than baselines at high load, with an arrival rate of 0.4. This
+advantage stems from its ability to perceive multi-dimensional
+geometric similarity between virtual resource demands and
+physical supplies. It minimizes resource fragmentation through
+compact placement and delaying network saturation.
+3) Impact of Lifecycle and Anti-Fragmentation: We further
+explore the influence of task duration on SAR by fixing the
+arrival rate at 0.25 and varying the workflow mean lifetime,
+as shown in Fig. 6c. As the task lifetime extends from 20
+to 40 time units, resource release cycles slow down, leading
+to severe resource fragmentation. Consequently, traditional
+heuristic algorithms, limited by short-sighted decision-making,
+suffer a sharp decline in SAR. In contrast, AgentVNE lever-
+ages the long-term reward mechanism of PPO fine-tuning
+to efficiently utilize fragmented resources, maintaining near-
+optimal SAR even for long-duration tasks.
+Crucially, this resilience is underpinned by the NTN-enabled
+Multi-dimensional Alignment mechanism. The NTN explicitly
+evaluates the similarity between virtual and physical nodes
+across diverse resource dimensions. This capability enables
+the system to proactively schedule small-scale sub-tasks onto
+micro-fragments with matching resource profiles. By ensuring
+12
+(a) Long-term Accepted Ratio
+(b) Arrival Rate
+(c) Workflow Mean Lifetime
+Fig. 6. Multi-agent workflow acceptance rates comparison, namely deployment success rates in different scenarios
+TABLE IV
+SCALABILITY ANALYSIS: IMPACT OF NETWORK SIZE ON WORKFLOW
+LATENCY UNDER PROPORTIONAL LOAD
+Substrate Network Size
+Arrival Rate
+Average Hops
+20
+0.2
+4.6
+50
+0.5
+4.1
+100
+1.0
+3.5
+150
+1.5
+2.9
+200
+2.0
+2.2
+dimensional alignment, this mechanism effectively prevents
+single-dimension exhaustion. That is a scenario where a
+physical node becomes unusable due to the depletion of one
+resource type (e.g., CPU) despite having ample capacity in
+others. Thus, it can maximize the utilization of fragmented
+resources. Consequently, the scattered idle resources within
+the network are more fully exploited. This efficient resource
+consolidation directly translates into a superior SAR, empow-
+ering the edge infrastructure to accommodate a significantly
+larger volume of concurrent agentic tasks.
+D. Scalability Analysis
+We design scalability simulations to verify AgentVNE’s
+ability to optimize embedding quality via the resource diversity
+of large-scale networks. We also use these simulations to
+confirm its capacity to maintain efficient decision-making
+speed as network nodes and task loads grow.
+1) Impact of Network Size on Communication Overhead:
+To evaluate the scalability of AgentVNE, we conduct a stress
+test. It sets the number of substrate nodes ranging from 20
+to 200, adopting a proportional load scaling strategy. The
+task arrival rate increases linearly with the number of nodes.
+The experimental results, as shown in Table IV, indicate that
+as the network scale expands, the weighted average hops of
+workflows decrease from 4.6 to 2.2. This demonstrates that
+AgentVNE effectively leverages the denser solution space in
+large-scale networks. Then, it can identify node clusters within
+local neighborhoods that satisfy both topological and affinity
+constraints, thereby achieving a more compact embedding.
+2) Solving Efficiency: Fig. 7 illustrates the average solving
+time for processing 1,000 tasks across different algorithms.
+Although meta-heuristic algorithms can achieve respectable
+placement quality through iterative search in complex dynamic
+environments, their solving time grows quadratically with
+Fig. 7. Variation of solving time over substrate network size .
+network size, often exceeding tens of seconds. For real-
+time agentic workflows, this high computational latency may
+exceed the communication latency saved by the optimization.
+In contrast, AgentVNE benefits from the parallel inference
+capabilities of neural networks. Despite a fixed overhead at
+small scales, its solving time increases marginally with net-
+work size. In large-scale networks, for multi-agent workflows
+that do not require LLM to capture placement constraints,
+AgentVNE generates near-optimal solutions within seconds.
+It can achieve an optimal balance between solution quality
+and decision latency, thus demonstrating its practical value in
+latency-sensitive edge applications.
+E. Ablation Evaluation
+To validate the effectiveness of the core modules within
+the AgentVNE dual-layer architecture, we design ablation
+experiments to separately evaluate the impact of the LLM-
+assisted constraint perception module and the Reinforcement
+Learning (RL)-based dynamic fine-tuning mechanism on sys-
+tem performance.
+1) Impact of LLM Module: We construct a variant denoted
+as AgentVNEw/oLLM, which removes the semantic analysis
+layer and disables the generation of the resource bias. As
+shown in Table V, after removing the LLM module, although
+the algorithm maintains a high SAR, its workflow weighted
+average hops rt increase significantly. For example, at an
+arrival rate of 0.2, the average hops of AgentVNEw/oLLM
+reach 8.4, which is approximately 1.8 times that of the com-
+plete AgentVNE with 4.6 hops. This indicates that without the
+13
+TABLE V
+ABLATION ANALYSIS: IMPACT OF THE LLM-ASSISTED MODULE ON
+WORKFLOW LATENCY AND SERVICE ACCEPTANCE RATE
+Solution
+Arrival Rate
+Average Hops
+AC Ratio
+AgentVNEw/oLLM
+0.2
+8.4
+97%
+AgentVNEw/oLLM
+0.4
+10.8
+66%
+AgentVNEw/oLLM
+0.6
+15.2
+46%
+AgentVNEw/oRL
+0.2
+6.2
+95%
+AgentVNEw/oRL
+0.4
+9.8
+63%
+AgentVNEw/oRL
+0.6
+14.2
+43%
+AgentVNE
+0.2
+4.6
+97%
+AgentVNE
+0.4
+7.2
+67%
+AgentVNE
+0.6
+10.4
+49%
+guidance of the semantic layer, the model struggles to identify
+implicit hardware affinity constraints. Thus, it will result in
+agents being dispersed across nodes with abundant physical
+resources but large topological distances. Conversely, with the
+introduction of the LLM’s physical resource bias injection
+mechanism, the system can effectively identify constraint
+anchors and shift the center of sampling probability toward
+the neighborhood of restricted nodes. Then, it can reduce
+communication overhead by approximately 30% to 40%.
+2) Impact of RL Fine-tuning: To evaluate the necessity of
+PPO fine-tuning, we denote the pre-trained model without
+RL updates as AgentVNEw/oRL. Experimental data reveal
+that AgentVNEw/oRL outperforms AgentVNEw/oLLM in hop
+performance due to the presence of LLM bias injection.
+However, its SAR drops noticeably when the task arrival
+rate is high, falling from 67% to 63%. This suggests that
+relying solely on a pre-trained model is insufficient to cope
+with highly dynamic task flows and resource fragmentation.
+The AgentVNE tailored via PPO fine-tuning can learn shape
+alignment strategies in the multi-dimensional resource space
+through continuous interaction with the environment. Thus,
+it can enhance the system’s service carrying capacity while
+ensuring low latency.
+Then,
+to
+visually
+demonstrate
+the
+decision
+logic
+of
+AgentVNE, we visualize a substrate nodes topo in Fig. 8 and
+the node mapping probability matrices output by the model in
+Fig. 9. In the setup, the workflow contains an agent that must
+be placed on substrate node 6.
+• Pre-training phase: As shown in Fig. 9a, the model tends
+to mimic a greedy strategy, assigning extremely high
+sampling probability to Node 8, which possesses the most
+abundant residual resources. However, it ignores the fact
+that Node 8 is topologically far from the anchor Node 6,
+leading to potential long-tail communication latency.
+• Fine-tuning phase: As shown in Fig. 9b, AgentVNE
+rectifies the probability distribution. Despite node 8’s
+high capacity, its probability is suppressed due to ex-
+cessive topological distance. In contrast, nodes 3, 4, and
+5, which are immediate neighbors of the anchor node
+6, receive significantly improved sampling probabilities.
+This proves that AgentVNE has successfully learned to
+prioritize selecting topologically affine neighbor nodes
+while satisfying resource constraints. Thus, it can achieve
+a more compact topological embedding.
+Fig. 8. Substrate nodes topology visualization. The darker the color, the more
+abundant the resources.
+V. RELATED WORK
+VNE serves as a core technology in network virtualization.
+Early research predominantly focused on resource optimiza-
+tion in static environments, utilizing heuristic or meta-heuristic
+algorithms to address node and link mapping problems [13],
+[14]. With the proliferation of Network Function Virtualization
+(NFV), the research focus has gradually shifted towards the
+dynamic embedding of service function chains (SFC). For
+instance, Liu and Zhang [48] proposed a DRL-based SFC
+embedding framework that employs BERT to encode network
+states for handling traffic fluctuations, while Fu et al. [46] de-
+signed a dependency-aware SFC mapping strategy specifically
+for IoT scenarios.
+Moreover, to deploy AI services at the resource-constrained
+edge, extensive exploration has been conducted in model
+compression and collaborative inference. Chen et al. [18]
+proposed an efficient offloading paradigm for computation-
+intensive tasks in space-air-ground integrated networks; Yin
+et al. [50] explored elastic scaling strategies for LLM services
+on edge devices, analyzing the fluctuation characteristics of
+inference workloads. Additionally, Kim et al. [49] introduced a
+hybrid edge-cloud resource allocation mechanism to optimize
+inference cost and accuracy by combining SLMs with LLMs.
+However, most of these works treat AI tasks as independent
+computational units or unidirectional data flow pipelines [19],
+neglecting the complex semantic interactions between agents
+in Agentic Systems. The topology of such systems is often a
+generative graph topology [16], dynamically generated by the
+planner at runtime based on inference logic. This topological
+deformation, which evolves with the CoT, makes algorithms
+based on predefined SFCs difficult to adapt directly.
+Furthermore, with the rise of the IoA concept, resource
+scheduling for MASs has become a frontier hotspot. Early
+work demonstrated the feasibility of using LLMs to sim-
+ulate multi-agent interactions and emergent behaviors [51].
+Subsequently, frameworks such as AgentVerse [52] and Au-
+toGen [53] provided the necessary infrastructure for agent
+collaboration. Chen et al. [9] further facilitated collaboration
+among heterogeneous LLM-based agents by introducing agent
+integration protocols, an instant-messaging-like architecture,
+and dynamic team-building mechanisms. Regarding resource
+14
+(a) Node mapping probability distribution during pre-
+training phase
+(b) Node mapping probability distribution after finetuning
+Fig. 9. Comparison of node mapping probability matrices.
+TABLE VI
+COMPARISON OF AGENTVNE WITH EXISTING RELATED WORKS
+Reference
+Main Scenario
+Service Object
+Methodology
+Semantic Awareness
+Dynamic Topology
+Fu et al. [46]
+NFV-IoT
+SFC / VNF
+DRL (DQN)
+No
+Low
+Lin et al. [4]
+Mobile Edge Intel.
+AI Service Program
+MINLP / ADMM
+No
+Low
+Xia et al. [47]
+MEC
+General Task
+DRL (DDPG)
+No
+Low
+Liu & Zhang [48]
+Cloud/NFV
+SFC
+DRL (DDPG)
+No
+Medium
+Wang et al. [6]
+Edge Intelligence
+AI Agent
+Ant Colony + LLM
+Limited
+Medium
+Liu et al. [49]
+Hybrid Edge-Cloud
+Agent Subtasks
+Heuristic Scheduler
+No
+High
+AgentVNE (Ours)
+Edge Agentic AI
+Multi-Agent Workflow
+LLM + DRL (PPO)
+High
+High
+allocation, Lin et al. [4] investigated service placement in
+mobile edge intelligence but primarily focused on general
+energy optimization. Although Fan et al. [20] proposed a
+dynamic topology resource allocation scheme for distributed
+training tasks, the parameter synchronization mode of dis-
+tributed training differs fundamentally from the asynchronous
+interaction mode of agent inference. This makes it unsuit-
+able for direct application in agent-based scenarios. Xia et
+al. [47] proposed a DRL-based privacy-preserving offloading
+framework, and Luo et al. [26] discussed trust architectures
+in multi-LLM collaboration. Wang et al. [6] incorporated ant
+colony algorithms for agent placement but only considered
+single-entity capacity matching. The proposed AgentVNE
+aims to bridge this gap by leveraging GNNs to capture high-
+order topological similarities, thereby achieving end-to-end
+optimization for agentic workflows.
+VI. CONCLUSION
+In this paper, we have proposed AgentVNE, a cloud-edge
+collaborative framework designed to orchestrate MAS within
+the IoA. Addressing the limitations of traditional embedding
+algorithms, AgentVNE introduces a dual-layer architecture
+that synergizes LLMs with GNNs. Specifically, we utilize an
+LLM-driven resource bias mechanism to resolve hard physical
+constraints and a similarity-aware GNN optimized via pre-
+training and PPO fine-tuning to handle topological dynamism.
+Extensive simulations have demonstrated that AgentVNE sig-
+nificantly outperforms existing baselines, reducing communi-
+cation latency to less than 40% of that yielded by state-of-
+the-art methods while improving the service acceptance rate
+by approximately 5%–10% under high-load scenarios. This
+work provides a foundational solution for the semantic-aware
+deployment of agentic AI. Future work will focus on cross-
+domain agent migration.
+REFERENCES
+[1] R. Zhang, G. Liu, Y. Liu, C. Zhao, J. Wang, Y. Xu, D. Niyato, J. Kang,
+Y. Li, S. Mao et al., “Toward edge general intelligence with agentic AI
+and agentification: Concepts, technologies, and future directions,” arXiv
+preprint arXiv:2508.18725, 2025.
+[2] B. Li, T. Liu, W. Wang, C. Zhao, and S. Wang, “Agent-as-a-service: An
+AI-native edge computing framework for 6G networks,” IEEE Network,
+2024.
+[3] X. Zheng, G. Sun, J. Li, J. Wang, D. Niyato, D. I. Kim, and P. Zhang,
+“Exploring multi-agent dynamics for generative AI and large language
+models in mobile edge networks,” IEEE Wireless Communications,
+2025.
+[4] Z. Lin, S. Bi, and Y.-J. A. Zhang, “Optimizing AI service placement
+and resource allocation in mobile edge intelligence systems,” IEEE
+Transactions on Wireless Communications, vol. 20, no. 11, pp. 7257–
+7271, 2021.
+[5] I. Taleb, J. Guillaume, and B. Duthil, “A survey on services placement
+algorithms in integrated cloud-fog/edge computing,” ACM Computing
+Surveys, vol. 57, no. 11, pp. 1–36, 2025.
+[6] X. Wang, J. He, Z. Tang, J. Guo, J. Lou, L. Qian, T. Wang, and
+W. Jia, “Adaptive AI agent placement and migration in edge intelligence
+systems,” arXiv preprint arXiv:2508.03345, 2025.
+[7] C. Zhao, R. Zhang, J. Wang, D. Niyato, G. Sun, X. Wang, S. Mao, and
+A. Jamalipour, “From agentification to self-evolving agentic AI for wire-
+less networks: Concepts, approaches, and future research directions,”
+arXiv preprint arXiv:2510.05596, 2025.
+[8] H. Gao, J. Geng, W. Hua, M. Hu, X. Juan, H. Liu, S. Liu, J. Qiu, X. Qi,
+Y. Wu et al., “A survey of self-evolving agents: On path to artificial super
+intelligence,” arXiv preprint arXiv:2507.21046, 2025.
+[9] W. Chen, Z. You, R. Li, yitong guan, C. Qian, C. Zhao, C. Yang,
+R. Xie, Z. Liu, and M. Sun, “Internet of agents: Weaving a web of
+heterogeneous agents for collaborative intelligence,” in The Thirteenth
+15
+International Conference on Learning Representations, 2025. [Online].
+Available: https://openreview.net/forum?id=o1Et3MogPw
+[10] Y. Wang, S. Guo, Y. Pan, Z. Su, F. Chen, T. H. Luan, P. Li, J. Kang,
+and D. Niyato, “Internet of agents: Fundamentals, applications, and
+challenges,” arXiv preprint arXiv:2505.07176, 2025.
+[11] L. He, L. Fan, X. Lei, P. Fan, A. Nallanathan, and G. K. Karagiannidis,
+“The road toward general edge intelligence: Standing on the shoulders
+of foundation models,” IEEE Communications Magazine, 2025.
+[12] Y. Shen, J. Shao, X. Zhang, Z. Lin, H. Pan, D. Li, J. Zhang, and
+K. B. Letaief, “Large language models empowered autonomous edge AI
+for connected intelligence,” IEEE Communications Magazine, vol. 62,
+no. 10, pp. 140–146, 2024.
+[13] Y. Zhang, P. Zhang, C. Jiang, S. Wang, H. Zhang, and C. Rong, “QoS
+aware virtual network embedding in space-air-ground-ocean integrated
+network,” IEEE Transactions on Services Computing, vol. 17, no. 4, pp.
+1712–1723, 2024.
+[14] H. Yao, X. Chen, M. Li, P. Zhang, and L. Wang, “A novel reinforcement
+learning algorithm for virtual network embedding,” Neurocomputing,
+vol. 284, pp. 1–9, 2018.
+[15] T. Wang, L. Deng, X. Chen, J. Wang, H. He, L. Ding, W. Wu, Q. Fan,
+and H. Xiong, “Virne: A comprehensive benchmark for deep RL-based
+network resource allocation in NFV,” arXiv preprint arXiv:2507.19234,
+2025.
+[16] G. Zhang, K. Chen, G. Wan, H. Chang, H. Cheng, K. Wang, S. Hu,
+and L. Bai, “EvoFlow: Evolving diverse agentic workflows on the fly,”
+arXiv preprint arXiv:2502.07373, 2025.
+[17] K. Nguyen, W. Shi, and M. St-Hilaire, “Dynamic virtual network em-
+bedding leveraging neighborhood and preceding mappings information,”
+IEEE Transactions on Vehicular Technology, 2024.
+[18] J. Chen, W. Kuo, and W. Liao, “SpaceEdge: Optimizing service latency
+and sustainability for space-centric task offloading in LEO satellite
+networks,” IEEE Transactions on Wireless Communications, 2024.
+[19] Y. Li, X. Zhang, B. Lei, Q. Zhao, M. Wei, Z. Qu, and W. Wang,
+“Incentive-driven task offloading and collaborative computing in device-
+assisted MEC networks,” IEEE Internet of Things Journal, 2024.
+[20] W. Fan, D. Wang, F. Xiao, Y. Zuo, M. Lv, L. Han, and S.-Y. Hsieh,
+“Dynamic topology and resource allocation for distributed training in
+mobile edge computing,” IEEE Transactions on Mobile Computing,
+2025.
+[21] H. Luo, J. Luo, and A. V. Vasilakos, “BC4LLM: A perspective of trusted
+artificial intelligence when blockchain meets large language models,”
+Neurocomputing, vol. 599, p. 128089, 2024.
+[22] J. Chen, X. Wang, R. Xu, S. Yuan, Y. Zhang, W. Shi, J. Xie, S. Li,
+R. Yang, T. Zhu et al., “From persona to personalization: A survey on
+role-playing language agents,” arXiv preprint arXiv:2404.18231, 2024.
+[23] S. Wu, N. Chen, A. Xiao, P. Zhang, C. Jiang, and W. Zhang, “AI-
+empowered virtual network embedding: a comprehensive survey,” IEEE
+Communications Surveys & Tutorials, 2024.
+[24] M. Xu, D. Niyato, and C. G. Brinton, “Serving long-context LLMs at
+the mobile edge: Test-time reinforcement learning-based model caching
+and inference offloading,” arXiv preprint arXiv:2501.14205, 2025.
+[25] R. Zheng, H. Luo, G. Sun, and H. Yu, “DHBN: An efficient broadcast
+protocol for blockchain networks in highly dynamic heterogeneous
+environment,” in Proceedings of the IEEE Wireless Communications and
+Networking Conference.
+IEEE, 2024, pp. 1–6.
+[26] H. Luo, Y. Liu, R. Zhang, J. Wang, G. Sun, D. Niyato, H. Yu,
+Z. Xiong, X. Wang, and X. Shen, “Toward edge general intelligence
+with multiple-large language model (Multi-LLM): architecture, trust,
+and orchestration,” IEEE Transactions on Cognitive Communications
+and Networking, 2025.
+[27] H. Luo, G. Sun, Y. Liu, D. Zhao, D. Niyato, H. Yu, and S. Dustdar,
+“A weighted byzantine fault tolerance consensus driven trusted multi-
+ple large language models network,” IEEE Transactions on Cognitive
+Communications and Networking, 2025.
+[28] X. He, H. Xu, X. Xu, Y. Chen, and Z. Wang, “An efficient algorithm
+for microservice placement in cloud-edge collaborative computing en-
+vironment,” IEEE Transactions on Services Computing, vol. 17, no. 5,
+pp. 1983–1997, 2024.
+[29] C. Qian, Z. Xie, Y. Wang, W. Liu, K. Zhu, H. Xia, Y. Dang, Z. Du,
+W. Chen, C. Yang et al., “Scaling large language model-based multi-
+agent collaboration,” arXiv preprint arXiv:2406.07155, 2024.
+[30] X. Yang, L. Wen, T. Wei, Y. Ma, J. Mei, X. Li, W. Lei, D. Fu,
+P. Cai, M. Dou et al., “DriveArena: A closed-loop generative simulation
+platform for autonomous driving,” in Proceedings of the IEEE/CVF
+International Conference on Computer Vision, 2025, pp. 26 933–26 943.
+[31] P. Anitha, H. Vimala, and J. Shreyas, “Comprehensive review on
+congestion detection, alleviation, and control for IoT networks,” Journal
+of Network and Computer Applications, vol. 221, p. 103749, 2024.
+[32] L. P. Cordella, P. Foggia, C. Sansone, and M. Vento, “A (sub) graph
+isomorphism algorithm for matching large graphs,” IEEE Transactions
+on Pattern Analysis and Machine Intelligence, vol. 26, no. 10, pp. 1367–
+1372, 2004.
+[33] W. Szeto, Y. Iraqi, and R. Boutaba, “A multi-commodity flow based
+approach to virtual network resource allocation,” in Proceedings of the
+IEEE Global Telecommunications Conference, vol. 6.
+IEEE, 2003, pp.
+3004–3008.
+[34] J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le,
+D. Zhou et al., “Chain-of-thought prompting elicits reasoning in large
+language models,” Advances in Neural Information Processing Systems,
+vol. 35, pp. 24 824–24 837, 2022.
+[35] H. Geng, R. Wang, F. Wu, and J. Yan, “Gal-VNE: Solving the VNE
+problem with global reinforcement learning and local one-shot neural
+prediction,” in Proceedings of the 29th ACM SIGKDD Conference on
+Knowledge Discovery and Data Mining, 2023, pp. 531–543.
+[36] Y. Bai, H. Ding, S. Bian, T. Chen, Y. Sun, and W. Wang, “SimGNN:
+A neural network approach to fast graph similarity computation,” in
+Proceedings of the Twelfth ACM International Conference on Web
+Search and Data Mining, 2019, pp. 384–392.
+[37] T. Kipf, “Semi-supervised classification with graph convolutional net-
+works,” arXiv preprint arXiv:1609.02907, 2016.
+[38] Q. Li, Z. Han, and X.-M. Wu, “Deeper insights into graph convolutional
+networks for semi-supervised learning,” in Proceedings of the AAAI
+Conference on Artificial Intelligence, vol. 32, no. 1, 2018.
+[39] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez,
+Ł. Kaiser, and I. Polosukhin, “Attention is all you need,” Advances in
+Neural Information Processing Systems, vol. 30, 2017.
+[40] X. Cheng, S. Su, Z. Zhang, H. Wang, F. Yang, Y. Luo, and J. Wang,
+“Virtual network embedding through topology-aware node ranking,”
+ACM SIGCOMM Computer Communication Review, vol. 41, no. 2, pp.
+38–47, 2011.
+[41] B. M. Waxman, “Routing of multipoint connections,” IEEE Journal on
+Selected Areas in Communications, vol. 6, no. 9, pp. 1617–1622, 2002.
+[42] H. Chase, “Langchain,” 10 2022. [Online]. Available: https://github.
+com/langchain-ai/langchain
+[43] F. Baccelli and P. Br´emaud, Elements of Queueing Theory: Palm
+Martingale Calculus and Stochastic Recurrences.
+Springer Science
+& Business Media, 2013, vol. 26.
+[44] L. Gong, Y. Wen, Z. Zhu, and T. Lee, “Toward profit-seeking virtual net-
+work embedding algorithm via global resource capacity,” in Proceedings
+of the IEEE Conference on Computer Communications.
+IEEE, 2014,
+pp. 1–9.
+[45] B. Dab, I. Fajjari, N. Aitsaadi, and G. Pujolle, “VNR-GA: Elastic virtual
+network reconfiguration algorithm based on genetic metaheuristic,” in
+Proceedings of the IEEE Global Communications Conference.
+IEEE,
+2013, pp. 2300–2306.
+[46] X. Fu, F. R. Yu, J. Wang, Q. Qi, and J. Liao, “Dynamic service function
+chain embedding for NFV-enabled IoT: A deep reinforcement learning
+approach,” IEEE Transactions on Wireless Communications, vol. 19,
+no. 1, pp. 507–519, 2019.
+[47] F. Xia, Y. Chen, and J. Huang, “Privacy-preserving task offloading
+in mobile edge computing: A deep reinforcement learning approach,”
+Software: Practice and Experience, vol. 54, no. 9, pp. 1774–1792, 2024.
+[48] Y. Liu and J. Zhang, “Service function chain embedding meets machine
+learning: Deep reinforcement learning approach,” IEEE Transactions on
+Network and Service Management, 2024.
+[49] M. Kim et al., “HERA: Hybrid edge-cloud resource allocation for cost-
+efficient AI agents,” arXiv preprint arXiv:2504.00434, 2025.
+[50] W. Yin, R. Yi, D. Xu, G. Huang, M. Xu, and X. Liu, “Elastic on-
+device LLM service,” in Proceedings of the 31st Annual International
+Conference on Mobile Computing and Networking, 2025, pp. 984–999.
+[51] J. S. Park, J. O’Brien, C. J. Cai, M. R. Morris, P. Liang, and M. S.
+Bernstein, “Generative agents: Interactive simulacra of human behavior,”
+in Proceedings of the 36th Annual ACM Symposium on User Interface
+Software and Technology, 2023, pp. 1–22.
+[52] W. Chen, Y. Su, J. Zuo, C. Yang, C. Yuan, C.-M. Chan, H. Yu,
+Y. Lu, Y.-H. Hung, C. Qian et al., “AgentVerse: Facilitating multi-agent
+collaboration and exploring emergent behaviors,” in Proceedings of the
+International Conference on Learning Representations, 2024.
+[53] Q. Wu, G. Bansal, J. Zhang, Y. Wu, B. Li, E. Zhu, L. Jiang, X. Zhang,
+S. Zhang, J. Liu et al., “AutoGen: Enabling next-gen LLM applications
+via multi-agent conversations,” in First Conference on Language Mod-
+eling, 2024.

@@ -23,9 +23,11 @@ Based on the [TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md](file:///c:/Users/BERA
 - [x] 3.4 Faz 3 testi ve Git Commiti.
 
 ## Faz 4 — Baseline Ailesini Genişlet
-- [ ] 4.1 Tüm baselineların (`LocalOnly`, `EdgeOnly`, `Random`, `Greedy` vb.) tam kodlanması.
-- [ ] 4.2 Baselines sonuçlarının `evaluation.py` altında ortak ölçümü.
-- [ ] 4.3 Faz 4 testleri ve Git Commiti.
+- [x] 4.1 Tüm temel baselineların (`LocalOnly`, `EdgeOnly`, `Random`, `GreedyLatency`) kodlanması.
+- [x] 4.2 **Meta-Heuristic Baseline (Eksik 1):** Genetic Algorithm (GA) tabanlı offloading optimizer'ın `src/agents/baselines.py` içine eklenmesi.
+- [x] 4.3 **Classical RL Baselines (Eksik 2):** PPO v2 modeli yeni 11 boyutlu state yapısıyla sıfırdan eğitilmiştir. DQN ve A2C iskelet yapıları hazırdır.
+- [x] 4.4 Baselines sonuçlarının `evaluation.py` altında ortak ölçümü ve dökümante edilmesi.
+- [x] 4.5 Faz 4 testleri ve raporlanması.
 
 ## Faz 5 — Sistematik Ablation Study
 - [ ] 5.1 Ablation configlerinin `w/o Semantics`, `w/o Reward Shaping` gibi hazırlanması.
@@ -58,4 +60,5 @@ Based on the [TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md](file:///c:/Users/BERA
 ## Faz 10 (Ekstra) — LLM Self-Reflection & Experience Replay
 - [ ] 10.1 Ajan hatalı ya da düşük utility kararlar aldığında LLM'den post-hoc analiz (Self-reflection) isteme.
 - [ ] 10.2 Elde edilen açıklamaların (explanation logs) bir Experience Buffer'da (veya Semantic Bank'da) biriktirilerek bir sonraki `state` prompt'larında RAG benzeri dinamik few-shot örnekleri olarak sağlanması.
-- [ ] 10.3 Final test ve Git Commiti.
+- [ ] 10.3 **Final Teknik Dokümantasyon:** Tüm baselineların, metriklerin ve AgentVNE karşılaştırmalı analizinin raporlanması.
+- [ ] 10.4 Final test ve Git Commiti.

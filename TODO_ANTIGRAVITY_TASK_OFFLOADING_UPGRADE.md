@@ -248,8 +248,9 @@ Kıyaslamayı ciddi hale getirmek.
 - [ ] `RandomPolicy`
 - [ ] `GreedyLatency`
 - [ ] `GreedyEnergy`
-- [ ] `WeightedCostHeuristic`
-- [ ] `RuleSemanticOnly`
+- [ ] `GeneticAlgorithm` (Meta-Heuristic / Eksik 1)
+- [ ] `DQN` (Classical RL / Eksik 2)
+- [ ] `A2C` (Classical RL / Eksik 2)
 - [ ] `PPO_NoSemantics`
 - [ ] `PPO_WithOneHotLLM`
 - [ ] `PPO_WithSemanticPrior`  ← hedef ana model
