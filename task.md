@@ -3,23 +3,23 @@
 Based on the [TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md](file:///c:/Users/BERAT/Desktop/task-offloading-study/TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md) and `AgentVNE`, here is the complete step-by-step Execution Plan. We added **Phase 10: LLM Self-Reflection & Experience Replay** to further improve upon AgentVNE's core concept by using the LLM for dynamic context generation.
 
 ## Faz 1 — Reproducibility ve Kod Temizliği
-- [/] 1.1 `src/baselines.py`, `src/evaluation.py`, `src/metrics.py`, `src/config.py`, `src/trace_loader.py`, `src/semantic_prior.py`, `src/pretrain_policy.py`, `src/utils/reproducibility.py` dosyalarını (modüllerini) oluştur.
-- [ ] 1.2 `configs/` (`train_ppo.yaml`,vb.) ve `results/` klasör yapılarını hazırlama.
-- [ ] 1.3 `numpy`, `random`, `torch`, `gymnasium` için tek seed fonksiyonunu yaz.
-- [ ] 1.4 JSON/CSV loglama altyapısını kur (run_id, timestamp, metrikler).
+- [x] 1.1 `src/baselines.py`, `src/evaluation.py`, `src/metrics.py`, `src/config.py`, `src/trace_loader.py`, `src/semantic_prior.py`, `src/pretrain_policy.py`, `src/utils/reproducibility.py` dosyalarını (modüllerini) oluştur.
+- [x] 1.2 `configs/` (`train_ppo.yaml`,vb.) ve `results/` klasör yapılarını hazırlama. (`train_ppo.yaml` eklendi, klasörler loglama anında otomatik oluşacak şekilde ayarlandı.)
+- [x] 1.3 `numpy`, `random`, `torch`, `gymnasium` için tek seed fonksiyonunu yaz. (`src/utils/reproducibility.py` içinde `set_seed` eklendi.)
+- [x] 1.4 JSON/CSV loglama altyapısını kur (run_id, timestamp, metrikler). (`train_agent.py` sonuna `results/raw/master_experiments.csv` loglaması eklendi.)
 - [ ] 1.5 Faz 1'i test et ve Git Commit at (`git commit -m "Faz 1: Reproducibility and Code Hygiene"`).
 
-## Faz 2 — Train Environment ve Gerçek Simülasyon HizalamasıTODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE
-- [ ] 2.1 Ortak `src/state_builder.py` yazımı.
-- [ ] 2.2 `rl_env.py` içinde mock yerine simülatör tabanlı reset işlemleri.
-- [ ] 2.3 Reward bileşenlerinin `src/reward.py` altına taşınması.
-- [ ] 2.4 Çok adımlı episode tasarımı.
+## Faz 2 — Train Environment ve Gerçek Simülasyon Hizalaması
+- [x] 2.1 Ortak `src/state_builder.py` yazımı.
+- [/] 2.2 `rl_env.py` içinde mock yerine simülatör tabanlı reset işlemleri. (**Eksik:** `rl_env.py` içinde `reset()` fonksiyonu hala `MockDevice` ve rastgele task değerleri üretiyor, tam olarak `simulation_env.py` entegrasyonu tamamlanmamış.)
+- [x] 2.3 Reward bileşenlerinin `src/reward.py` altına taşınması.
+- [x] 2.4 Çok adımlı episode tasarımı. (50 adımlı episode eklendi.)
 - [ ] 2.5 Faz 2'yi test et ve Git Commit at.
 
 ## Faz 3 — LLM Entegrasyonunu Gerçek Katkıya Dönüştür
-- [ ] 3.1 Gözlemler (observation) için 6 boyutlu action prior vektörünün LLM ile üretimi.
-- [ ] 3.2 Confidence skorunun reward/policy etkisine entegre edilmesi.
-- [ ] 3.3 LLM çıktısını parse edilebilir JSON hale getirme ve loglama.
+- [x] 3.1 Gözlemler (observation) için 6 boyutlu action prior vektörünün LLM ile üretimi. (`semantic_prior.py` içerisinde oluşturuldu.)
+- [x] 3.2 Confidence skorunun reward/policy etkisine entegre edilmesi.
+- [x] 3.3 LLM çıktısını parse edilebilir JSON hale getirme ve loglama. (`llm_analyzer.py` başarıyla güncellendi ve loglama için `phase_reports` eklendi.)
 - [ ] 3.4 Faz 3 testi ve Git Commiti.
 
 ## Faz 4 — Baseline Ailesini Genişlet
