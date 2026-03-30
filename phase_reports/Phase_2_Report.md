@@ -18,11 +18,12 @@
 - Artık `max_steps = 50` gibi bir yapı kuruldu. Ajanımız 50 görevi (veya batarya bitene kadar olan görevleri) art arda çözerek uzun vadeli bir policy çıkartmaya zorlanıyor. Time-series dynamics ve batarya koruma yetenekleri kuvvetlendirildi.
 
 **4. Simülatör (Mock) Eğitimi Gerçekleştirildi:**
-- `rl_env.py` reset fonksiyonu güncellendi; mock device her stepte baştan yaratılmak yerine `_generate_next_task` adlı bir kuyruk simülatörüne bağlandı. Böylece ajan, cihazın hareketliliği (mobility/velocity) ve simüle edilmiş zaman içerisinde karar almaya bırakıldı.
+- `train_agent.py` güncellenerek eğitim sırasında simülasyon ortamına bağlandı ve gerçek `IoTDevice` sınıfı RL ajanı tarafından kullanılabilir hale getirildi. `rl_env.py` içerisindeki mock nesneler temizlendi.
 
 ## Çıkarımlar ve Sonraki Adım
-- RL ortamımız büyük oranda standartlar üzerine oturdu ve gerçeğe uygun şekilde hizalandı.
-- Bir sonraki hedef olan **Faz 3**'te, Semantic Prior yapısı (LLM'in bir metin ve priority output'u yerine, RL'ye prior probabilities şeklinde bir bias vektörü sağlaması) entegre edilecektir.
+- RL ortamımız büyük oranda standartlar üzerine oturdu ve gerçeğe uygun şekilde hizalandı. (Faz 2 tamamlandı.)
+- Bir sonraki hedef olan **Faz 3** (Semantic Prior ve LLM Output Parsing) de kod tabanında tamamlandı ve loglamaya aktarıldı.
+- Sıradaki hedefler **Faz 4 (Baseline Genişletmesi)** ve **Faz 5 (Ablation Study)**.
 
 ---
-**Not:** Kullanıcı (Siz) manuel olarak test onayı ve `git commit` gerçekleştirecektir.
+**Not:** Lütfen yeni değişiklikler için `git commit -m "Faz 2 ve 3 tamamlandı: Simülatör hizalaması, Prior ve JSON parsing"` mesajı ile commit atınız.

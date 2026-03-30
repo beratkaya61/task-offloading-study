@@ -29,9 +29,13 @@ def train():
     num_edge_servers = env_cfg.get('num_edge_servers', 3)
     edge_servers = [EdgeServer(env, i+1, (random.uniform(0, 1000), random.uniform(0, 1000)), 2e9) for i in range(num_edge_servers)]
     
+    # Gerçek cihazları (IoTDevice) simülatör objesi olarak RL eğitmenine ver
+    num_devices_for_training = 5
+    devices = [IoTDevice(env, id=i, channel=channel, edge_servers=edge_servers, cloud_server=cloud, battery_capacity=10000.0) for i in range(num_devices_for_training)]
+    
     # Create the custom Gym environment
     train_env = OffloadingEnv(
-        devices=[], # Will be populated per step/reset
+        devices=devices, # Will be populated per step/reset
         edge_servers=edge_servers,
         cloud_server=cloud,
         channel=channel

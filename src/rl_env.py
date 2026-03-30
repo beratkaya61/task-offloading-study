@@ -48,17 +48,22 @@ class OffloadingEnv(gym.Env):
         self.current_step = 0
         
         if not self.devices:
-            # Simulator-backed mock for training
+            # Fallback in case no devices provided
             from simulation_env import Task, TaskType
             self.current_device = type('MockDevice', (), {
                 'battery': 10000.0,
                 'location': [random.uniform(0, 1000), random.uniform(0, 1000)],
                 'velocity': [random.uniform(-2, 2), random.uniform(-2, 2)]
             })
-            
-            self._generate_next_task()
         else:
+            # Gerçek Simülatör objesi kullan!
             self.current_device = random.choice(self.devices)
+            # Başlangıç değerlerini simülasyona uygun resetle:
+            self.current_device.battery = getattr(self.current_device, 'battery_capacity', 10000.0)
+            self.current_device.location = [random.uniform(0, 1000), random.uniform(0, 1000)]
+            self.current_device.velocity = [random.uniform(-2, 2), random.uniform(-2, 2)]
+            
+        self._generate_next_task()
             
         return self._get_obs(), {}
 

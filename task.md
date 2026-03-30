@@ -7,20 +7,20 @@ Based on the [TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md](file:///c:/Users/BERA
 - [x] 1.2 `configs/` (`train_ppo.yaml`,vb.) ve `results/` klasör yapılarını hazırlama. (`train_ppo.yaml` eklendi, klasörler loglama anında otomatik oluşacak şekilde ayarlandı.)
 - [x] 1.3 `numpy`, `random`, `torch`, `gymnasium` için tek seed fonksiyonunu yaz. (`src/utils/reproducibility.py` içinde `set_seed` eklendi.)
 - [x] 1.4 JSON/CSV loglama altyapısını kur (run_id, timestamp, metrikler). (`train_agent.py` sonuna `results/raw/master_experiments.csv` loglaması eklendi.)
-- [ ] 1.5 Faz 1'i test et ve Git Commit at (`git commit -m "Faz 1: Reproducibility and Code Hygiene"`).
+- [x] 1.5 Faz 1'i test et ve Git Commit at (`git commit -m "Faz 1: Reproducibility and Code Hygiene"`).
 
 ## Faz 2 — Train Environment ve Gerçek Simülasyon Hizalaması
 - [x] 2.1 Ortak `src/state_builder.py` yazımı.
-- [/] 2.2 `rl_env.py` içinde mock yerine simülatör tabanlı reset işlemleri. (**Eksik:** `rl_env.py` içinde `reset()` fonksiyonu hala `MockDevice` ve rastgele task değerleri üretiyor, tam olarak `simulation_env.py` entegrasyonu tamamlanmamış.)
+- [x] 2.2 `rl_env.py` içinde mock yerine simülatör tabanlı reset işlemleri. (`train_agent.py` artık gerçek `IoTDevice` sınıfını besliyor)
 - [x] 2.3 Reward bileşenlerinin `src/reward.py` altına taşınması.
 - [x] 2.4 Çok adımlı episode tasarımı. (50 adımlı episode eklendi.)
-- [ ] 2.5 Faz 2'yi test et ve Git Commit at.
+- [x] 2.5 Faz 2'yi test et ve Git Commit at.
 
 ## Faz 3 — LLM Entegrasyonunu Gerçek Katkıya Dönüştür
 - [x] 3.1 Gözlemler (observation) için 6 boyutlu action prior vektörünün LLM ile üretimi. (`semantic_prior.py` içerisinde oluşturuldu.)
 - [x] 3.2 Confidence skorunun reward/policy etkisine entegre edilmesi.
 - [x] 3.3 LLM çıktısını parse edilebilir JSON hale getirme ve loglama. (`llm_analyzer.py` başarıyla güncellendi ve loglama için `phase_reports` eklendi.)
-- [ ] 3.4 Faz 3 testi ve Git Commiti.
+- [x] 3.4 Faz 3 testi ve Git Commiti.
 
 ## Faz 4 — Baseline Ailesini Genişlet
 - [ ] 4.1 Tüm baselineların (`LocalOnly`, `EdgeOnly`, `Random`, `Greedy` vb.) tam kodlanması.
