@@ -272,7 +272,8 @@ Analysis:
         context_str = context_str.rstrip(", ") if context_str else "Standard conditions"
         
         # Construct few-shot prompt for TinyLlama (instruction-tuned)
-        prompt = f"""You are an IoT Task Offloading Analyzer. Your job is to analyze tasks and recommend where they should execute (LOCAL device, EDGE server, or CLOUD).
+        prompt = f"""You are an IoT Task Offloading Analyzer. Your job is to analyze tasks and recommend where they should execute (local, edge, or cloud).
+You can output your analysis in standard format, but prefer providing a valid JSON object block containing the keys: "priority_score", "urgency", "complexity", "bandwidth_need", "recommended_target", "confidence", "reason".
 
 {few_shot_examples}
 
@@ -280,8 +281,7 @@ Analysis:
 Input: Task Type: {task.task_type.name}, Size: {task.size_bits / 1e6:.2f} MB, CPU: {task.cpu_cycles / 1e9:.2f} GHz, Deadline: {task.deadline:.2f} seconds
 Context: {context_str}
 
-Analysis:
-- Priority Score: """
+Analysis:"""
         
         try:
             # Tokenize with attention to max_length
@@ -344,13 +344,30 @@ Analysis:
     
     def _parse_llm_response(self, analysis_text, task):
         """
-        Parse structured LLM response into our metadata format.
-        Extracts key-value pairs from the analysis.
+        Parse structured JSON LLM response with a Regex fallback.
         """
         try:
+            import json
             import re
             
-            # Extract scores using regex
+            # 🎯 NEW: Try JSON parsing first (Structured Output Support)
+            try:
+                start_idx = analysis_text.find('{')
+                end_idx = analysis_text.rfind('}')
+                if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                    json_str = analysis_text[start_idx:end_idx+1]
+                    parsed_json = json.loads(json_str)
+                    
+                    if "recommended_target" in parsed_json and "confidence" in parsed_json:
+                        # Normalize output
+                        if "analysis_method" not in parsed_json:
+                            parsed_json["analysis_method"] = "TinyLlama JSON Output"
+                        parsed_json["raw_stats"] = { "size_mb": round(task.size_bits / 1e6, 2), "cpu_ghz": round(task.cpu_cycles / 1e9, 2) }
+                        return parsed_json
+            except Exception as e:
+                pass # Fallback to regex quietly
+                
+            # Extract scores using regex (Fallback)
             priority_match = re.search(r"Priority Score:\s*([\d.]+)", analysis_text)
             urgency_match = re.search(r"Urgency:\s*([\d.]+)", analysis_text)
             complexity_match = re.search(r"Complexity:\s*([\d.]+)", analysis_text)

@@ -24,13 +24,11 @@ class OffloadingEnv(gym.Env):
         # 5: Full Cloud (100% Cloud)
         self.action_space = spaces.Discrete(6)
         
-        # State Space: [SNR, Task Size, CPU Cycles, Battery %, Edge Load, LLM-Local, LLM-Edge, LLM-Cloud]
-        # Normalized values between 0 and 1
-        # Updated from (6,) to (8,) - LLM recommendation now one-hot encoded
+        # State Space: [SNR, Task Size, CPU Cycles, Battery %, Edge Load] + [6D Action Prior]
         # Features 0-4: Physical/Network metrics
-        # Features 5-7: LLM one-hot encoding [local_flag, edge_flag, cloud_flag]
+        # Features 5-10: LLM Semantic Prior [local, edge_25, edge_50, edge_75, edge_100, cloud] (Sum = 1.0)
         self.observation_space = spaces.Box(
-            low=0, high=1, shape=(8,), dtype=np.float32
+            low=0, high=1, shape=(11,), dtype=np.float32
         )
         
         self.devices = devices
@@ -137,6 +135,12 @@ class OffloadingEnv(gym.Env):
 
         self.current_step += 1
         done = (self.current_step >= self.max_steps) or (getattr(self.current_device, 'battery', 10000.0) <= 0)
+        
+        # Faz 3 Logging: Semantic Explanation Bank
+        if self.current_task:
+             from semantic_prior import generate_action_prior, log_semantic_explanation
+             prior = generate_action_prior(self.current_task.semantic_analysis)
+             log_semantic_explanation(self.current_task, action, prior)
         
         if not done:
             self._generate_next_task()

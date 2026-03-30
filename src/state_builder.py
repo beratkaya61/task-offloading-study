@@ -28,16 +28,11 @@ def build_state(device, task, edge_servers, channel):
     
     load_norm = min(1.0, closest_edge.current_load / 10.0) if closest_edge else 0.0
     
-    # 3. Handle LLM One-Hot Feature
-    llm_rec = 'edge'
-    if task.semantic_analysis and 'recommended_target' in task.semantic_analysis:
-        llm_rec = task.semantic_analysis['recommended_target']
-        
-    if llm_rec == 'local':
-        llm_onehot = [1.0, 0.0, 0.0]
-    elif llm_rec == 'cloud':
-        llm_onehot = [0.0, 0.0, 1.0]
-    else:
-        llm_onehot = [0.0, 1.0, 0.0]
-        
-    return np.array([snr_norm, size_norm, cpu_norm, batt_norm, load_norm] + llm_onehot, dtype=np.float32)
+    # 3. Handle LLM Semantic Prior (6D vector)
+    from semantic_prior import generate_action_prior
+    prior_vector = generate_action_prior(task.semantic_analysis)
+    
+    return np.concatenate((
+        np.array([snr_norm, size_norm, cpu_norm, batt_norm, load_norm], dtype=np.float32), 
+        prior_vector
+    ))
