@@ -11,3 +11,9 @@ This project focuses on **"Semantic-Aware Task Offloading and Dynamic Resource A
 
 ## Research Goal
 To solve the "sparse reward" problem in DRL-based offloading by using Large Language Models (LLMs) for semantic task analysis and reward shaping, maximizing Quality of Experience (QoE) in dynamic IoT environments.
+
+## How to Reproduce
+1. Ensure dependencies are installed (e.g., `gymnasium`, `stable-baselines3`, `simpy`, `transformers`).
+2. Run standard training: `python src/train_agent.py`
+3. Experiment seed (`seed`), specific configurations, and models are deterministic via `src/utils/reproducibility.py`.
+4. Inspect logs: Detailed execution logs and results are generated in JSON and a master CSV table directly inside `results/raw/master_experiments.csv`. Evaluater scripts like `src/evaluation.py` can be used to compare experiments out-of-the-box.
