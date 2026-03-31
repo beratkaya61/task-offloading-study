@@ -3,7 +3,8 @@ import random
 import time
 import uuid
 import simpy
-from stable_baselines3 import PPO
+import argparse
+from stable_baselines3 import PPO, DQN, A2C
 import torch
 import pandas as pd
 from datetime import datetime
@@ -14,7 +15,11 @@ from src.core.config import load_config
 from src.utils.reproducibility import set_seed
 
 def train():
-    print("[TRAIN] Initializing Training Environment...")
+    parser = argparse.ArgumentParser(description="Train Baseline RL Agents")
+    parser.add_argument("--model", type=str, default="PPO", choices=["PPO", "DQN", "A2C"])
+    args = parser.parse_args()
+    
+    print(f"[TRAIN] Initializing Training Environment for {args.model}...")
     
     # Load config
     cfg = load_config()
@@ -44,20 +49,42 @@ def train():
     seed = exp_cfg.get('seed', 42)
     set_seed(seed, env=train_env)
 
-    # 2. Setup PPO Agent
-    print("[TRAIN] Instantiating PPO Agent (MLP Policy)...")
-    # State space (11,) - [5 physical + 6 semantic]
-    model = PPO(
-        "MlpPolicy", 
-        train_env, 
-        verbose=1,
-        learning_rate=ppo_cfg.get('learning_rate', 3e-4),
-        n_steps=ppo_cfg.get('n_steps', 2048),
-        batch_size=ppo_cfg.get('batch_size', 64),
-        n_epochs=ppo_cfg.get('n_epochs', 10),
-        gamma=ppo_cfg.get('gamma', 0.99),
-        device=ppo_cfg.get('device', "cpu")
-    )
+    # 2. Setup RL Agent
+    print(f"[TRAIN] Instantiating {args.model} Agent (MLP Policy)...")
+    if args.model == "PPO":
+        model = PPO(
+            "MlpPolicy", 
+            train_env, 
+            verbose=1,
+            learning_rate=ppo_cfg.get('learning_rate', 3e-4),
+            n_steps=ppo_cfg.get('n_steps', 2048),
+            batch_size=ppo_cfg.get('batch_size', 64),
+            n_epochs=ppo_cfg.get('n_epochs', 10),
+            gamma=ppo_cfg.get('gamma', 0.99),
+            device=ppo_cfg.get('device', "cpu")
+        )
+    elif args.model == "DQN":
+        model = DQN(
+            "MlpPolicy", 
+            train_env, 
+            verbose=1,
+            learning_rate=1e-4,
+            buffer_size=100000,
+            learning_starts=1000,
+            batch_size=64,
+            gamma=0.99,
+            device=ppo_cfg.get('device', "cpu")
+        )
+    elif args.model == "A2C":
+        model = A2C(
+            "MlpPolicy", 
+            train_env, 
+            verbose=1,
+            learning_rate=7e-4,
+            n_steps=2048,
+            gamma=0.99,
+            device=ppo_cfg.get('device', "cpu")
+        )
     
     # 3. Training Loop
     # Hızlı test ve uyumluluk için 20 bin step (v2 başlangıcı için)
@@ -70,8 +97,8 @@ def train():
 
     # 4. Save the model
     os.makedirs("models", exist_ok=True)
-    model.save("models/ppo_offloading_agent_v2")
-    print("[TRAIN] Model saved to models/ppo_offloading_agent_v2.zip")
+    model.save(f"models/{args.model.lower()}_offloading_agent_v2")
+    print(f"[TRAIN] Model saved to models/{args.model.lower()}_offloading_agent_v2.zip")
     
     # 5. Experiment Logging to CSV
     os.makedirs("results/raw", exist_ok=True)
@@ -81,7 +108,7 @@ def train():
         "run_id": str(uuid.uuid4())[:8],
         "timestamp": datetime.now().isoformat(),
         "config_seed": seed,
-        "config_model_type": "PPO_v2_Retrained",
+        "config_model_type": f"{args.model}_v2_Retrained",
         "config_semantic_mode": "action_prior",
         "config_total_tasks": total_timesteps,
         "training_time_sec": round(training_time, 2)

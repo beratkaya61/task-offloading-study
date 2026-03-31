@@ -194,13 +194,13 @@ Fitness = latency penalty + energy penalty + deadline penalty
 - Ama klasik RL modelleri (DQN, A2C, SAC) eksik ⚠️
 
 **TODO:** 
-- [ ] DQN (Q-learning tabanlı)
-- [ ] A2C (Actor-Critic)
-- [ ] SAC (Soft Actor-Critic - SOTA energy-aware problems için)
-- [ ] TRPO (Trust Region Policy Optimization)
+- [x] DQN (Q-learning tabanlı) - Faz 4 test ortamına başarıyla eklendi.
+- [x] A2C (Actor-Critic) - Faz 4 testlerine başarıyla eklendi.
+- [x] SAC (Soft Actor-Critic - SOTA energy-aware problems için) - Opsiyonel olarak not düşüldü (İhtiyaç yok, Problem Discrete uzaylı olduğu için).
+- [x] TRPO (Trust Region Policy Optimization) - PPO temel alındığı için referans mapping dökümanında elendiği açıklandı.
 
 **Nereye Yazılacak:** 
-- Faz 4 sonunda: `docs/baseline_literature_mapping.md` (YETÖ)
+- Faz 4 sonunda: `docs/baseline_literature_mapping.md` (✅ OLUŞTURULDU)
 - Bu dosyada yazılacak:
   - Hangi klasik model nedir (1-2 satır)
   - Neden seçtik / seçmedik

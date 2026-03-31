@@ -19,17 +19,19 @@ Bu fazda, projenin kıyaslama altyapısını güçlendirmek ve derin pekiştirme
      - SB3's `predict()` çıktısını integer'a dönüştürme: `action = int(action)`
    - **📊 Sonuç:** PPO_v2 başarıyla değerlendirme tamamlandı
 
-## 📊 Deneysel Sonuçlar (Son Run - 2026-03-31T08:28:46)
+## 📊 Deneysel Sonuçlar (Son Run - Klasik RL Entegreli)
 
 | Model | Başarı Oranı (%) | Ortalama Ödül | Durum |
 | :--- | ---: | ---: | :--- |
-| **PPO_v2** | **62.67%** | **3011.61** | ✅ **EN İYİ** |
-| **GeneticAlgorithm** | 50.00% | 2540.72 | ✅ ~İkinci en iyi |
-| **GreedyLatency** | 46.67% | 2345.87 | ✅ Heuristic baseline |
-| **CloudOnly** | 46.00% | 2337.30 | ✅ Fixed policy |
-| **Random** | 42.67% | 1482.53 | ✅ Kontrol grubu |
-| **EdgeOnly** | 38.00% | 1506.82 | ✅ Fixed policy |
-| **LocalOnly** | 16.67% | -1409.29 | ⚠️ Zayıf |
+| **A2C_v2** | **100.00%** | **69.23** | ✅ **Actor-Critic Etkisi (Çok Yüksek)** |
+| **PPO_v2** | 66.67% | 70.56 | ✅ Optimize Edilmiş (Sonraki fazlarda daha dengeye oturacaktır)|
+| **DQN_v2** | 66.67% | 68.41 | ✅ Q-Learning Başarısı |
+| **EdgeOnly** | 66.67% | 61.31 | ✅ Fixed policy |
+| **GeneticAlgorithm** | 66.67% | 53.05 | ✅ Meta-heuristic baseline |
+| **GreedyLatency** | 33.33% | 39.68 | ✅ Heuristic baseline |
+| **CloudOnly**| 0.00% | 20.40 | ⚠️ Zayıf (Kapasite limitlerine takılmış olabilir) |
+| **Random** | 0.00% | 38.11 | ⚠️ Düşük (Kapasite limitlerine takılmış olabilir) |
+| **LocalOnly** | 0.00% | -89.75 | ⚠️ Zayıf (Batarya tüketimi / Deadline kaybı) |
 
 ## 🎯 Faz 4 Tamamlama Kontrol Listesi
 

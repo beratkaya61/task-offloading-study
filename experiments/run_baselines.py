@@ -55,24 +55,21 @@ def run_all_baselines():
         "GeneticAlgorithm": GeneticAlgorithmPolicy(population_size=10, generations=5),
     }
     
-    # 3. PPO v2 modelini yükle
-    ppo_v2_path = "models/ppo_offloading_agent_v2.zip"
-    ppo_v1_path = "models/ppo_offloading_agent.zip"
-    
-    ppo_path = ppo_v2_path if os.path.exists(ppo_v2_path) else ppo_v1_path
-    ppo_label = "PPO_v2" if os.path.exists(ppo_v2_path) else "PPO_v1"
-    
-    if os.path.exists(ppo_path):
-        print(f"[INIT] PPO Modeli yuklendi: {ppo_path}")
-        try:
-            policies[ppo_label] = PPO.load(ppo_path, env=eval_env)
-            print(f"[INIT] {ppo_label} hazir, obs_space={eval_env.observation_space.shape}")
-        except Exception as e:
-            print(f"[WARN] PPO yuklenemedi: {e}")
-    
-    # 4. Klasik RL Baselines - Faz 5+ icin eklenecek
-    # policies["DQN"] = DQN("MlpPolicy", eval_env)
-    # policies["A2C"] = A2C("MlpPolicy", eval_env)
+    # 3. Klasik RL Modellerini Yükle (PPO, DQN, A2C)
+    rl_models = {
+        "PPO_v2": ("models/ppo_offloading_agent_v2.zip", PPO),
+        "DQN_v2": ("models/dqn_offloading_agent_v2.zip", DQN),
+        "A2C_v2": ("models/a2c_offloading_agent_v2.zip", A2C)
+    }
+
+    for label, (path, model_class) in rl_models.items():
+        if os.path.exists(path):
+            print(f"[INIT] {label} Modeli yuklendi: {path}")
+            try:
+                policies[label] = model_class.load(path, env=eval_env)
+                print(f"[INIT] {label} hazir, obs_space={eval_env.observation_space.shape}")
+            except Exception as e:
+                print(f"[WARN] {label} yuklenemedi: {e}")
 
 
     # 5. Her Birini Değerlendir
