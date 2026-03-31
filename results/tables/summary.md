@@ -1,4 +1,6 @@
-# Experiment Evaluation Summary
+# 📊 Experiment Evaluation Summary
+
+## Tüm Baseline Modellerinin Performans Karşılaştırması
 
 | run_id   | timestamp                  |   config_seed | config_model_type   | config_semantic_mode   |   config_total_tasks |   metric_success_rate |   metric_avg_reward |
 |:---------|:---------------------------|--------------:|:--------------------|:-----------------------|---------------------:|----------------------:|--------------------:|
@@ -33,3 +35,20 @@
 | ac584b84 | 2026-03-30T22:09:58.926263 |            42 | Random              | nan                    |                  150 |                0.4133 |             1477.28 |
 | 164404e1 | 2026-03-30T22:09:58.964245 |            42 | GreedyLatency       | nan                    |                  150 |                0.4933 |             2347.33 |
 | 20510053 | 2026-03-30T22:09:59.184121 |            42 | GeneticAlgorithm    | nan                    |                  150 |                0.58   |             2540.98 |
+| c25c145f | 2026-03-31T08:27:36.769080 |            42 | LocalOnly           | nan                    |                  150 |                0.1933 |            -1058.95 |
+| 419f253b | 2026-03-31T08:27:36.851769 |            42 | EdgeOnly            | nan                    |                  150 |                0.48   |             2026.28 |
+| 661ae543 | 2026-03-31T08:27:36.928962 |            42 | CloudOnly           | nan                    |                  150 |                0.4333 |             2305.53 |
+| 61e82e7b | 2026-03-31T08:27:37.005145 |            42 | Random              | nan                    |                  150 |                0.4733 |             1684.89 |
+| daf3f751 | 2026-03-31T08:27:37.082721 |            42 | GreedyLatency       | nan                    |                  150 |                0.4867 |             2450.07 |
+| 31af9b52 | 2026-03-31T08:27:37.340085 |            42 | GeneticAlgorithm    | nan                    |                  150 |                0.5333 |             2527.5  |
+| 4245cdf9 | 2026-03-31T08:28:46.238493 |            42 | LocalOnly           | nan                    |                  150 |                0.1667 |            -1409.29 |
+| 8519abdb | 2026-03-31T08:28:46.308493 |            42 | EdgeOnly            | nan                    |                  150 |                0.38   |             1506.82 |
+| 391d00ac | 2026-03-31T08:28:46.354825 |            42 | CloudOnly           | nan                    |                  150 |                0.46   |             2337.3  |
+| a68f5128 | 2026-03-31T08:28:46.399741 |            42 | Random              | nan                    |                  150 |                0.4267 |             1482.53 |
+| ae34784b | 2026-03-31T08:28:46.548704 |            42 | GreedyLatency       | nan                    |                  150 |                0.4667 |             2345.87 |
+| 49ce2220 | 2026-03-31T08:28:46.851842 |            42 | GeneticAlgorithm    | nan                    |                  150 |                0.5    |             2540.72 |
+| cd28921a | 2026-03-31T08:28:46.960455 |            42 | PPO_v2              | nan                    |                  150 |                0.6267 |             3011.61 |
+
+---
+*Güncellenme Tarihi: 2026-03-31T08:28:46.997701*
+*Faz 4: Baseline Ailesinin Genişletilmesi*

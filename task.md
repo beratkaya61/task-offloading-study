@@ -30,7 +30,7 @@ Based on the [TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md](file:///c:/Users/BERA
 - [x] 4.5 Faz 4 testleri ve raporlanması.
 
 ## Faz 5 — Sistematik Ablation Study
-- [ ] 5.1 Ablation configlerinin `w/o Semantics`, `w/o Reward Shaping` gibi hazırlanması.
+- [ ] 5.1 Ablation configlerinin `w/o Semantics`, `w/o Reward Shaping` gibi hazırlanması. (📋 `configs/ablation.yaml` oluşturuldu)
 - [ ] 5.2 Toplu ablation deney loglarının alınması.
 - [ ] 5.3 Faz 5 testleri ve Git Commiti.
 
