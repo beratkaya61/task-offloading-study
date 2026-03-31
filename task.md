@@ -32,13 +32,17 @@ Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 ## Faz 5 - Sistematik Ablation Study
 - [x] 5.1 Ablation config (`configs/ablation.yaml`)
 - [x] 5.2 Ablation logs (90 run, Phase_5_Report.md)
-- [x] 5.3 Phase 5 test/report
+- [x] 5.3 Anomali Giderimi ve Kalibrasyon
+- [x] 5.4 Scientific Seal: Visuals (plots), Variance (StdDev) & State Pruning (noise reduction)
+- [x] 5.5 Phase 5 final report update (Sealed with real metrics)
 
 ## Faz 6 - Gercek Veri / Trace-Driven Deney Paketi
 - [x] 6.1 `trace_loader.py` exists in `src/core/trace_loader.py`
 - [x] 6.2 Trace to task mapping
-- [ ] 6.3 Domain shift (synthetic vs trace)
-- [x] 6.4 Phase 6 test/report
+- [ ] 6.3 Success Bonus (+100 sparse reward) Integration to reduce Semantic Dependency
+- [ ] 6.4 Adaptive/Dynamic Switching Overhead for Partial Offloading
+- [ ] 6.5 Domain shift analysis (Synthetic vs Trace results)
+- [ ] 6.6 Phase 6 final test/report
 
 ## Faz 7 - Two-Stage Training (AgentVNE Concept)
 - [ ] 7.1 Oracle / heuristic labels

@@ -51,10 +51,8 @@ def evaluate_policy(
             if is_sb3:
                 obs_batch = obs[np.newaxis, :]  # (11,) -> (1, 11)
                 action, _ = model.predict(obs_batch, deterministic=True)
-                # SB3 action'ı numpy array olarak döner, int'e çevir
                 action = int(action)
             else:
-                # Özel baseline'lar düz vektör ile çalışırlar
                 action, _ = model.predict(obs, deterministic=True)
             
             obs, reward, done, truncated, info = env.step(action)
@@ -62,23 +60,38 @@ def evaluate_policy(
             episode_reward += reward
             step_count += 1
 
-            # Başarı takibi: reward > 50 ise başarılı sayıl
-            if reward > 50:
+            # Track latency and energy from info dict
+            ep_latencies.append(info.get('delay', 0))
+            ep_energies.append(info.get('energy', 0))
+
+            # Success tracking
+            if info.get('task_success', False):
                 ep_successes += 1
+
+        # Calculate episode-level aggregated metrics
+        p95_lat = np.percentile(ep_latencies, 95) if ep_latencies else 0
+        avg_ep_energy = np.mean(ep_energies) if ep_energies else 0
+        qoe = 100.0 * (ep_successes / max(1, step_count)) - (p95_lat * 5.0) # Simple QoE heuristic
 
         results.append(
             {
                 "reward": episode_reward,
                 "steps": step_count,
                 "success_rate": ep_successes / max(1, step_count),
+                "p95_latency": p95_lat,
+                "avg_energy": avg_ep_energy,
+                "qoe": qoe
             }
         )
 
-    # Ortalamaları hesapla
+    # Calculate global averages across all episodes
     avg_reward = np.mean([r["reward"] for r in results])
     avg_success = np.mean([r["success_rate"] for r in results])
+    avg_p95_lat = np.mean([r["p95_latency"] for r in results])
+    avg_energy = np.mean([r["avg_energy"] for r in results])
+    avg_qoe = np.mean([r["qoe"] for r in results])
 
-    # Log kaydı
+    # Log entry preparation
     os.makedirs("results/raw", exist_ok=True)
     csv_path = "results/raw/master_experiments.csv"
 
@@ -88,9 +101,12 @@ def evaluate_policy(
         "config_seed": 42,
         "config_model_type": run_name,
         "config_semantic_mode": semantic_mode,
-        "config_total_tasks": num_episodes * 50,  # max_steps=50 varsayıldı
+        "config_total_tasks": num_episodes * 50,
         "metric_success_rate": round(avg_success, 4),
         "metric_avg_reward": round(avg_reward, 2),
+        "metric_p95_latency": round(avg_p95_lat, 4),
+        "metric_avg_energy": round(avg_energy, 4),
+        "metric_qoe": round(avg_qoe, 2)
     }
 
     df = pd.DataFrame([log_entry])
@@ -99,7 +115,8 @@ def evaluate_policy(
     else:
         df.to_csv(csv_path, mode="a", header=False, index=False)
 
-    print(f"✅ {run_name} değerlendirildi. Ortalama Başarı: {avg_success:.2%}")
+    print(f"✅ {run_name} değerlendirildi. Ortalama Başarı: {avg_success:.2%}, P95 Latency: {avg_p95_lat:.3f}s")
+
 
 
 def summarize_logs(results_dir="results/raw", output_table="results/tables/summary.md"):
