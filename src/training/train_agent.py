@@ -8,10 +8,10 @@ import torch
 import pandas as pd
 from datetime import datetime
 
-from env.rl_env import OffloadingEnv
-from env.simulation_env import WirelessChannel, EdgeServer, CloudServer, IoTDevice
-from core.config import load_config
-from utils.reproducibility import set_seed
+from src.env.rl_env import OffloadingEnv
+from src.env.simulation_env import WirelessChannel, EdgeServer, CloudServer, IoTDevice
+from src.core.config import load_config
+from src.utils.reproducibility import set_seed
 
 def train():
     print("[TRAIN] Initializing Training Environment...")

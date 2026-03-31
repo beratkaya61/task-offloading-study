@@ -157,3 +157,8 @@ cython_debug/
 # Project specific generated data
 sample_google_trace.csv
 sample_didi_mobility.csv
+
+# Phase reports / generated logs
+phase_reports/semantic_logs/
+logs/
+models/

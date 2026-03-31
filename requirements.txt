@@ -21,7 +21,7 @@ scipy>=1.10.0
 # Gymnasium 0.29.1 + SB3 2.3.2 is the recommended stable pair for Numpy 2.x
 gymnasium==0.29.1
 stable-baselines3[extra]==2.3.2
-shimmy[gymany]>=1.3.0
+shimmy[gymnasium]>=1.3.0
 simpy==4.1.1
 torch==2.2.2
 
