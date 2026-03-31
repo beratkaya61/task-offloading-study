@@ -1,8 +1,8 @@
-# Ablation Study Configuration for Phase 5
-# Systematic analysis of semantic components' contribution to task offloading
+# Ablation Study Configuration (Faz 5) - Ablation Çalışması Yapılandırması
+# Semantic components' contribution - Semantic bileşenlerin kontribüsyon analizi
 
 ablation_studies:
-  # 1. Full Model (Baseline - all components enabled)
+  # Full Model (Baseline - tüm bileşenler etkinleştirildi)
   full_model:
     name: "Full Model (with all semantic features)"
     enabled_features:
@@ -17,7 +17,7 @@ ablation_studies:
     description: "Complete system with all LLM semantic prior, confidence, and reward shaping"
     expected_performance: "~62% success (baseline from Phase 4)"
 
-  # 2. Without Semantics
+  # Without Semantics - Semantic analiz olmadan
   w_o_semantics:
     name: "Without LLM Semantic Analysis"
     enabled_features:
@@ -32,7 +32,7 @@ ablation_studies:
     description: "PPO_v2 without LLM semantic input, prior, or confidence"
     expected_drop: "~5-15% (LLM contribution)"
 
-  # 3. Without Reward Shaping
+  # Without Reward Shaping - Reward şekillendirmesi olmadan
   w_o_reward_shaping:
     name: "Without Semantic Reward Shaping"
     enabled_features:
@@ -47,7 +47,7 @@ ablation_studies:
     description: "No LLM-based reward bonus/penalty feedback"
     expected_drop: "~3-8% (reward shaping contribution)"
 
-  # 4. Without Semantic Prior
+  # Without Semantic Prior - Semantic prior olmadan
   w_o_semantic_prior:
     name: "Without Semantic Prior (Policy Bias)"
     enabled_features:
@@ -62,7 +62,7 @@ ablation_studies:
     description: "No LLM action probability prior biasing"
     expected_drop: "~2-5% (prior contribution)"
 
-  # 5. Without Confidence
+  # Without Confidence Weighting - Güven ağırlıklandırması olmadan
   w_o_confidence:
     name: "Without LLM Confidence Weighting"
     enabled_features:
@@ -77,7 +77,7 @@ ablation_studies:
     description: "Uniform confidence weight (all 1.0) regardless of semantic confidence"
     expected_drop: "~1-3% (confidence calibration)"
 
-  # 6. Without Partial Offloading
+  # Without Partial Offloading - Kısmi offloading olmadan
   w_o_partial_offloading:
     name: "Without Partial Offloading (Local/Edge/Cloud only)"
     enabled_features:
@@ -85,14 +85,14 @@ ablation_studies:
       reward_shaping: true
       semantic_prior: true
       confidence_weighting: true
-      partial_offloading: false  # Only 0 (Local), 4 (Edge), 5 (Cloud)
+      partial_offloading: false # Only 0 (Local), 4 (Edge), 5 (Cloud)
       battery_awareness: true
       queue_awareness: true
       mobility_features: true
     description: "Discrete targets only (Local, Edge, Cloud) - no split offloading"
     expected_drop: "~10-20% (partial offloading utility)"
 
-  # 7. Without Battery Awareness
+  # Without Battery Awareness - Pil farkındalığı olmadan
   w_o_battery_awareness:
     name: "Without Battery Awareness"
     enabled_features:
@@ -107,7 +107,7 @@ ablation_studies:
     description: "State doesn't include battery level; reward ignores battery drain"
     expected_drop: "~5-10% (battery impact on mobile devices)"
 
-  # 8. Without Queue Awareness
+  # Without Queue Awareness - Kuyruk farkındalığı olmadan
   w_o_queue_awareness:
     name: "Without Server Queue Awareness"
     enabled_features:
@@ -122,7 +122,7 @@ ablation_studies:
     description: "State doesn't reflect edge/cloud server queue lengths"
     expected_drop: "~3-8% (queue congestion avoidance)"
 
-  # 9. Without Mobility Features
+  # Without Mobility Features - Mobilite özellikleri olmadan
   w_o_mobility_features:
     name: "Without Mobility & Distance Features"
     enabled_features:
@@ -139,10 +139,10 @@ ablation_studies:
 
 # Experimental parameters
 experiment:
-  num_episodes_per_ablation: 10  # More runs for statistical significance
+  num_episodes_per_ablation: 10 # More runs for statistical significance
   seed: 42
   deterministic: true
-  confidence_interval: 0.95  # 95% CI for results
+  confidence_interval: 0.95 # 95% CI for results
 
 # Output configuration
 output:
@@ -153,15 +153,15 @@ output:
 
 # Metrics to collect
 metrics:
-  - metric_success_rate           # % of successful task completions
-  - metric_avg_reward             # Mean cumulative reward
-  - metric_avg_latency            # Average task latency (ms)
-  - metric_p95_latency            # 95th percentile latency (ms)
-  - metric_deadline_miss_ratio    # % of missed deadlines
-  - metric_avg_energy             # Average energy consumption (J)
-  - metric_fairness_score         # Fairness across devices
-  - metric_jitter                 # Latency variation (std dev)
-  - metric_qoe                    # Quality of Experience score
+  - metric_success_rate # % of successful task completions
+  - metric_avg_reward # Mean cumulative reward
+  - metric_avg_latency # Average task latency (ms)
+  - metric_p95_latency # 95th percentile latency (ms)
+  - metric_deadline_miss_ratio # % of missed deadlines
+  - metric_avg_energy # Average energy consumption (J)
+  - metric_fairness_score # Fairness across devices
+  - metric_jitter # Latency variation (std dev)
+  - metric_qoe # Quality of Experience score
 
 # Analysis output format
 analysis_format:
@@ -174,7 +174,7 @@ analysis_format:
     - Deadline_Miss_%
     - Fairness_Score
     - Delta_vs_Full_%
-  
+
   chart_types:
     - bar_chart_success_rate
     - bar_chart_reward

@@ -59,11 +59,44 @@
 
 ## 🔍 Kod Kalitesi Standartları
 
+### Terminoloji & Yorum Kuralı 📚
+**KRITIK: Yorumlar Hybrid Türkçe-İngilizce olmalı**
+
+Format: `# Terminoloji (English) - Açıklama (Türkçe)`
+
+✅ **DOĞRU:**
+```python
+# Jain Fairness Index - cihazlar arasında load dengesini ölçer
+# Semantic prior - LLM tarafından hesaplanan offloading olasılıkları
+# Reward shaping - hedefe yönelik ödül fonksiyonu
+# Deadline miss ratio - zamanında tamamlanamayan görevlerin yüzdesi
+# Partial offloading - task'ı local/edge/cloud arasında bölme
+# Battery awareness - pil seviyesi farkındalığı
+```
+
+❌ **YANLIŞ:**
+```python
+# Adil paylaşım indeksi
+# Bayırlı öncül bilgi
+# Ödül şekillendirmesi (terminoloji İngilizce olmalı)
+```
+
+**Neden?**
+- Terminoloji açısından kesinlik (makalelerde/literatürde ingilizce kullanılır)
+- Türkçe açıklama sayesinde lokal anlaşılabilirlik
+- AgentVNE alignment: Mevcut makalelerin bazıları ingilizce, bazıları türkçe
+
+**Kuralı uygulandığı dosyalar (Faz 5 Completed):**
+- ✅ src/core/metrics.py (9 metrik fonksiyonu)
+- ✅ experiments/run_ablation_study.py (orchestration script)
+- ✅ src/env/rl_env.py (ablation environment)
+- ✅ configs/ablation.yaml (9 ablation senaryosu)
+
 ### Python Kodunda:
 - Docstring: GoogleStyle veya NumPy style
 - Type hints: `def function(x: np.ndarray) -> float:`
 - Error handling: Try/except ile detaylı logging
-- Comments: Kompleks logic'i açıkla
+- Comments: Kompleks logic'i açıkla (terminoloji İngilizce, geri kalan Türkçe)
 
 ### Config Dosyalarında:
 - YAML formatı (JSON değil)
@@ -85,17 +118,20 @@
 ```
 task-offloading-study/
 ├── .agent/rules/
-│   └── yolharitasi.md         ← Bu dosya
+│   └── yolharitasi.md         ← Workflow kuralları
+├── v1_docs/                   ← Pre-AgentVNE analysis
+│   ├── implementation_plan.md
+│   ├── roadmap.md
+│   └── ...
+├── v2_docs/                   ← Post-AgentVNE analysis
+│   ├── baseline_literature_analysis.md      ✅ Yeni
+│   ├── phase_5_ablation_plan.md             ✅ Operasyon planı
+│   └── ...
 ├── configs/
 │   ├── train_ppo.yaml         ✅ Var
 │   ├── eval_default.yaml      ✅ Var
 │   ├── baselines.yaml         ✅ Var
 │   └── ablation.yaml          ✅ Var
-├── docs/
-│   ├── baseline_literature_analysis.md    ✅ Yeni
-│   ├── phase_5_ablation_plan.md           ✅ Var
-│   ├── implementation_plan.md             ✅ Var
-│   └── agentvne_comparison.md             ⚠️ YAPILACAK
 ├── phase_reports/
 │   ├── Phase_1_Report.md      ✅ Var
 │   ├── Phase_2_Report.md      ✅ Var
@@ -118,44 +154,14 @@ task-offloading-study/
     │   └── semantic_prior.py   ✅ Var
     ├── core/
     │   ├── evaluation.py       ✅ Hazırlandı (SB3 fix)
-    │   ├── metrics.py          ⚠️ YAPILACAK (Faz 5+)
+    │   ├── metrics.py          ✅ Faz 5 (advanced metrics)
     │   └── reward.py           ✅ Var
     └── env/
-        ├── rl_env.py           ✅ Var (11 boyutlu state)
+        ├── rl_env.py           ✅ Faz 5 (ablation flags)
         └── state_builder.py    ✅ Var
-
 ```
 
----
-
-## 🚀 Faz 5 Operasyon Planı
-
-### Hedef: Ablation Study (Hangi Bileşen Ne Kadar Katkı Sağlıyor?)
-
-**Yapılacaklar (Sıralı):**
-
-1. **Environment'ı Modifiye Et**
-   - Dosya: `src/env/rl_env.py`
-   - Eklenecek: Ablation flags (`disable_semantics`, `disable_reward_shaping`, etc.)
-   - Test: Her ablation mode'da test et
-
-2. **Ablation Runner Scripti Yaz**
-   - Dosya: `experiments/run_ablation_study.py` (YENİ)
-   - Koş: 9 ablation × 10 episode = 90 run
-   - Kaydet: `results/raw/ablation_experiments.csv`
-
-3. **Metrikleri Genişlet**
-   - Dosya: `src/core/metrics.py` (YENİ)
-   - Ekle: avg_latency, p95_latency, deadline_miss, energy, fairness, jitter, qoe
-
-4. **Karşılaştırma Raporu Yaz**
-   - Dosya: `results/tables/ablation_comparison.md` (YAPILACAK)
-   - Tablo: 9 ablation × 9 metrik
-   - Chart: matplotlib ile impact graph'ları
-
-5. **Faz 5 Raporu Yaz**
-   - Dosya: `phase_reports/Phase_5_Report.md` (YAPILACAK)
-   - İçerik: Detaylı bulgular, istatistiksel testler, sonuçlar
+**Referans:** Faz 5 operasyon planı → `v2_docs/phase_5_ablation_plan.md`
 
 ---
 
@@ -189,10 +195,10 @@ task-offloading-study/
 - [Phase Reports](../phase_reports/)
 
 ### Baseline Analizi:
-- [baseline_literature_analysis.md](../docs/baseline_literature_analysis.md) ← YENI
+- [baseline_literature_analysis.md](../v2_docs/baseline_literature_analysis.md)
 
 ### Faz Planları:
-- [phase_5_ablation_plan.md](../docs/phase_5_ablation_plan.md)
+- [phase_5_ablation_plan.md](../v2_docs/phase_5_ablation_plan.md)
 
 ### Konfigürasyon:
 - [configs/ablation.yaml](../../configs/ablation.yaml)
