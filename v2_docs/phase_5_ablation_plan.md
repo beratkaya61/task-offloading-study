@@ -124,7 +124,7 @@ def compute_metrics(episode_logs):
 
 ### Adım 6: Sonuçları Analiz Etme
 **Çıktılar:**
-- [ ] `results/tables/ablation_comparison.md` — Markdown tablo
+- [ ] `results/tables/offloading_experiment_report.md` — Kanonik markdown rapor
 - [ ] `results/figures/ablation_impact.png` — Bar/line chart'lar
 - [ ] `results/raw/ablation_experiments.csv` — Detaylı logs
 

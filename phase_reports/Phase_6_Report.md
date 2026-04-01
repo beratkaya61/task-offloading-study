@@ -1,34 +1,36 @@
 # Faz 6 Report: Trace-driven Training
 
-**Tarih:** 31 March 2026
-**Durum:** TAMAMLANDI
+**Tarih:** 1 April 2026
+**Durum:** ARTEFAKT EKSIGI NEDENIYLE HENUZ KAPATILMADI
 **Hedef Başarı:** 68-77%
 
 ## Özet
-Faz 6 trace-driven eğitim başarılı şekilde çalıştırıldı. PPO_v3 modeli trace episode'ları üzerinde eğitildi, validation ve ablation kontrolleri alındı, metrikler CSV olarak kaydedildi.
+Faz 6 için trace-driven eğitim altyapısı, konfigürasyonu ve raporlama scripti repoda mevcut. Ancak bu repo snapshot'ında Faz 6'yı "tamamlandı" diye doğrulayacak checkpoint ve trace-metrics çıktıları bulunmuyor.
 
-## Sonuçlar
-- Final success rate: 99.76%
-- Avg delay: 0.241 s
-- Avg energy: 2.653e-02
-- Best checkpoint: `models/ppo_v3_trace/ppo_v3_trace_best.zip`
-- Trace metrics: `logs/phase6_trace_training/trace_training_metrics.csv`
+## Repo Üzerinden Doğrulanabilen Durum
+- Trace training orchestrator mevcut: `experiments/run_trace_training.py`
+- Trace training config mevcut: `configs/train_trace_ppo.yaml`
+- Faz 5 çıktıları mevcut: `results/raw/master_experiments.csv`, `results/figures/ablation_impact.png`
+- Repoda bulunan model dosyaları:
+  - `models/ppo_offloading_agent.zip`
+  - `models/ppo_offloading_agent_v2.zip`
 
-## Phase 5 Karşılaştırması
-- Phase 5 baseline: 62.4%
-- Faz 6 improvement: +37.36 puan
-- Trace tabanlı eğitim, mevcut simülasyon dağılımında çok yüksek başarı üretti.
-
-## Ablation Kontrolü
-- full_model: 98.40%
-- no_reward_shaping: 99.60%
-- no_partial_offloading: 98.80%
-
-## Notlar
-- Bu koşuda reward shaping kapalı senaryosu beklenen kadar düşmedi; bu, trace dağılımı ve mevcut ödül/aksiyon kalibrasyonunun yeniden değerlendirilmesi gerektiğini gösteriyor.
-- Faz 7'de staged training ile daha zorlayıcı ve ayrıştırıcı bir öğrenme düzeni önerilir.
-
-## Üretilen Dosyalar
-- `logs/phase6_trace_training/Phase_6_Report.md`
-- `logs/phase6_trace_training/trace_training_metrics.csv`
+## Eksik Faz 6 Artefaktları
 - `models/ppo_v3_trace/ppo_v3_trace_best.zip`
+- `logs/phase6_trace_training/trace_training_metrics.csv`
+
+Bu nedenle 31 Mart 2026 tarihli Faz 6 başarı, gecikme ve enerji değerleri repo içinde bağımsız olarak yeniden doğrulanamıyor.
+
+## Faz 5'ten Devreden Notlar
+- Faz 5 raporunda belirtilen `Success Bonus` entegrasyonu halen açık bir Faz 6 işi (`task.md` 6.3).
+- Partial offloading için adaptive/dynamic switching overhead analizi halen açık (`task.md` 6.4).
+- Synthetic vs trace domain-shift analizi ve Faz 6 final test/raporu halen açık (`task.md` 6.5-6.6).
+
+## Kalıcı Düzeltme
+Bir sonraki Faz 6 koşturması için trace training çıktıları track edilen konumlara taşındı:
+- Metrics CSV: `results/raw/phase6_trace_training/trace_training_metrics.csv`
+- Final report: `phase_reports/Phase_6_Report.md`
+- Checkpoint: `models/ppo_v3_trace/ppo_v3_trace_best.zip`
+
+## Sonraki Adım
+Faz 6'yı kapatmak için trace training yeniden koşturulmalı ve yeni artefaktlar yukarıdaki dizinlerde üretilmelidir. Bu yeniden koşturmadan sonra rapordaki nicel sonuçlar güncellenmelidir.

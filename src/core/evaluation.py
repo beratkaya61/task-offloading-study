@@ -1,153 +1,179 @@
+import csv
 import os
-import pandas as pd
-import numpy as np
-import time
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+
+
+EXPERIMENT_LOG_COLUMNS = [
+    "run_id",
+    "timestamp",
+    "config_seed",
+    "config_model_type",
+    "config_semantic_mode",
+    "config_total_tasks",
+    "metric_success_rate",
+    "metric_avg_reward",
+    "metric_p95_latency",
+    "metric_avg_energy",
+    "metric_qoe",
+    "config_batch_id",
+    "config_eval_group",
+]
 
 
 def _is_sb3_model(model):
-    """
-    Stable Baselines3 modeli olup olmadığını kontrol et.
-    SB3 modellerinin 'policy' ve 'learn' attribute'ları vardır.
-    Özel baseline'lar basit sınıflardır.
-    """
     return hasattr(model, "policy") and hasattr(model, "learn")
 
 
-def evaluate_policy(
-    env, model, num_episodes=5, run_name="Baseline", semantic_mode="None"
-):
-    """
-    Belirli bir modeli (baseline veya RL) Gymnasium ortamında test eder.
-    Metrikleri toplar ve CSV'ye kaydeder.
+def normalize_experiment_csv(csv_path="results/raw/master_experiments.csv"):
+    if not os.path.exists(csv_path):
+        return
 
-    SB3 ve özel baseline modellerini her ikisini de destekler:
-    - SB3 modelleri: batch formatında (1, obs_dim) gözlem beklerler
-    - Özel baseline'lar: düz vektör (obs_dim,) ile çalışırlar
-    """
-    print(f"[EVAL] Değerlendirme Başlatıldı: {run_name} ({num_episodes} bölüm)")
+    rows = []
+    with open(csv_path, "r", encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle)
+        header = next(reader, None)
+        if not header:
+            return
+
+        for raw in reader:
+            if not raw:
+                continue
+            if len(raw) < len(EXPERIMENT_LOG_COLUMNS):
+                raw = raw + [""] * (len(EXPERIMENT_LOG_COLUMNS) - len(raw))
+            elif len(raw) > len(EXPERIMENT_LOG_COLUMNS):
+                raw = raw[: len(EXPERIMENT_LOG_COLUMNS)]
+            rows.append(raw)
+
+    with open(csv_path, "w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(EXPERIMENT_LOG_COLUMNS)
+        writer.writerows(rows)
+
+
+def evaluate_policy(
+    env,
+    model,
+    num_episodes=5,
+    run_name="Baseline",
+    semantic_mode="None",
+    config_seed=42,
+    extra_fields=None,
+):
+    print(f"[EVAL] Starting evaluation: {run_name} ({num_episodes} episodes)")
 
     is_sb3 = _is_sb3_model(model)
     if is_sb3:
-        print(f"[EVAL] ✓ SB3 Model (PPO/DQN/A2C) tespit edildi: {run_name}")
+        print(f"[EVAL] SB3 model detected: {run_name}")
     else:
-        print(f"[EVAL] ✓ Özel Baseline Model: {run_name}")
+        print(f"[EVAL] Custom baseline model detected: {run_name}")
 
     results = []
 
-    for episode in range(num_episodes):
-        obs, info = env.reset()
+    for _ in range(num_episodes):
+        obs, _ = env.reset()
         done = False
-        episode_reward = 0
+        episode_reward = 0.0
         step_count = 0
-
-        ep_latencies = []
-        ep_energies = []
-        ep_successes = 0
+        episode_latencies = []
+        episode_energies = []
+        episode_successes = 0
 
         while not done:
-            # SB3 modelleri batch formatında (1, obs_dim) gözlem beklerler
             if is_sb3:
-                obs_batch = obs[np.newaxis, :]  # (11,) -> (1, 11)
+                obs_batch = obs[np.newaxis, :]
                 action, _ = model.predict(obs_batch, deterministic=True)
-                action = int(action)
+                action = int(np.asarray(action).reshape(-1)[0])
             else:
                 action, _ = model.predict(obs, deterministic=True)
-            
+
             obs, reward, done, truncated, info = env.step(action)
-            
+            done = done or truncated
             episode_reward += reward
             step_count += 1
+            episode_latencies.append(info.get("delay", 0.0))
+            episode_energies.append(info.get("energy", 0.0))
+            if info.get("task_success", False):
+                episode_successes += 1
 
-            # Track latency and energy from info dict
-            ep_latencies.append(info.get('delay', 0))
-            ep_energies.append(info.get('energy', 0))
-
-            # Success tracking
-            if info.get('task_success', False):
-                ep_successes += 1
-
-        # Calculate episode-level aggregated metrics
-        p95_lat = np.percentile(ep_latencies, 95) if ep_latencies else 0
-        avg_ep_energy = np.mean(ep_energies) if ep_energies else 0
-        qoe = 100.0 * (ep_successes / max(1, step_count)) - (p95_lat * 5.0) # Simple QoE heuristic
+        p95_latency = np.percentile(episode_latencies, 95) if episode_latencies else 0.0
+        avg_energy = float(np.mean(episode_energies)) if episode_energies else 0.0
+        success_rate = episode_successes / max(1, step_count)
+        qoe = 100.0 * success_rate - (p95_latency * 5.0)
 
         results.append(
             {
-                "reward": episode_reward,
+                "reward": float(episode_reward),
                 "steps": step_count,
-                "success_rate": ep_successes / max(1, step_count),
-                "p95_latency": p95_lat,
-                "avg_energy": avg_ep_energy,
-                "qoe": qoe
+                "success_rate": success_rate,
+                "p95_latency": float(p95_latency),
+                "avg_energy": avg_energy,
+                "qoe": float(qoe),
             }
         )
 
-    # Calculate global averages across all episodes
-    avg_reward = np.mean([r["reward"] for r in results])
-    avg_success = np.mean([r["success_rate"] for r in results])
-    avg_p95_lat = np.mean([r["p95_latency"] for r in results])
-    avg_energy = np.mean([r["avg_energy"] for r in results])
-    avg_qoe = np.mean([r["qoe"] for r in results])
+    avg_reward = float(np.mean([row["reward"] for row in results]))
+    avg_success = float(np.mean([row["success_rate"] for row in results]))
+    avg_p95_latency = float(np.mean([row["p95_latency"] for row in results]))
+    avg_energy = float(np.mean([row["avg_energy"] for row in results]))
+    avg_qoe = float(np.mean([row["qoe"] for row in results]))
+    total_tasks = int(sum(row["steps"] for row in results))
 
-    # Log entry preparation
     os.makedirs("results/raw", exist_ok=True)
     csv_path = "results/raw/master_experiments.csv"
+    normalize_experiment_csv(csv_path)
 
     log_entry = {
         "run_id": str(uuid.uuid4())[:8],
         "timestamp": datetime.now().isoformat(),
-        "config_seed": 42,
+        "config_seed": config_seed,
         "config_model_type": run_name,
         "config_semantic_mode": semantic_mode,
-        "config_total_tasks": num_episodes * 50,
+        "config_total_tasks": total_tasks,
         "metric_success_rate": round(avg_success, 4),
         "metric_avg_reward": round(avg_reward, 2),
-        "metric_p95_latency": round(avg_p95_lat, 4),
+        "metric_p95_latency": round(avg_p95_latency, 4),
         "metric_avg_energy": round(avg_energy, 4),
-        "metric_qoe": round(avg_qoe, 2)
+        "metric_qoe": round(avg_qoe, 2),
+        "config_batch_id": "",
+        "config_eval_group": "",
     }
+    if extra_fields:
+        log_entry.update(extra_fields)
 
-    df = pd.DataFrame([log_entry])
+    df = pd.DataFrame([log_entry], columns=EXPERIMENT_LOG_COLUMNS)
     if not os.path.exists(csv_path):
         df.to_csv(csv_path, index=False)
     else:
         df.to_csv(csv_path, mode="a", header=False, index=False)
 
-    print(f"✅ {run_name} değerlendirildi. Ortalama Başarı: {avg_success:.2%}, P95 Latency: {avg_p95_lat:.3f}s")
+    print(
+        f"[EVAL] {run_name} evaluated. Average success: {avg_success:.2%}, "
+        f"P95 latency: {avg_p95_latency:.3f}s"
+    )
+    return log_entry
 
 
-
-def summarize_logs(results_dir="results/raw", output_table="results/tables/summary.md"):
-    """
-    Master CSV'den özet tablo üretir ve Markdown formatında kaydeder.
-
-    Tüm baselines'ların (GA, PPO, Greedy vb.) performans kıyaslaması
-    bu dosyada görüntülenir.
-    """
+def summarize_logs(results_dir="results/raw", output_table="results/tables/offloading_experiment_report.md"):
     csv_path = os.path.join(results_dir, "master_experiments.csv")
     if not os.path.exists(csv_path):
-        print(f"[WARN] CSV dosyası bulunamadı: {csv_path}")
+        print(f"[WARN] CSV not found: {csv_path}")
         return
 
     try:
-        df = pd.read_csv(csv_path)
-        os.makedirs(os.path.dirname(output_table), exist_ok=True)
-        markdown_str = df.to_markdown(index=False)
+        normalize_experiment_csv(csv_path)
+        try:
+            from src.core.reporting import write_experiment_report
+        except ModuleNotFoundError:
+            from core.reporting import write_experiment_report
 
-        with open(output_table, "w", encoding="utf-8") as f:
-            f.write("# 📊 Experiment Evaluation Summary\n\n")
-            f.write("## Tüm Baseline Modellerinin Performans Karşılaştırması\n\n")
-            f.write(markdown_str)
-            f.write("\n\n---\n")
-            f.write(f"*Güncellenme Tarihi: {datetime.now().isoformat()}*\n")
-            f.write("*Faz 4: Baseline Ailesinin Genişletilmesi*\n")
-
-        print(f"✅ Özet tablo oluşturuldu: {output_table}")
-
-    except Exception as e:
-        print(f"[ERROR] Özet tablo oluşturması başarısız: {e}")
+        write_experiment_report(csv_path=csv_path, output_path=output_table)
+        print(f"[INFO] Canonical experiment report written: {output_table}")
+    except Exception as exc:
+        print(f"[ERROR] Failed to summarize logs: {exc}")
 
 
 if __name__ == "__main__":

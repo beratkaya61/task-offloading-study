@@ -48,7 +48,7 @@ Bu fazda, projenin kıyaslama altyapısını güçlendirmek ve derin pekiştirme
   - GreedyLatency: Çalışıyor ✓
   - GeneticAlgorithm: Çalışıyor ✓
   - **PPO_v2: Çalışıyor** ✓ (Bu oturumda düzeltildi!)
-- [x] Özet tablosu `results/tables/summary.md` oluşturuldu
+- [x] Özet rapor `results/tables/offloading_experiment_report.md` oluşturuldu
 
 ## 🚧 Karşılaşılan Sorunlar ve Çözümleri (Teknik Detaylar)
 

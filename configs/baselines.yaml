@@ -1,0 +1,4 @@
+evaluation:
+  num_episodes: 10
+  seeds: [42, 43, 44]
+  max_steps: 50

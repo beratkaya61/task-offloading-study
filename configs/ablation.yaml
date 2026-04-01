@@ -141,13 +141,15 @@ ablation_studies:
 experiment:
   num_episodes_per_ablation: 25 # Increased for statistical significance and calibration verification
   seed: 42
+  seeds: [42, 43, 44]
+  max_steps: 50
   deterministic: true
   confidence_interval: 0.95 # 95% CI for results
 
 # Output configuration
 output:
   results_dir: "results/ablation"
-  table_path: "results/tables/ablation_comparison.md"
+  table_path: "results/tables/offloading_experiment_report.md"
   plot_path: "results/figures/ablation_impact.png"
   csv_path: "results/raw/ablation_experiments.csv"
 

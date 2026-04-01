@@ -143,13 +143,18 @@ class TraceTrainingOrchestrator:
         # Setup directories
         self.log_dir = Path(self.config_dict['logging']['log_dir'])
         self.checkpoint_dir = Path(self.config_dict['logging']['checkpoint_dir'])
+        self.report_path = Path(
+            self.config_dict['logging'].get('report_path', 'phase_reports/Phase_6_Report.md')
+        )
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.report_path.parent.mkdir(parents=True, exist_ok=True)
         
         logger.info(f"✅ Initialized TraceTrainingOrchestrator")
         logger.info(f"   Config: {config_path}")
         logger.info(f"   Log dir: {self.log_dir}")
         logger.info(f"   Checkpoint dir: {self.checkpoint_dir}")
+        logger.info(f"   Report path: {self.report_path}")
     
     def prepare_traces(self) -> Tuple[List[TraceEpisode], 
                                       List[TraceEpisode], 
@@ -422,7 +427,9 @@ class TraceTrainingOrchestrator:
         """
         logger.info("🔄 Step 5: Generating Phase 6 report...")
         
-        report_path = self.log_dir / 'Phase_6_Report.md'
+        report_path = self.report_path
+        metrics_path = self.log_dir / 'trace_training_metrics.csv'
+        checkpoint_path = self.checkpoint_dir / 'ppo_v3_trace_best.zip'
         
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write("# 📊 Faz 6 Report: Trace-driven Training\n\n")
@@ -472,6 +479,8 @@ class TraceTrainingOrchestrator:
             f.write("- **Environment:** OffloadingEnv_v2 (trace-based)\n")
             f.write("- **Data:** Synthetic Didi Gaia mobility traces\n")
             f.write("- **Agent:** PPO_v3 (from Phase 5, fine-tuned)\n")
+            f.write(f"- **Metrics CSV:** `{metrics_path.as_posix()}`\n")
+            f.write(f"- **Checkpoint:** `{checkpoint_path.as_posix()}`\n")
             f.write("- **Components Enabled:**\n")
             f.write("  - ✅ Reward Shaping (CRITICAL from Phase 5)\n")
             f.write("  - ✅ Partial Offloading (HIGH impact)\n")
