@@ -7,7 +7,7 @@
 
 **1. Klasör ve Dosya Yapısı Standardize Edildi:**
 - Projenin `src/` dizini altında modüler yapı için gerekli olan yapı taşları oluşturuldu: `baselines.py`, `evaluation.py`, `metrics.py`, `config.py`, `trace_loader.py`, `semantic_prior.py`, `pretrain_policy.py`.
-- Gelecek deneylerin yönetimi için `configs/` (`train_ppo.yaml`, `eval_default.yaml`, `baselines.yaml`, `ablation.yaml`) dosyaları ve `results/` (`raw`, `processed`, `figures`, `tables`) dizinleri eklendi.
+- Gelecek deneylerin yönetimi için `configs/` (`synthetic_rl_training.yaml`, `eval_default.yaml`, `baselines.yaml`, `ablation.yaml`) dosyaları ve `results/` (`raw`, `processed`, `figures`, `tables`) dizinleri eklendi.
 
 **2. Determinism (Tekrarlanabilirlik) Altyapısı Kuruldu:**
 - Ortak klasörler arasına rastgeleliği (randomness) disiplin altına alan `src/utils/reproducibility.py` modülü yazıldı.

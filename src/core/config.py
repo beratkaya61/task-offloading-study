@@ -1,7 +1,9 @@
-import yaml
 import os
 
-def load_config(config_path="configs/train_ppo.yaml"):
+import yaml
+
+
+def load_config(config_path="configs/synthetic_rl_training.yaml"):
     """
     Loads experiment configuration from a YAML file.
     """

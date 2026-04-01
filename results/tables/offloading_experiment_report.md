@@ -14,6 +14,9 @@ Bu dosya `results/tables` altindaki tek kanonik okuma noktasi olarak uretilir. H
 
 | Batch ID | Eval Group | Last Update | Runs | Models | Total Tasks |
 |---|---|---:|---:|---:|---:|
+| ablation_retrain_20260401_180038 | phase5_ablation_retraining | 2026-04-01T18:17:25.113075 | 27 | 9 | 13500 |
+| ablation_20260401_173620 | phase5_ablation_evaluation | 2026-04-01T17:36:41.924933 | 27 | 9 | 33750 |
+| retrain_20260401_171158 | phase5_baseline_retraining | 2026-04-01T17:18:10.802650 | 9 | 3 | 4500 |
 | ablation_20260401_152509 | ablation_multiseed | 2026-04-01T15:25:58.268252 | 27 | 9 | 33750 |
 | ablation_20260401_152041 | ablation_multiseed | 2026-04-01T15:21:30.571893 | 27 | 9 | 33750 |
 | baseline_20260401_152006 | baseline_multiseed | 2026-04-01T15:20:24.038580 | 27 | 9 | 13500 |
@@ -27,8 +30,11 @@ Bu dosya `results/tables` altindaki tek kanonik okuma noktasi olarak uretilir. H
 - `QoE`: success ve latency'nin birlesik, daha yorumlayici bir ozetidir.
 - `Delta vs Full`: ilgili ablation varyantinin Full Model'e gore success farkidir.
 
-Bu rapordaki baseline ve ablation bolumleri su anda agirlikli olarak multi-seed evaluation sonucudur.
-Yani ayni egitilmis modeller farkli seed'lerde test edilmistir; bu, farkli seed'lerle yeniden egitilmis olmakla ayni sey degildir.
+Bu raporda iki farkli deney tipi birlikte bulunur:
+- `evaluation`: mevcut checkpoint ailesi farkli seed'lerde test edilir.
+- `retraining`: model her seed icin sifirdan yeniden egitilir.
+
+Faz 5 yorumu yaparken retraining bolumleri, evaluation-only bolumlerinden daha guclu kanit olarak okunmalidir.
 
 ## Faz Siniri
 
@@ -43,12 +49,94 @@ Faz 5 kapsaminda kalan isler:
 Faz 6 ancak trace-driven egitim ve trace-driven evaluation ana akisa gectigimizde baslar.
 Yani gercek gecis noktasi, sentetik episode yerine trace tabanli is yukleriyle modeli yeniden egitmek ve bu sonuclari raporlamaktir.
 
+## Neden Multi-Seed Retraining
+
+`Multi-seed evaluation` ile `multi-seed retraining` ayni sey degildir.
+
+- `Multi-seed evaluation`: ayni egitilmis model farkli evaluation seed'lerinde test edilir.
+- `Multi-seed retraining`: model her seed icin sifirdan yeniden egitilir ve sonra karsilastirilir.
+
+RL ajanlari random initialization, experience ordering, environment stochasticity ve exploration farklari nedeniyle seed'e hassastir.
+Bu yuzden tek bir seed'de iyi gorunen model baska bir seed'de ayni sekilde davranmayabilir.
+
+Bu islemi yapmamizin temel nedenleri sunlardir:
+- tek bir sansli training kosusuna asiri guvenmemek
+- algoritmalarin gercekten daha iyi olup olmadigini varyansla birlikte okumak
+- Faz 5 bulgularini Faz 6'ya tasimadan once daha savunulabilir hale getirmek
+- sonraki trace-driven asamaya daha saglam bir sentetik temel ile gecmek
+
+Kisaca: multi-seed evaluation, mevcut modelin test-dayanikliligini; multi-seed retraining ise egitim surecinin kendisinin ne kadar kararlı oldugunu gosterir.
+
 ## Metodoloji Notlari
 
-- Mevcut multi-seed sonuclar evaluation-seed cesitliligi saglar, fakat training-seed cesitliligi saglamaz.
-- Bu nedenle sonuclar onceki tek-seed duruma gore daha guvenilir olsa da tam anlamiyla seed-robust kabul edilmemelidir.
+- Evaluation-only sonuclar evaluation-seed cesitliligi saglar, fakat training-seed cesitliligi saglamaz.
+- Retraining bolumleri ise training-seed cesitliligi ekler; Faz 5 kapanis yorumu icin asil dayanak bunlar olmalidir.
 - Bazi varyantlarin birbirine cok yakin cikmasi, ilgili bilesenin etkisiz oldugunu degil; mevcut state, reward veya env tasariminin bu farki yeterince ayristiramadigini da gosterebilir.
 - Ozellikle `w_o_reward_shaping` ve `w_o_queue_awareness` sonuclarini bu gozle okumak gerekir.
+- `configs/ablation.yaml` tek kanonik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.
+
+## Kanonik Deney Akisi
+
+Bu repo icinde Faz 5 icin sade akisin hangi dosyalardan gectigi burada ozetlenir.
+
+- Ortak egitim recetesi: `configs/synthetic_rl_training.yaml`
+- Baseline retraining orkestrasyonu: `configs/phase5_baseline_retraining.yaml`
+- Ablation config ve mod secimi: `configs/ablation.yaml`
+- Baseline retraining scripti: `experiments/run_baseline_retraining.py`
+- Ablation scripti: `experiments/run_ablation_study.py`
+- Kanonik rapor: `results/tables/offloading_experiment_report.md`
+
+Model ciktilari agent bazli klasorlerde tutulur:
+- PPO baseline retraining: `models/ppo/phase5_baseline_retraining/`
+- DQN baseline retraining: `models/dqn/phase5_baseline_retraining/`
+- A2C baseline retraining: `models/a2c/phase5_baseline_retraining/`
+- PPO ablation retraining varyantlari: `models/ppo/phase5_ablation_retraining/<varyant>/`
+
+## Faz 5 Baseline Retraining
+
+Bu bolum, ayni modellerin sadece farkli evaluation seed'lerde test edilmesini degil, farkli train seed'lerle sifirdan yeniden egitilmesini ozetler.
+Bu nedenle metodolojik olarak baseline multi-seed evaluation bolumunden daha gucludur.
+
+| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |
+|---|---:|---:|---:|---:|---:|
+| PPO_v2 | 85.27% +- 1.10 | 1727.59 +- 21.13 | 1.980 +- 0.032 | 0.0153 +- 0.0009 | 75.37 +- 1.00 |
+| A2C_v2 | 84.93% +- 1.21 | 1682.64 +- 17.74 | 1.993 +- 0.036 | 0.0153 +- 0.0025 | 74.97 +- 1.03 |
+| DQN_v2 | 84.93% +- 1.21 | 1682.64 +- 17.74 | 1.993 +- 0.036 | 0.0153 +- 0.0025 | 74.97 +- 1.03 |
+
+Bu bolum Faz 5 kapanisi icin kritik kabul edilmelidir; cunku seed'e bagli sans etkisini azaltir ve model karsilastirmasini daha savunulabilir hale getirir.
+
+## Faz 5 Ablation Retraining
+
+Bu bolum, ablation varyantlarinin sadece test edilmesini degil, her birinin ayri ayri sifirdan yeniden egitilmesini ozetler.
+Bu nedenle semantic bilesen katkisini okumak icin en guvenilir Faz 5 tablosu budur.
+
+| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |
+|---|---:|---:|---:|---:|---:|
+| full_model | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_battery_awareness | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_confidence | 85.73% +- 1.80 | 1662.20 +- 85.66 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_partial_offloading | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_queue_awareness | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_semantic_prior | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_reward_shaping | 85.73% +- 1.80 | -57.20 +- 0.77 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_semantics | 79.53% +- 11.38 | 1848.74 +- 226.17 | 2.517 +- 0.913 | 0.0587 +- 0.0694 | 66.95 +- 15.95 |
+| w_o_mobility_features | 74.20% +- 2.51 | 608.23 +- 7.07 | 2.624 +- 0.060 | 0.2534 +- 0.0042 | 61.08 +- 2.38 |
+
+Baseline (Full Model): 85.73%
+
+| Ablation | Mean Success % | Delta vs Full | Contribution |
+|---|---:|---:|---:|
+| full_model | 85.73% | +0.00% | 0.00% |
+| w_o_battery_awareness | 85.73% | +0.00% | -0.00% |
+| w_o_confidence | 85.73% | +0.00% | -0.00% |
+| w_o_partial_offloading | 85.73% | +0.00% | -0.00% |
+| w_o_queue_awareness | 85.73% | +0.00% | -0.00% |
+| w_o_semantic_prior | 85.73% | +0.00% | -0.00% |
+| w_o_reward_shaping | 85.73% | +0.00% | -0.00% |
+| w_o_semantics | 79.53% | -6.20% | 6.20% |
+| w_o_mobility_features | 74.20% | -11.53% | 11.53% |
+
+Bu tablo, inference-only ablation sonucundan daha onemlidir; cunku policy'nin hangi sinyallerle yeniden sekillendigini gosterir.
 
 ## Baseline Multi-Seed Sonuclari
 
@@ -74,15 +162,15 @@ Full Model: semantics, reward shaping, semantic prior, confidence weighting, par
 
 | Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |
 |---|---:|---:|---:|---:|---:|
-| w_o_battery_awareness | 84.00% +- 0.71 | 2078.81 +- 29.19 | 2.005 +- 0.011 | 0.0274 +- 0.0019 | 73.98 +- 0.76 |
-| w_o_semantic_prior | 83.01% +- 0.33 | 2060.81 +- 23.66 | 1.999 +- 0.011 | 0.0356 +- 0.0015 | 73.02 +- 0.38 |
-| w_o_semantics | 83.01% +- 0.33 | 2161.91 +- 18.86 | 1.999 +- 0.011 | 0.0356 +- 0.0015 | 73.02 +- 0.38 |
-| full_model | 82.99% +- 0.58 | 2133.16 +- 28.28 | 2.058 +- 0.005 | 0.0391 +- 0.0019 | 72.70 +- 0.61 |
-| w_o_reward_shaping | 82.99% +- 0.58 | -65.72 +- 0.15 | 2.058 +- 0.005 | 0.0391 +- 0.0019 | 72.70 +- 0.61 |
-| w_o_queue_awareness | 82.99% +- 0.58 | 2133.16 +- 28.28 | 2.058 +- 0.005 | 0.0391 +- 0.0019 | 72.70 +- 0.61 |
-| w_o_confidence | 82.88% +- 0.69 | 2151.03 +- 29.74 | 2.112 +- 0.015 | 0.0386 +- 0.0022 | 72.32 +- 0.67 |
-| w_o_partial_offloading | 79.97% +- 0.45 | 1612.56 +- 9.96 | 2.362 +- 0.006 | 0.0128 +- 0.0015 | 68.16 +- 0.47 |
-| w_o_mobility_features | 74.88% +- 2.09 | 894.36 +- 91.49 | 2.618 +- 0.031 | 0.2520 +- 0.0072 | 61.79 +- 2.11 |
+| full_model | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_battery_awareness | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_confidence | 85.73% +- 1.80 | 1662.20 +- 85.66 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_partial_offloading | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_queue_awareness | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_semantic_prior | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_reward_shaping | 85.73% +- 1.80 | -57.20 +- 0.77 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
+| w_o_semantics | 79.53% +- 11.38 | 1848.74 +- 226.17 | 2.517 +- 0.913 | 0.0587 +- 0.0694 | 66.95 +- 15.95 |
+| w_o_mobility_features | 74.20% +- 2.51 | 608.23 +- 7.07 | 2.624 +- 0.060 | 0.2534 +- 0.0042 | 61.08 +- 2.38 |
 
 ### Delta Analizi
 
@@ -90,19 +178,19 @@ Delta analizi, her ablation senaryosunun Full Model'e gore ne kadar iyilestigini
 Pozitif delta, ilgili varyantin Full Model'den daha yuksek success verdigini; negatif delta ise daha kotu oldugunu anlatir.
 Contribution kolonu, cikarilan bilesenin yaklasik etkisini `-delta` olarak okumayi kolaylastirir.
 
-Baseline (Full Model): 82.99%
+Baseline (Full Model): 85.73%
 
 | Ablation | Mean Success % | Delta vs Full | Contribution |
 |---|---:|---:|---:|
-| w_o_battery_awareness | 84.00% | +1.01% | -1.01% |
-| w_o_semantic_prior | 83.01% | +0.03% | -0.03% |
-| w_o_semantics | 83.01% | +0.03% | -0.03% |
-| full_model | 82.99% | +0.00% | 0.00% |
-| w_o_reward_shaping | 82.99% | +0.00% | -0.00% |
-| w_o_queue_awareness | 82.99% | +0.00% | -0.00% |
-| w_o_confidence | 82.88% | -0.11% | 0.11% |
-| w_o_partial_offloading | 79.97% | -3.01% | 3.01% |
-| w_o_mobility_features | 74.88% | -8.11% | 8.11% |
+| full_model | 85.73% | +0.00% | 0.00% |
+| w_o_battery_awareness | 85.73% | +0.00% | -0.00% |
+| w_o_confidence | 85.73% | +0.00% | -0.00% |
+| w_o_partial_offloading | 85.73% | +0.00% | -0.00% |
+| w_o_queue_awareness | 85.73% | +0.00% | -0.00% |
+| w_o_semantic_prior | 85.73% | +0.00% | -0.00% |
+| w_o_reward_shaping | 85.73% | +0.00% | -0.00% |
+| w_o_semantics | 79.53% | -6.20% | 6.20% |
+| w_o_mobility_features | 74.20% | -11.53% | 11.53% |
 
 ### Figure
 
@@ -115,15 +203,15 @@ Amac, ablation sonuclarini success, enerji, tail-latency ve QoE eksenlerinde hiz
 
 | Ablation Model | Success Rate (mean +- std) | Avg Energy (J) | P95 Latency (s) | QoE Score | Delta vs Baseline |
 |---|---:|---:|---:|---:|---:|
-| w_o_battery_awareness | 84.00% +- 0.71 | 0.027 | 2.005 | 73.98 | +1.01% |
-| w_o_semantic_prior | 83.01% +- 0.33 | 0.036 | 1.999 | 73.02 | +0.03% |
-| w_o_semantics | 83.01% +- 0.33 | 0.036 | 1.999 | 73.02 | +0.03% |
-| full_model | 82.99% +- 0.58 | 0.039 | 2.058 | 72.70 | 0.00% (Baseline) |
-| w_o_reward_shaping | 82.99% +- 0.58 | 0.039 | 2.058 | 72.70 | +0.00% |
-| w_o_queue_awareness | 82.99% +- 0.58 | 0.039 | 2.058 | 72.70 | +0.00% |
-| w_o_confidence | 82.88% +- 0.69 | 0.039 | 2.112 | 72.32 | -0.11% |
-| w_o_partial_offloading | 79.97% +- 0.45 | 0.013 | 2.362 | 68.16 | -3.01% |
-| w_o_mobility_features | 74.88% +- 2.09 | 0.252 | 2.618 | 61.79 | -8.11% |
+| full_model | 85.73% +- 1.80 | 0.014 | 2.001 | 75.73 | 0.00% (Baseline) |
+| w_o_battery_awareness | 85.73% +- 1.80 | 0.014 | 2.001 | 75.73 | +0.00% |
+| w_o_confidence | 85.73% +- 1.80 | 0.014 | 2.001 | 75.73 | +0.00% |
+| w_o_partial_offloading | 85.73% +- 1.80 | 0.014 | 2.001 | 75.73 | +0.00% |
+| w_o_queue_awareness | 85.73% +- 1.80 | 0.014 | 2.001 | 75.73 | +0.00% |
+| w_o_semantic_prior | 85.73% +- 1.80 | 0.014 | 2.001 | 75.73 | +0.00% |
+| w_o_reward_shaping | 85.73% +- 1.80 | 0.014 | 2.001 | 75.73 | +0.00% |
+| w_o_semantics | 79.53% +- 11.38 | 0.059 | 2.517 | 66.95 | -6.20% |
+| w_o_mobility_features | 74.20% +- 2.51 | 0.253 | 2.624 | 61.08 | -11.53% |
 
 ### Kisa Yorum
 
@@ -133,4 +221,4 @@ Amac, ablation sonuclarini success, enerji, tail-latency ve QoE eksenlerinde hiz
 - `w_o_reward_shaping` ve `w_o_queue_awareness` sonuclarinin Full Model'e cok yakin olmasi, bu bilesenlerin etkisinin mevcut protokolde yeterince ayrisamamis olabilecegini dusunduruyor.
 
 ---
-*Updated: 2026-04-01T16:29:50.329270*
+*Updated: 2026-04-01T18:41:37.384848*

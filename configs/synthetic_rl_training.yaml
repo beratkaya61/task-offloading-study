@@ -1,0 +1,33 @@
+experiment:
+  seed: 42
+  semantic_mode: "action_prior"
+  total_timesteps: 30000
+
+env:
+  max_steps: 50
+  num_edge_servers: 3
+  num_devices: 5
+
+ppo:
+  learning_rate: 0.0003
+  n_steps: 512
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  device: "cpu"
+
+dqn:
+  learning_rate: 0.0001
+  buffer_size: 10000
+  learning_starts: 1000
+  batch_size: 64
+  gamma: 0.99
+  train_freq: 4
+  target_update_interval: 500
+  device: "cpu"
+
+a2c:
+  learning_rate: 0.0007
+  n_steps: 5
+  gamma: 0.99
+  device: "cpu"

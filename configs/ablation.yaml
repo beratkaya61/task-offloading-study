@@ -139,12 +139,21 @@ ablation_studies:
 
 # Experimental parameters
 experiment:
+  mode: "evaluation"
   num_episodes_per_ablation: 25 # Increased for statistical significance and calibration verification
   seed: 42
   seeds: [42, 43, 44]
   max_steps: 50
+  evaluation_model_path_template: "models/ppo/phase5_baseline_retraining/seed{seed}.zip"
   deterministic: true
   confidence_interval: 0.95 # 95% CI for results
+
+retraining:
+  base_config: "configs/synthetic_rl_training.yaml"
+  seeds: [42, 43, 44]
+  total_timesteps: 30000
+  eval_episodes: 10
+  model_root: "models/ppo/phase5_ablation_retraining"
 
 # Output configuration
 output:

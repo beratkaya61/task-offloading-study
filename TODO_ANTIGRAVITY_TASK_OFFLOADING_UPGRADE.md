@@ -101,7 +101,7 @@ Projeyi “çalışıyor” seviyesinden “tekrarlanabilir araştırma prototip
   - [ ] `src/pretrain_policy.py`
   - [ ] `src/utils/reproducibility.py`
 - [ ] `configs/` klasörü oluştur:
-  - [ ] `configs/train_ppo.yaml`
+  - [ ] `configs/synthetic_rl_training.yaml`
   - [ ] `configs/eval_default.yaml`
   - [ ] `configs/baselines.yaml`
   - [ ] `configs/ablation.yaml`

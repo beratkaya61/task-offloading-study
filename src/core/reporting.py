@@ -60,6 +60,46 @@ def _latest_batch(df, batch_prefix):
     return batch_df[batch_df["config_batch_id"] == latest_batch_id].copy()
 
 
+def _latest_batch_for_group(df, eval_group, batch_prefix=None):
+    if df.empty:
+        return pd.DataFrame(columns=df.columns)
+
+    batch_df = df[df["config_eval_group"].astype(str) == str(eval_group)].copy()
+    if batch_df.empty:
+        return batch_df
+
+    if batch_prefix:
+        batch_df = batch_df[batch_df["config_batch_id"].astype(str).str.startswith(batch_prefix)].copy()
+        if batch_df.empty:
+            return batch_df
+
+    batch_df = batch_df.sort_values("timestamp")
+    latest_batch_id = batch_df["config_batch_id"].iloc[-1]
+    return batch_df[batch_df["config_batch_id"] == latest_batch_id].copy()
+
+
+def _latest_batch_for_groups(df, eval_groups, batch_prefixes=None):
+    if df.empty:
+        return pd.DataFrame(columns=df.columns)
+
+    eval_groups = [str(group) for group in eval_groups]
+    batch_df = df[df["config_eval_group"].astype(str).isin(eval_groups)].copy()
+    if batch_df.empty:
+        return batch_df
+
+    if batch_prefixes:
+        mask = False
+        for prefix in batch_prefixes:
+            mask = mask | batch_df["config_batch_id"].astype(str).str.startswith(prefix)
+        batch_df = batch_df[mask].copy()
+        if batch_df.empty:
+            return batch_df
+
+    batch_df = batch_df.sort_values("timestamp")
+    latest_batch_id = batch_df["config_batch_id"].iloc[-1]
+    return batch_df[batch_df["config_batch_id"] == latest_batch_id].copy()
+
+
 def _aggregate_results(df):
     if df.empty:
         return pd.DataFrame()
@@ -85,6 +125,15 @@ def _percent_mean_std(mean_value, std_value):
 
 def _scalar_mean_std(mean_value, std_value, precision):
     return f"{float(mean_value):.{precision}f} +- {_safe_std(std_value):.{precision}f}"
+
+
+def _display_eval_group(eval_group):
+    mapping = {
+        "phase5_retraining_multiseed": "phase5_baseline_retraining",
+        "ablation_retraining_multiseed": "phase5_ablation_retraining",
+        "ablation_multiseed_retrained_ppo": "phase5_ablation_evaluation",
+    }
+    return mapping.get(str(eval_group), str(eval_group))
 
 
 def _build_batch_overview(df):
@@ -115,7 +164,7 @@ def _build_batch_overview(df):
     for _, row in batch_df.iterrows():
         last_update = row["last_update"].isoformat() if pd.notna(row["last_update"]) else "-"
         lines.append(
-            f"| {row['config_batch_id']} | {row['config_eval_group'] or '-'} | "
+            f"| {row['config_batch_id']} | {_display_eval_group(row['config_eval_group'] or '-')} | "
             f"{last_update} | {int(row['runs'])} | {int(row['models'])} | {int(row['tasks'])} |"
         )
     return "\n".join(lines) + "\n"
@@ -131,8 +180,11 @@ def _build_reading_guide():
         "- `QoE`: success ve latency'nin birlesik, daha yorumlayici bir ozetidir.",
         "- `Delta vs Full`: ilgili ablation varyantinin Full Model'e gore success farkidir.",
         "",
-        "Bu rapordaki baseline ve ablation bolumleri su anda agirlikli olarak multi-seed evaluation sonucudur.",
-        "Yani ayni egitilmis modeller farkli seed'lerde test edilmistir; bu, farkli seed'lerle yeniden egitilmis olmakla ayni sey degildir.",
+        "Bu raporda iki farkli deney tipi birlikte bulunur:",
+        "- `evaluation`: mevcut checkpoint ailesi farkli seed'lerde test edilir.",
+        "- `retraining`: model her seed icin sifirdan yeniden egitilir.",
+        "",
+        "Faz 5 yorumu yaparken retraining bolumleri, evaluation-only bolumlerinden daha guclu kanit olarak okunmalidir.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -155,15 +207,99 @@ def _build_phase_boundary_note():
     return "\n".join(lines) + "\n"
 
 
+def _build_multiseed_explanation():
+    lines = [
+        "## Neden Multi-Seed Retraining",
+        "",
+        "`Multi-seed evaluation` ile `multi-seed retraining` ayni sey degildir.",
+        "",
+        "- `Multi-seed evaluation`: ayni egitilmis model farkli evaluation seed'lerinde test edilir.",
+        "- `Multi-seed retraining`: model her seed icin sifirdan yeniden egitilir ve sonra karsilastirilir.",
+        "",
+        "RL ajanlari random initialization, experience ordering, environment stochasticity ve exploration farklari nedeniyle seed'e hassastir.",
+        "Bu yuzden tek bir seed'de iyi gorunen model baska bir seed'de ayni sekilde davranmayabilir.",
+        "",
+        "Bu islemi yapmamizin temel nedenleri sunlardir:",
+        "- tek bir sansli training kosusuna asiri guvenmemek",
+        "- algoritmalarin gercekten daha iyi olup olmadigini varyansla birlikte okumak",
+        "- Faz 5 bulgularini Faz 6'ya tasimadan once daha savunulabilir hale getirmek",
+        "- sonraki trace-driven asamaya daha saglam bir sentetik temel ile gecmek",
+        "",
+        "Kisaca: multi-seed evaluation, mevcut modelin test-dayanikliligini; multi-seed retraining ise egitim surecinin kendisinin ne kadar kararlı oldugunu gosterir.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def _build_methodology_notes():
     lines = [
         "## Metodoloji Notlari",
         "",
-        "- Mevcut multi-seed sonuclar evaluation-seed cesitliligi saglar, fakat training-seed cesitliligi saglamaz.",
-        "- Bu nedenle sonuclar onceki tek-seed duruma gore daha guvenilir olsa da tam anlamiyla seed-robust kabul edilmemelidir.",
+        "- Evaluation-only sonuclar evaluation-seed cesitliligi saglar, fakat training-seed cesitliligi saglamaz.",
+        "- Retraining bolumleri ise training-seed cesitliligi ekler; Faz 5 kapanis yorumu icin asil dayanak bunlar olmalidir.",
         "- Bazi varyantlarin birbirine cok yakin cikmasi, ilgili bilesenin etkisiz oldugunu degil; mevcut state, reward veya env tasariminin bu farki yeterince ayristiramadigini da gosterebilir.",
         "- Ozellikle `w_o_reward_shaping` ve `w_o_queue_awareness` sonuclarini bu gozle okumak gerekir.",
+        "- `configs/ablation.yaml` tek kanonik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.",
     ]
+    return "\n".join(lines) + "\n"
+
+
+def _build_workflow_map():
+    lines = [
+        "## Kanonik Deney Akisi",
+        "",
+        "Bu repo icinde Faz 5 icin sade akisin hangi dosyalardan gectigi burada ozetlenir.",
+        "",
+        "- Ortak egitim recetesi: `configs/synthetic_rl_training.yaml`",
+        "- Baseline retraining orkestrasyonu: `configs/phase5_baseline_retraining.yaml`",
+        "- Ablation config ve mod secimi: `configs/ablation.yaml`",
+        "- Baseline retraining scripti: `experiments/run_baseline_retraining.py`",
+        "- Ablation scripti: `experiments/run_ablation_study.py`",
+        "- Kanonik rapor: `results/tables/offloading_experiment_report.md`",
+        "",
+        "Model ciktilari agent bazli klasorlerde tutulur:",
+        "- PPO baseline retraining: `models/ppo/phase5_baseline_retraining/`",
+        "- DQN baseline retraining: `models/dqn/phase5_baseline_retraining/`",
+        "- A2C baseline retraining: `models/a2c/phase5_baseline_retraining/`",
+        "- PPO ablation retraining varyantlari: `models/ppo/phase5_ablation_retraining/<varyant>/`",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _build_retraining_section(df):
+    if df.empty:
+        return (
+            "## Faz 5 Baseline Retraining\n\n"
+            "Bu bolum icin henuz baseline retraining verisi yok. "
+            "Gercek multi-seed retraining calistirildiginda burada farkli train seed'lerle egitilen modellerin aggregate sonuclari yer alir.\n"
+        )
+
+    grouped = _aggregate_results(df)
+    lines = [
+        "## Faz 5 Baseline Retraining",
+        "",
+        "Bu bolum, ayni modellerin sadece farkli evaluation seed'lerde test edilmesini degil, farkli train seed'lerle sifirdan yeniden egitilmesini ozetler.",
+        "Bu nedenle metodolojik olarak baseline multi-seed evaluation bolumunden daha gucludur.",
+        "",
+        "| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+
+    for _, row in grouped.iterrows():
+        lines.append(
+            f"| {row['config_model_type']} | "
+            f"{_percent_mean_std(row['metric_success_rate_mean'], row['metric_success_rate_std'])} | "
+            f"{_scalar_mean_std(row['metric_avg_reward_mean'], row['metric_avg_reward_std'], 2)} | "
+            f"{_scalar_mean_std(row['metric_p95_latency_mean'], row['metric_p95_latency_std'], 3)} | "
+            f"{_scalar_mean_std(row['metric_avg_energy_mean'], row['metric_avg_energy_std'], 4)} | "
+            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "Bu bolum Faz 5 kapanisi icin kritik kabul edilmelidir; cunku seed'e bagli sans etkisini azaltir ve model karsilastirmasini daha savunulabilir hale getirir.",
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -304,6 +440,65 @@ def _build_ablation_extended_section(df):
     return "\n".join(lines) + "\n"
 
 
+def _build_ablation_retraining_section(df):
+    if df.empty:
+        return (
+            "## Faz 5 Ablation Retraining\n\n"
+            "Bu bolum icin henuz gercek ablation retraining verisi yok. "
+            "Her varyant sifirdan egitildiginde semantic ve fiziksel bilesenlerin gercek katkisi burada gorunur.\n"
+        )
+
+    grouped = _aggregate_results(df)
+    baseline_row = grouped[grouped["config_model_type"] == "full_model"]
+    baseline_success = float(baseline_row["metric_success_rate_mean"].iloc[0]) if not baseline_row.empty else 0.0
+
+    lines = [
+        "## Faz 5 Ablation Retraining",
+        "",
+        "Bu bolum, ablation varyantlarinin sadece test edilmesini degil, her birinin ayri ayri sifirdan yeniden egitilmesini ozetler.",
+        "Bu nedenle semantic bilesen katkisini okumak icin en guvenilir Faz 5 tablosu budur.",
+        "",
+        "| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+
+    for _, row in grouped.iterrows():
+        lines.append(
+            f"| {row['config_model_type']} | "
+            f"{_percent_mean_std(row['metric_success_rate_mean'], row['metric_success_rate_std'])} | "
+            f"{_scalar_mean_std(row['metric_avg_reward_mean'], row['metric_avg_reward_std'], 2)} | "
+            f"{_scalar_mean_std(row['metric_p95_latency_mean'], row['metric_p95_latency_std'], 3)} | "
+            f"{_scalar_mean_std(row['metric_avg_energy_mean'], row['metric_avg_energy_std'], 4)} | "
+            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            f"Baseline (Full Model): {baseline_success * 100:.2f}%",
+            "",
+            "| Ablation | Mean Success % | Delta vs Full | Contribution |",
+            "|---|---:|---:|---:|",
+        ]
+    )
+
+    for _, row in grouped.iterrows():
+        success = float(row["metric_success_rate_mean"])
+        delta = (success - baseline_success) * 100.0
+        contribution = 0.0 if row["config_model_type"] == "full_model" else -delta
+        lines.append(
+            f"| {row['config_model_type']} | {success * 100:.2f}% | {delta:+.2f}% | {contribution:.2f}% |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "Bu tablo, inference-only ablation sonucundan daha onemlidir; cunku policy'nin hangi sinyallerle yeniden sekillendigini gosterir.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
 def write_experiment_report(
     csv_path="results/raw/master_experiments.csv",
     output_path="results/tables/offloading_experiment_report.md",
@@ -312,6 +507,16 @@ def write_experiment_report(
     df = _load_experiment_df(csv_path)
     baseline_df = _latest_batch(df, "baseline_")
     ablation_df = _latest_batch(df[df["config_model_type"].isin(ABLATION_MODELS)].copy(), "ablation_")
+    retraining_df = _latest_batch_for_groups(
+        df,
+        ["phase5_retraining_multiseed", "phase5_baseline_retraining"],
+        ["retrain_", "baseline_retrain_"],
+    )
+    ablation_retraining_df = _latest_batch_for_groups(
+        df[df["config_model_type"].isin(ABLATION_MODELS)].copy(),
+        ["ablation_retraining_multiseed", "phase5_ablation_retraining"],
+        ["ablation_retrain_"],
+    )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as handle:
@@ -335,7 +540,15 @@ def write_experiment_report(
         handle.write("\n")
         handle.write(_build_phase_boundary_note())
         handle.write("\n")
+        handle.write(_build_multiseed_explanation())
+        handle.write("\n")
         handle.write(_build_methodology_notes())
+        handle.write("\n")
+        handle.write(_build_workflow_map())
+        handle.write("\n")
+        handle.write(_build_retraining_section(retraining_df))
+        handle.write("\n")
+        handle.write(_build_ablation_retraining_section(ablation_retraining_df))
         handle.write("\n")
         handle.write(_build_baseline_section(baseline_df))
         handle.write("\n")

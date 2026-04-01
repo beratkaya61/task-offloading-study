@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Faz 5: Sistematik Ablation Study
-9 farkli ablation senaryosu uzerinde PPO_v2 politikasini coklu seed ile degerlendir.
+Phase 5 ablation entrypoint.
+
+Supports two modes:
+- evaluation: evaluate an existing PPO checkpoint family on ablated environments
+- retrain: train each ablation variant from scratch across multiple seeds
 """
 
+import argparse
 import os
 import random
 import sys
@@ -25,24 +29,26 @@ sys.path.append(os.path.join(os.getcwd(), "src"))
 from core.evaluation import evaluate_policy, summarize_logs
 from env.rl_env import OffloadingEnv
 from env.simulation_env import CloudServer, EdgeServer, IoTDevice, WirelessChannel
-
-
-ABLATION_MODELS = [
-    "full_model",
-    "w_o_semantics",
-    "w_o_reward_shaping",
-    "w_o_semantic_prior",
-    "w_o_confidence",
-    "w_o_partial_offloading",
-    "w_o_battery_awareness",
-    "w_o_queue_awareness",
-    "w_o_mobility_features",
-]
+from training.train_agent import train_single_agent
 
 
 def load_ablation_config(config_path="configs/ablation.yaml"):
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def to_disable_flags(enabled_features):
+    flags = enabled_features or {}
+    return {
+        "disable_semantics": not flags.get("semantics", True),
+        "disable_reward_shaping": not flags.get("reward_shaping", True),
+        "disable_semantic_prior": not flags.get("semantic_prior", True),
+        "disable_confidence_weighting": not flags.get("confidence_weighting", True),
+        "disable_partial_offloading": not flags.get("partial_offloading", True),
+        "disable_battery_awareness": not flags.get("battery_awareness", True),
+        "disable_queue_awareness": not flags.get("queue_awareness", True),
+        "disable_mobility_features": not flags.get("mobility_features", True),
+    }
 
 
 def create_env_with_ablation(ablation_spec, seed, max_steps=50):
@@ -69,25 +75,13 @@ def create_env_with_ablation(ablation_spec, seed, max_steps=50):
         for i in range(5)
     ]
 
-    flags = ablation_spec.get("enabled_features", {})
-    disable_flags = {
-        "disable_semantics": not flags.get("semantics", True),
-        "disable_reward_shaping": not flags.get("reward_shaping", True),
-        "disable_semantic_prior": not flags.get("semantic_prior", True),
-        "disable_confidence_weighting": not flags.get("confidence_weighting", True),
-        "disable_partial_offloading": not flags.get("partial_offloading", True),
-        "disable_battery_awareness": not flags.get("battery_awareness", True),
-        "disable_queue_awareness": not flags.get("queue_awareness", True),
-        "disable_mobility_features": not flags.get("mobility_features", True),
-    }
-
     env = OffloadingEnv(
         devices=devices,
         edge_servers=edge_servers,
         cloud_server=cloud,
         channel=channel,
         max_steps=max_steps,
-        **disable_flags,
+        **to_disable_flags(ablation_spec.get("enabled_features", {})),
     )
     env.reset(seed=seed)
     env.action_space.seed(seed)
@@ -95,72 +89,120 @@ def create_env_with_ablation(ablation_spec, seed, max_steps=50):
     return env
 
 
-def run_ablation_study():
-    print("=" * 80)
-    print("FAZ 5: SISTEMATIK ABLATION STUDY")
-    print("=" * 80)
-    print(f"Baslama zamani: {datetime.now().isoformat()}")
-    print()
-
-    config = load_ablation_config()
+def run_evaluation_mode(config):
     ablation_specs = config["ablation_studies"]
     experiment_cfg = config["experiment"]
     num_episodes = experiment_cfg["num_episodes_per_ablation"]
     seeds = experiment_cfg.get("seeds", [42, 43, 44])
     max_steps = experiment_cfg.get("max_steps", 50)
+    model_path_template = experiment_cfg.get(
+        "evaluation_model_path_template",
+        "models/ppo/phase5_baseline_retraining/seed{seed}.zip",
+    )
     batch_id = datetime.now().strftime("ablation_%Y%m%d_%H%M%S")
 
-    print(f"[INFO] {len(ablation_specs)} ablation senaryosu calistirilacak")
-    print(f"[INFO] Her ablation: {num_episodes} episode")
-    print(f"[INFO] Seedler: {seeds}")
-    print(f"[INFO] Toplam run: {len(ablation_specs) * len(seeds)}")
+    print("=" * 80)
+    print("PHASE 5 ABLATION EVALUATION")
+    print("=" * 80)
+    print(f"[INFO] Variants: {len(ablation_specs)}")
+    print(f"[INFO] Seeds: {seeds}")
+    print(f"[INFO] Episodes per variant: {num_episodes}")
+    print(f"[INFO] Model source: {model_path_template}")
     print()
 
-    ppo_model_path = "models/ppo_offloading_agent_v2.zip"
-    if not os.path.exists(ppo_model_path):
-        print(f"[ERROR] PPO modeli bulunamadi: {ppo_model_path}")
-        return
+    sample_model_path = (
+        model_path_template.format(seed=seeds[0]) if "{seed}" in model_path_template else model_path_template
+    )
+    if not os.path.exists(sample_model_path):
+        raise FileNotFoundError(sample_model_path)
 
-    print(f"[INFO] PPO modeli yukleniyor: {ppo_model_path}")
-
-    for idx, (ablation_name, ablation_spec) in enumerate(ablation_specs.items(), 1):
-        print()
-        print(f"[{idx}/{len(ablation_specs)}] Ablation baslatiliyor: {ablation_name}")
-        print(f"    Tanim: {ablation_spec['description']}")
-        print(f"    Beklenen dusus: {ablation_spec.get('expected_drop', 'Baseline')}")
-
+    for ablation_name, ablation_spec in ablation_specs.items():
+        print(f"[VARIANT] {ablation_name}")
         for seed in seeds:
-            try:
-                eval_env = create_env_with_ablation(ablation_spec, seed=seed, max_steps=max_steps)
-                policy = PPO.load(ppo_model_path, env=eval_env)
-                print(f"    -> seed={seed}, {num_episodes} episode")
-                evaluate_policy(
-                    eval_env,
-                    policy,
-                    num_episodes=num_episodes,
-                    run_name=ablation_name,
-                    semantic_mode="action_prior",
-                    config_seed=seed,
-                    extra_fields={
-                        "config_batch_id": batch_id,
-                        "config_eval_group": "ablation_multiseed",
-                    },
-                )
-            except Exception as e:
-                print(f"    [ERROR] {ablation_name} degerlendirilirken (seed={seed}): {e}")
-                import traceback
+            model_path = model_path_template.format(seed=seed) if "{seed}" in model_path_template else model_path_template
+            eval_env = create_env_with_ablation(ablation_spec, seed=seed, max_steps=max_steps)
+            policy = PPO.load(model_path, env=eval_env)
+            evaluate_policy(
+                eval_env,
+                policy,
+                num_episodes=num_episodes,
+                run_name=ablation_name,
+                semantic_mode="action_prior",
+                config_seed=seed,
+                extra_fields={
+                    "config_batch_id": batch_id,
+                    "config_eval_group": "ablation_evaluation",
+                },
+            )
 
-                traceback.print_exc()
-
-    print()
-    print("=" * 80)
-    print("ABLATION STUDY TAMAMLANDI")
-    print("=" * 80)
     summarize_logs(results_dir="results/raw", output_table="results/tables/offloading_experiment_report.md")
+    print("[INFO] Canonical report refreshed: results/tables/offloading_experiment_report.md")
+
+
+def run_retraining_mode(config):
+    ablation_specs = config["ablation_studies"]
+    retrain_cfg = config.get("retraining", {})
+    seeds = retrain_cfg.get("seeds", [42, 43, 44])
+    total_timesteps = retrain_cfg.get("total_timesteps", 30000)
+    eval_episodes = retrain_cfg.get("eval_episodes", 10)
+    base_config = retrain_cfg.get("base_config", "configs/synthetic_rl_training.yaml")
+    model_root = retrain_cfg.get("model_root", "models/ppo/phase5_ablation_retraining")
+    batch_id = datetime.now().strftime("ablation_retrain_%Y%m%d_%H%M%S")
+
+    print("=" * 80)
+    print("PHASE 5 ABLATION RETRAINING")
+    print("=" * 80)
+    print(f"[INFO] Variants: {len(ablation_specs)}")
+    print(f"[INFO] Seeds: {seeds}")
+    print(f"[INFO] Total runs: {len(ablation_specs) * len(seeds)}")
+    print(f"[INFO] Model root: {model_root}")
     print()
-    print(f"Bitis zamani: {datetime.now().isoformat()}")
-    print("Sonuclar: results/tables/offloading_experiment_report.md")
+
+    for ablation_name, ablation_spec in ablation_specs.items():
+        env_kwargs = to_disable_flags(ablation_spec.get("enabled_features", {}))
+        variant_dir = os.path.join(model_root, ablation_name)
+        os.makedirs(variant_dir, exist_ok=True)
+        for seed in seeds:
+            save_path = os.path.join(variant_dir, f"seed{seed}")
+            print(f"[RUN] variant={ablation_name} seed={seed}")
+            train_single_agent(
+                algorithm="ppo",
+                total_timesteps=total_timesteps,
+                seed=seed,
+                save_path=save_path,
+                run_name=ablation_name,
+                config_path=base_config,
+                eval_episodes=eval_episodes,
+                env_kwargs=env_kwargs,
+                extra_eval_fields={
+                    "config_batch_id": batch_id,
+                    "config_eval_group": "phase5_ablation_retraining",
+                },
+            )
+
+    summarize_logs(results_dir="results/raw", output_table="results/tables/offloading_experiment_report.md")
+    print("[INFO] Canonical report refreshed: results/tables/offloading_experiment_report.md")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Run Phase 5 ablation workflows")
+    parser.add_argument(
+        "--mode",
+        choices=["evaluation", "retrain"],
+        default=None,
+        help="evaluation: test an existing PPO family, retrain: train each ablation from scratch",
+    )
+    parser.add_argument("--config", default="configs/ablation.yaml", help="Ablation config path")
+    args = parser.parse_args()
+
+    config = load_ablation_config(args.config)
+    mode = args.mode or config.get("experiment", {}).get("mode", "evaluation")
+
+    if mode == "retrain":
+        run_retraining_mode(config)
+    else:
+        run_evaluation_mode(config)
 
 
 if __name__ == "__main__":
-    run_ablation_study()
+    main()

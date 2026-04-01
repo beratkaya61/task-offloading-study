@@ -34,6 +34,15 @@ def load_latest_ablation_batch(csv_path):
         df["timestamp"] = pd.to_datetime(df["timestamp"])
 
     if "config_batch_id" in df.columns:
+        retrain_rows = df[
+            df["config_eval_group"].astype(str).isin(
+                ["ablation_retraining_multiseed", "phase5_ablation_retraining"]
+            )
+        ].copy()
+        if not retrain_rows.empty:
+            latest_batch_id = retrain_rows.sort_values("timestamp")["config_batch_id"].iloc[-1]
+            return retrain_rows[retrain_rows["config_batch_id"] == latest_batch_id].copy()
+
         batch_rows = df[df["config_batch_id"].astype(str).str.startswith("ablation_")].copy()
         if not batch_rows.empty:
             latest_batch_id = batch_rows.sort_values("timestamp")["config_batch_id"].iloc[-1]
