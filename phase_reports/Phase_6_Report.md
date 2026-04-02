@@ -1,36 +1,77 @@
-# Faz 6 Report: Trace-driven Training
+# Faz 6 Report: Trace-Driven Training
 
-**Tarih:** 1 April 2026
-**Durum:** ARTEFAKT EKSIGI NEDENIYLE HENUZ KAPATILMADI
-**Hedef Başarı:** 68-77%
+**Tarih:** 2 April 2026  
+**Durum:** acik / henuz kapatilmedi
 
-## Özet
-Faz 6 için trace-driven eğitim altyapısı, konfigürasyonu ve raporlama scripti repoda mevcut. Ancak bu repo snapshot'ında Faz 6'yı "tamamlandı" diye doğrulayacak checkpoint ve trace-metrics çıktıları bulunmuyor.
+---
 
-## Repo Üzerinden Doğrulanabilen Durum
-- Trace training orchestrator mevcut: `experiments/trace/train_ppo.py`
-- Trace training config mevcut: `configs/trace/ppo_training.yaml`
-- Faz 5 çıktıları mevcut: `results/raw/` altındaki workflow logları ve `results/figures/` altındaki ablation görselleri
-- Repoda bulunan model dosyaları:
-  - `models/ppo/single_run_synthetic/ppo_offloading_agent.zip`
-  - `models/ppo/single_run_synthetic/ppo_offloading_agent_v2.zip`
+## Ozet
 
-## Eksik Faz 6 Artefaktları
+Faz 6 icin temel trace-driven egitim iskeleti repoda mevcuttur, ancak Faz 6'yi "tamamlandi" diye kapatacak artefaktlar ve bazi kritik metodoloji maddeleri henuz tamamlanmamistir.
+
+Repo icinde su anda gorulebilenler:
+- trace orchestrator: `experiments/trace/train_ppo.py`
+- trace config: `configs/trace/ppo_training.yaml`
+- trace episode uretim cekirdegi: `src/core/trace_processor.py`
+
+Repo icinde henuz eksik olanlar:
+- `Success Bonus` entegrasyonu
+- partial offloading switching overhead modeli
+- domain-shift analizi
+- dogrulanmis Faz 6 checkpoint ve metrics CSV
+
+---
+
+## Dogrulanabilen Mevcut Durum
+
+Su anda dogrudan dogrulanabilen kisim, Faz 6'nin baslangic altyapisidir:
+
+- `experiments/trace/train_ppo.py` trace episode besleyebilen bir orchestrator sunuyor.
+- `configs/trace/ppo_training.yaml` trace-driven PPO egitimi icin konfigurlari tasiyor.
+- `src/core/trace_processor.py` trace-benzeri episode olusturma ve task mapping cekirdegi sagliyor.
+- `data/traces/` altinda train/val/test episode JSON dosyalari bulunuyor.
+
+Ancak bu durum, Faz 6'nin tamamlandigi anlamina gelmez.
+
+---
+
+## Henuz Acik Olan Faz 6 Isleri
+
+### 1. Success Bonus
+Faz 5 sonunda acik bir Faz 6 isi olarak birakildi. Reward tarafinda trace mode icin acik sparse success bonus henuz yok.
+
+### 2. Switching overhead
+Partial offloading icin adaptive/dynamic switching overhead modeli henuz eklenmedi.
+
+### 3. Domain-shift analizi
+Synthetic vs trace performansini ayni protokolde karsilastiran ayri bir akis bulunmuyor.
+
+### 4. Final artefaktlar
+Asagidaki artefaktlar repo icinde henuz yok:
 - `models/ppo/trace_training/ppo_v3_trace_best.zip`
 - `results/raw/trace_training/trace_training_metrics.csv`
 
-Bu nedenle 31 Mart 2026 tarihli Faz 6 başarı, gecikme ve enerji değerleri repo içinde bağımsız olarak yeniden doğrulanamıyor.
+---
 
 ## Faz 5'ten Devreden Notlar
-- Faz 5 raporunda belirtilen `Success Bonus` entegrasyonu halen açık bir Faz 6 işi (`task.md` 6.3).
-- Partial offloading için adaptive/dynamic switching overhead analizi halen açık (`task.md` 6.4).
-- Synthetic vs trace domain-shift analizi ve Faz 6 final test/raporu halen açık (`task.md` 6.5-6.6).
 
-## Kalıcı Düzeltme
-Bir sonraki Faz 6 koşturması için trace training çıktıları track edilen konumlara taşındı:
-- Metrics CSV: `results/raw/trace_training/trace_training_metrics.csv`
-- Final report: `phase_reports/Phase_6_Report.md`
-- Checkpoint: `models/ppo/trace_training/ppo_v3_trace_best.zip`
+- Mobility etkisi sentetik tarafta en guclu bulgu olarak cikti; trace tarafinda ilk dogrulanacak bilesenlerden biri olmali.
+- Reward shaping katkisi sentetik tarafta tam net degildi; trace ortaminda yeniden test edilmeli.
+- Edge enerji modeli sentetik tarafta yeni kalibre edildi; trace yuklerinde davranisi henuz bilinmiyor.
 
-## Sonraki Adım
-Faz 6'yı kapatmak için trace training yeniden koşturulmalı ve yeni artefaktlar yukarıdaki dizinlerde üretilmelidir. Bu yeniden koşturmadan sonra rapordaki nicel sonuçlar güncellenmelidir.
+---
+
+## Faz 6'yi Kapatmak Icin Gerekenler
+
+1. Trace mapping varsayimlari netlestirilmeli
+2. Reward tarafina `Success Bonus` eklenmeli
+3. Partial offloading switching overhead modeli eklenmeli
+4. Trace training yeniden kosturulmali
+5. Metrics CSV ve checkpoint track edilen konumlarda uretilmeli
+6. Domain-shift sonuclari rapora eklenmeli
+
+---
+
+## Sonraki Adim
+
+Bir sonraki dogru adim, trace mapping varsayimlarini netlestirip reward/overhead eksiklerini tamamlamaktir. Bu adimlar tamamlanmadan Faz 6 sayisal sonuc raporu yazilmamali.

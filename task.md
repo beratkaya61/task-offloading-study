@@ -37,12 +37,17 @@ Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 - [x] 5.5 Phase 5 final report update (Sealed with real metrics)
 
 ## Faz 6 - Gercek Veri / Trace-Driven Deney Paketi
-- [x] 6.1 `trace_loader.py` exists in `src/core/trace_loader.py`
-- [x] 6.2 Trace to task mapping
+- [x] 6.1 `trace_loader.py` implemented and wired into the trace pipeline
+- [x] 6.2 Basic trace-to-task mapping via `src/core/trace_processor.py`
 - [ ] 6.3 Success Bonus (+100 sparse reward) Integration to reduce Semantic Dependency
 - [ ] 6.4 Adaptive/Dynamic Switching Overhead for Partial Offloading
 - [ ] 6.5 Domain shift analysis (Synthetic vs Trace results)
 - [ ] 6.6 Phase 6 final test/report
+
+Not:
+- `src/core/trace_loader.py` artik raw trace CSV ve kaydedilmis train/val/test episode split JSON dosyalarini yukleyebiliyor.
+- Mevcut Faz 6 orchestrator'u (`experiments/trace/train_ppo.py`) trace hazirlama icin artik once `TraceLoader`, sonra `TraceProcessor` kullaniyor.
+- `data/traces/` altindaki episode JSON dosyalari yeniden kullanilabiliyor; raw trace yoksa processor tarafindaki fallback akisiyla yeni splitler uretilebiliyor.
 
 ## Faz 7 - Two-Stage Training (AgentVNE Concept)
 - [ ] 7.1 Oracle / heuristic labels

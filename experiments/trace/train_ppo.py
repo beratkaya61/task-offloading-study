@@ -37,6 +37,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 # Add repo root to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from src.core.trace_loader import TraceLoader
 from src.core.trace_processor import TraceProcessor, TraceEpisode
 from src.env.rl_env import OffloadingEnv_v2
 from src.env.simulation_env import WirelessChannel, EdgeServer, CloudServer, IoTDevice
@@ -167,37 +168,42 @@ class TraceTrainingOrchestrator:
         """
         logger.info("🔄 Step 1: Preparing traces...")
         
-        # Initialize processor
         trace_cfg = self.config_dict['data']
+        loader = TraceLoader(trace_dir=trace_cfg.get('trace_dir', 'data/traces'))
         processor = TraceProcessor(
             trace_dir=trace_cfg.get('trace_dir', 'data/traces'),
             seed=self.seed
         )
-        
-        # Load/generate traces
-        traces = processor.load_traces()
-        
-        # Preprocess
-        processed = processor.preprocess_traces(traces)
-        
-        # Generate episodes
-        env_cfg = self.config_dict['environment']
-        episodes = processor.generate_episodes(
-            processed,
-            tasks_per_episode=env_cfg['n_tasks_per_episode'],
-            n_episodes=trace_cfg['train_episodes'] + trace_cfg['val_episodes'] + trace_cfg['test_episodes']
-        )
-        
-        # Split
-        train_eps, val_eps, test_eps = processor.split_episodes(
-            train_ratio=0.8,
-            val_ratio=0.1
-        )
-        
-        # Save for reproducibility
-        processor.save_episodes(train_eps, str(self.log_dir / 'train_episodes.json'))
-        processor.save_episodes(val_eps, str(self.log_dir / 'val_episodes.json'))
-        processor.save_episodes(test_eps, str(self.log_dir / 'test_episodes.json'))
+
+        # Prefer previously materialized episode splits when available.
+        if loader.has_saved_episode_splits():
+            logger.info("📦 Using saved trace episode splits from data/traces")
+            train_eps, val_eps, test_eps = loader.load_saved_episode_splits()
+            processor.episodes = [*train_eps, *val_eps, *test_eps]
+        else:
+            logger.info("📥 Loading raw trace inputs and generating episode splits")
+            traces = loader.load_trace_frames()
+            if not traces:
+                traces = processor.load_traces()
+
+            processed = processor.preprocess_traces(traces)
+
+            env_cfg = self.config_dict['environment']
+            processor.generate_episodes(
+                processed,
+                tasks_per_episode=env_cfg['n_tasks_per_episode'],
+                n_episodes=trace_cfg['train_episodes'] + trace_cfg['val_episodes'] + trace_cfg['test_episodes']
+            )
+
+            train_eps, val_eps, test_eps = processor.split_episodes(
+                train_ratio=0.8,
+                val_ratio=0.1
+            )
+
+            save_paths = loader.saved_episode_paths()
+            processor.save_episodes(train_eps, str(save_paths['train']))
+            processor.save_episodes(val_eps, str(save_paths['val']))
+            processor.save_episodes(test_eps, str(save_paths['test']))
         
         # Log statistics
         stats = processor.get_statistics()

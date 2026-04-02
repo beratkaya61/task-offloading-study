@@ -1,5 +1,11 @@
 # TODO — Antigravity Upgrade Plan for `task-offloading-study`
 
+> Guncel durum notu (2026-04-02):
+> Faz 1-5 tamamlandi ve Faz 5 sentetik taraf donduruldu.
+> Faz 6 aktif asamadadir.
+> `src/core/trace_loader.py` implement edildi ve `experiments/trace/train_ppo.py` akisina baglandi.
+> Faz 6'da acik kalan ana maddeler artik `Success Bonus`, switching overhead, domain-shift analizi ve final trace artefaktlaridir.
+
 Bu dosya, projeyi seminer seviyesinden **tez + makale + güçlü demo** seviyesine çıkarmak için hazırlanmış sıralı geliştirme planıdır.
 
 Amaç sadece birkaç küçük iyileştirme yapmak değil; mevcut sistemi şu çizgiye taşımaktır:
