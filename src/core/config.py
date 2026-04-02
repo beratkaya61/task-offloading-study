@@ -3,7 +3,7 @@ import os
 import yaml
 
 
-def load_config(config_path="configs/synthetic_rl_training.yaml"):
+def load_config(config_path="configs/synthetic/rl_training.yaml"):
     """
     Loads experiment configuration from a YAML file.
     """

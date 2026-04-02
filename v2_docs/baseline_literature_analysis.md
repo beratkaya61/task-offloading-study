@@ -243,7 +243,7 @@ Fitness = latency penalty + energy penalty + deadline penalty
    - Faz 8 sonunda: %85+
 
 3. **Faz 5 Hazır Yapısını Iyileştir**
-   - `configs/ablation.yaml` çok iyi
+   - `configs/synthetic/ablation.yaml` çok iyi
    - Ama hangi modeller ile kıyas yapacağız net yazmalıyız
 
 ### ORTA VADƏ (Faz 5-7)

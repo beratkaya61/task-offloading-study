@@ -15,25 +15,25 @@
 
 ## Çıktılar
 - Final report: `phase_reports/Phase_6_Report.md`
-- Checkpoint: `models/ppo_v3_trace/ppo_v3_trace_best.zip`
-- Metrik CSV: `results/raw/phase6_trace_training/trace_training_metrics.csv`
+- Checkpoint: `models/ppo/trace_training/ppo_v3_trace_best.zip`
+- Metrik CSV: `results/raw/trace_training/trace_training_metrics.csv`
 - Karşılaştırma tablosu: Faz 5 vs Faz 6
 
 ---
 
-## Orchestrator (`experiments/run_trace_training.py`)
+## Orchestrator (`experiments/trace/train_ppo.py`)
 - SB3 PPO ile eğitim; `TraceOffloadingEnv` trace episode'larını besliyor.
 - Fiziksel topoloji: `WirelessChannel`, `EdgeServer`, `CloudServer`, `IoTDevice` ile daha gerçekçi datarate/mesafe akışı.
 - `TraceMetricsCallback` her epizotta başarı, gecikme ve enerji ölçümlerini CSV'ye yazıyor.
 - Validasyon ve ablation adımı, Faz 5'in reward shaping ve partial offloading bulgularını trace üzerinde yeniden test ediyor.
-- Çıktı yolları artık track edilen dizinlerde: CSV `results/raw/phase6_trace_training/trace_training_metrics.csv`, checkpoint `models/ppo_v3_trace/ppo_v3_trace_best.zip`, rapor `phase_reports/Phase_6_Report.md`.
+- Çıktı yolları artık track edilen dizinlerde: CSV `results/raw/trace_training/trace_training_metrics.csv`, checkpoint `models/ppo/trace_training/ppo_v3_trace_best.zip`, rapor `phase_reports/Phase_6_Report.md`.
 
 ---
 
 ## Koşum
 ```bash
 cd d:\task-offloading-study
-python experiments/run_trace_training.py
+python experiments/trace/train_ppo.py
 ```
 
 ---

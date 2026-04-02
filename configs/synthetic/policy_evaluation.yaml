@@ -1,0 +1,33 @@
+evaluation:
+  num_episodes: 10
+  seeds: [42, 43, 44]
+  max_steps: 50
+
+output:
+  csv_path: "results/raw/synthetic/policy_evaluation/synthetic_policy_evaluation.csv"
+
+policies:
+  heuristic:
+    - LocalOnly
+    - EdgeOnly
+    - CloudOnly
+    - Random
+    - GreedyLatency
+    - GeneticAlgorithm
+  rl:
+    - PPO_v2
+    - DQN_v2
+    - A2C_v2
+
+rl_models:
+  checkpoint_family: "synthetic_rl_retraining"
+  training_seed: 42
+  checkpoints:
+    synthetic_rl_retraining:
+      PPO_v2: "models/ppo/synthetic_rl_retraining/seed{seed}.zip"
+      DQN_v2: "models/dqn/synthetic_rl_retraining/seed{seed}.zip"
+      A2C_v2: "models/a2c/synthetic_rl_retraining/seed{seed}.zip"
+    single_run_synthetic:
+      PPO_v2: "models/ppo/single_run_synthetic/ppo_offloading_agent_v2.zip"
+      DQN_v2: "models/dqn/single_run_synthetic/dqn_offloading_agent_v2.zip"
+      A2C_v2: "models/a2c/single_run_synthetic/a2c_offloading_agent_v2.zip"

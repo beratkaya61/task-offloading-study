@@ -28,7 +28,7 @@ def _is_sb3_model(model):
     return hasattr(model, "policy") and hasattr(model, "learn")
 
 
-def normalize_experiment_csv(csv_path="results/raw/master_experiments.csv"):
+def normalize_experiment_csv(csv_path="results/raw/experiment_results.csv"):
     if not os.path.exists(csv_path):
         return
 
@@ -62,6 +62,7 @@ def evaluate_policy(
     semantic_mode="None",
     config_seed=42,
     extra_fields=None,
+    csv_path="results/raw/experiment_results.csv",
 ):
     print(f"[EVAL] Starting evaluation: {run_name} ({num_episodes} episodes)")
 
@@ -122,8 +123,7 @@ def evaluate_policy(
     avg_qoe = float(np.mean([row["qoe"] for row in results]))
     total_tasks = int(sum(row["steps"] for row in results))
 
-    os.makedirs("results/raw", exist_ok=True)
-    csv_path = "results/raw/master_experiments.csv"
+    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
     normalize_experiment_csv(csv_path)
 
     log_entry = {
@@ -157,20 +157,22 @@ def evaluate_policy(
     return log_entry
 
 
-def summarize_logs(results_dir="results/raw", output_table="results/tables/offloading_experiment_report.md"):
-    csv_path = os.path.join(results_dir, "master_experiments.csv")
-    if not os.path.exists(csv_path):
-        print(f"[WARN] CSV not found: {csv_path}")
+def summarize_logs(
+    results_dir="results/raw",
+    output_table="results/tables/offloading_experiment_report.md",
+    figure_path="results/figures/ablation_impact.png",
+):
+    if not os.path.exists(results_dir):
+        print(f"[WARN] Results directory not found: {results_dir}")
         return
 
     try:
-        normalize_experiment_csv(csv_path)
         try:
             from src.core.reporting import write_experiment_report
         except ModuleNotFoundError:
             from core.reporting import write_experiment_report
 
-        write_experiment_report(csv_path=csv_path, output_path=output_table)
+        write_experiment_report(csv_path=results_dir, output_path=output_table, figure_path=figure_path)
         print(f"[INFO] Canonical experiment report written: {output_table}")
     except Exception as exc:
         print(f"[ERROR] Failed to summarize logs: {exc}")

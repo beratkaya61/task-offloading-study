@@ -14,8 +14,8 @@ if not exist "src\venv\Scripts\python.exe" (
 )
 
 rem 2. AI Model Check
-if not exist "src\models\ppo_offloading_agent.zip" (
-    echo [WARNING] Trained PPO model not found at src\models\ppo_offloading_agent.zip
+if not exist "..\models\ppo\single_run_synthetic\ppo_offloading_agent.zip" (
+    echo [WARNING] Trained PPO model not found at ..\models\ppo\single_run_synthetic\ppo_offloading_agent.zip
     echo [INFO] Simulation will run using Semantic Rule-based logic.
     echo ------------------------------------------
 ) else (

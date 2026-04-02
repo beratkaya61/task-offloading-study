@@ -15,7 +15,7 @@
 
 **3. Deney Loglama Altyapısı Kuruldu:**
 - PPO çalışırken sonuçların kayıt edilmesi için `src/utils/logger.py` oluşturuldu. 
-- Deneylerin sonuçlarını hem JSON formatında ayrı dosyalar olarak kaydedecek, hem de toplu ve genel istatistikleri çıkarabilmek adına ortak bir Master CSV (master_experiments.csv) tablosuna yazacak `ExperimentLogger` sınıfı kodlandı.
+- Deneylerin sonuçlarını hem JSON formatında ayrı dosyalar olarak kaydedecek, hem de workflow bazlı CSV loglarına yazacak deney loglama altyapısı kodlandı.
 
 **4. Raporlama Altyapısı Başlatıldı:**
 - Her fazın bitiminde commit bazlı takip yapmak ve dokümantasyonu güçlendirmek amacıyla ana dizin altına `phase_reports/` klasörü eklendi ve ilk rapor oluşturuldu.

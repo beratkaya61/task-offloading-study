@@ -23,7 +23,7 @@ ALGORITHM_DEFAULTS = {
         "n_epochs": 10,
         "gamma": 0.99,
         "device": "cpu",
-        "default_save_path": "models/ppo_offloading_agent_v2",
+        "default_save_path": "models/ppo/single_run_synthetic/ppo_offloading_agent_v2",
         "default_run_name": "PPO_v2_Retrained",
     },
     "dqn": {
@@ -36,7 +36,7 @@ ALGORITHM_DEFAULTS = {
         "train_freq": 4,
         "target_update_interval": 500,
         "device": "cpu",
-        "default_save_path": "models/dqn_offloading_agent_v2",
+        "default_save_path": "models/dqn/single_run_synthetic/dqn_offloading_agent_v2",
         "default_run_name": "DQN_v2",
     },
     "a2c": {
@@ -45,7 +45,7 @@ ALGORITHM_DEFAULTS = {
         "n_steps": 5,
         "gamma": 0.99,
         "device": "cpu",
-        "default_save_path": "models/a2c_offloading_agent_v2",
+        "default_save_path": "models/a2c/single_run_synthetic/a2c_offloading_agent_v2",
         "default_run_name": "A2C_v2",
     },
 }
@@ -143,8 +143,9 @@ def train_single_agent(
     seed=42,
     save_path=None,
     run_name=None,
-    config_path="configs/synthetic_rl_training.yaml",
+    config_path="configs/synthetic/rl_training.yaml",
     eval_episodes=10,
+    eval_csv_path="results/raw/synthetic_rl_retraining.csv",
     extra_eval_fields=None,
     env_overrides=None,
     env_kwargs=None,
@@ -197,6 +198,7 @@ def train_single_agent(
         run_name=resolved_run_name,
         semantic_mode="action_prior",
         config_seed=seed,
+        csv_path=eval_csv_path,
         extra_fields=extra_eval_fields,
     )
 
@@ -225,7 +227,7 @@ def train():
     parser.add_argument(
         "--config",
         type=str,
-        default="configs/synthetic_rl_training.yaml",
+        default="configs/synthetic/rl_training.yaml",
         help="Training config path",
     )
     parser.add_argument("--eval_episodes", type=int, default=10, help="Final evaluation episodes")

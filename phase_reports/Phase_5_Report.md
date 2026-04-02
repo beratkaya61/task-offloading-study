@@ -39,7 +39,7 @@ Aşağıdaki veriler, yeni kalibre edilmiş PPO modeli ile 25 episode (n=1250 ta
 ---
 
 ## 🖼️ Görsel Kanıtlar
-![Ablation Impact Chart](../results/figures/ablation_impact.png)
+![Ablation Impact Chart](../results/figures/synthetic_ablation_ppo_multi_seed_retraining_success_rate.png)
 *Şekil 1: Bileşenlerin başarı oranları üzerindeki etkisi ve yeni modelle sağlanan istatistiksel kararlılık.*
 
 ---

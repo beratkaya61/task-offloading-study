@@ -10,7 +10,7 @@ Semantik bileşenlerin (LLM prior, reward shaping, confidence vb.) task offloadi
 ## 📋 Yapılacaklar (Sıralı)
 
 ### Adım 1: Ablation Konfigürasyonları Hazırlama ✅
-- [x] `configs/ablation.yaml` oluşturuldu (9 farklı ablation)
+- [x] `configs/synthetic/ablation.yaml` oluşturuldu (9 farklı ablation)
 - [ ] Faz 4 sonuçlarıyla karşılaştırma için baseline kaydedilecek
 
 **Hazırlanmış Ablation'lar:**
@@ -27,13 +27,13 @@ Semantik bileşenlerin (LLM prior, reward shaping, confidence vb.) task offloadi
 | 9 | w/o Mobility Features | Distance/proximity impact | -2 to -5% |
 
 ### Adım 2: Ablation Runner Script Yazma
-**Dosya:** `experiments/run_ablation_study.py`
+**Dosya:** `experiments/synthetic/run_ablation_study.py`
 
 **İçerik:**
 ```python
 # Pseudo-code
 def run_ablation_study():
-    ablation_config = load_yaml('configs/ablation.yaml')
+    ablation_config = load_yaml('configs/synthetic/ablation.yaml')
     
     for ablation_name, ablation_spec in ablation_config['ablation_studies'].items():
         print(f"[ABLATION] Running: {ablation_name}")
@@ -46,7 +46,7 @@ def run_ablation_study():
         )
         
         # 2. PPO_v2 modelini yükle ve test et
-        policy = PPO.load('models/ppo_offloading_agent_v2.zip', env=env)
+        policy = PPO.load('models/ppo/single_run_synthetic/ppo_offloading_agent_v2.zip', env=env)
         
         # 3. 10 episode üzerinde değerlendir
         results = evaluate_policy(env, policy, num_episodes=10, run_name=ablation_name)
@@ -120,12 +120,12 @@ def compute_metrics(episode_logs):
 ```
 
 ### Adım 5: Ablation Runner Yazma
-**Dosya:** `experiments/run_ablation_study.py`
+**Dosya:** `experiments/synthetic/run_ablation_study.py`
 
 ### Adım 6: Sonuçları Analiz Etme
 **Çıktılar:**
 - [ ] `results/tables/offloading_experiment_report.md` — Kanonik markdown rapor
-- [ ] `results/figures/ablation_impact.png` — Bar/line chart'lar
+- [ ] `results/figures/synthetic_ablation_<algorithm>_<scope>_success_rate.png` — Bar/line chart'lar
 - [ ] `results/raw/ablation_experiments.csv` — Detaylı logs
 
 ### Adım 7: Faz 5 Raporunu Yazma
@@ -165,7 +165,7 @@ def compute_metrics(episode_logs):
 ## 📚 Bağlantılar
 
 - **Faz 5 Tanımı:** [TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md#Faz 5](file:///...)
-- **Ablation Config:** [configs/ablation.yaml](configs/ablation.yaml)
+- **Ablation Config:** `configs/synthetic/ablation.yaml`
 - **Önceki Sonuçlar:** [Phase_4_Report.md](phase_reports/Phase_4_Report.md)
 
 ---
@@ -216,6 +216,6 @@ def compute_metrics(episode_logs):
 
 Tüm hazırlıklar tamamlandı. Sonraki adım:
 1. `src/env/rl_env.py`'de ablation flag'larını ekle
-2. `experiments/run_ablation_study.py` yaz
-3. Çalıştır: `python experiments/run_ablation_study.py`
+2. `experiments/synthetic/run_ablation_study.py` yaz
+3. Çalıştır: `python experiments/synthetic/run_ablation_study.py`
 4. Rapor yaz: `phase_reports/Phase_5_Report.md`

@@ -38,10 +38,34 @@ def _load_experiment_df(csv_path):
     if not os.path.exists(csv_path):
         return pd.DataFrame(columns=REQUIRED_COLUMNS)
 
-    df = pd.read_csv(csv_path)
-    for column in REQUIRED_COLUMNS:
-        if column not in df.columns:
-            df[column] = ""
+    if os.path.isdir(csv_path):
+        frames = []
+        for root, _, files in os.walk(csv_path):
+            for file_name in files:
+                if not file_name.endswith(".csv"):
+                    continue
+                file_path = os.path.join(root, file_name)
+                try:
+                    df = pd.read_csv(file_path)
+                except Exception:
+                    continue
+                if "run_id" not in df.columns or "config_model_type" not in df.columns:
+                    continue
+                for column in REQUIRED_COLUMNS:
+                    if column not in df.columns:
+                        df[column] = ""
+                frames.append(df[REQUIRED_COLUMNS].copy())
+
+        if not frames:
+            return pd.DataFrame(columns=REQUIRED_COLUMNS)
+
+        df = pd.concat(frames, ignore_index=True)
+    else:
+        df = pd.read_csv(csv_path)
+        for column in REQUIRED_COLUMNS:
+            if column not in df.columns:
+                df[column] = ""
+
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     return df
@@ -129,9 +153,15 @@ def _scalar_mean_std(mean_value, std_value, precision):
 
 def _display_eval_group(eval_group):
     mapping = {
-        "phase5_retraining_multiseed": "phase5_baseline_retraining",
-        "ablation_retraining_multiseed": "phase5_ablation_retraining",
-        "ablation_multiseed_retrained_ppo": "phase5_ablation_evaluation",
+        "phase5_retraining_multiseed": "synthetic_rl_retraining",
+        "phase5_baseline_retraining": "synthetic_rl_retraining",
+        "ablation_retraining_multiseed": "synthetic_ablation_retraining",
+        "phase5_ablation_retraining": "synthetic_ablation_retraining",
+        "ablation_multiseed_retrained_ppo": "synthetic_ablation_evaluation",
+        "synthetic_rl_retraining": "synthetic_rl_retraining",
+        "synthetic_policy_evaluation": "synthetic_policy_evaluation",
+        "synthetic_ablation_evaluation": "synthetic_ablation_evaluation",
+        "synthetic_ablation_retraining": "synthetic_ablation_retraining",
     }
     return mapping.get(str(eval_group), str(eval_group))
 
@@ -238,7 +268,7 @@ def _build_methodology_notes():
         "- Retraining bolumleri ise training-seed cesitliligi ekler; Faz 5 kapanis yorumu icin asil dayanak bunlar olmalidir.",
         "- Bazi varyantlarin birbirine cok yakin cikmasi, ilgili bilesenin etkisiz oldugunu degil; mevcut state, reward veya env tasariminin bu farki yeterince ayristiramadigini da gosterebilir.",
         "- Ozellikle `w_o_reward_shaping` ve `w_o_queue_awareness` sonuclarini bu gozle okumak gerekir.",
-        "- `configs/ablation.yaml` tek kanonik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.",
+        "- `configs/synthetic/ablation.yaml` tek kanonik sentetik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -249,18 +279,26 @@ def _build_workflow_map():
         "",
         "Bu repo icinde Faz 5 icin sade akisin hangi dosyalardan gectigi burada ozetlenir.",
         "",
-        "- Ortak egitim recetesi: `configs/synthetic_rl_training.yaml`",
-        "- Baseline retraining orkestrasyonu: `configs/phase5_baseline_retraining.yaml`",
-        "- Ablation config ve mod secimi: `configs/ablation.yaml`",
-        "- Baseline retraining scripti: `experiments/run_baseline_retraining.py`",
-        "- Ablation scripti: `experiments/run_ablation_study.py`",
+        "- Sentetik RL egitim ayarlari: `configs/synthetic/rl_training.yaml`",
+        "- Sentetik RL retraining orkestrasyonu: `configs/synthetic/rl_retraining.yaml`",
+        "- Sentetik policy evaluation ayarlari: `configs/synthetic/policy_evaluation.yaml`",
+        "- Sentetik ablation config ve mod secimi: `configs/synthetic/ablation.yaml`",
+        "- Sentetik RL retraining scripti: `experiments/synthetic/train_rl_agents.py`",
+        "- Sentetik policy evaluation scripti: `experiments/synthetic/evaluate_policies.py`",
+        "- Sentetik ablation scripti: `experiments/synthetic/run_ablation_study.py`",
+        "- Trace PPO egitim configi: `configs/trace/ppo_training.yaml`",
+        "- Trace PPO egitim scripti: `experiments/trace/train_ppo.py`",
         "- Kanonik rapor: `results/tables/offloading_experiment_report.md`",
         "",
         "Model ciktilari agent bazli klasorlerde tutulur:",
-        "- PPO baseline retraining: `models/ppo/phase5_baseline_retraining/`",
-        "- DQN baseline retraining: `models/dqn/phase5_baseline_retraining/`",
-        "- A2C baseline retraining: `models/a2c/phase5_baseline_retraining/`",
-        "- PPO ablation retraining varyantlari: `models/ppo/phase5_ablation_retraining/<varyant>/`",
+        "- PPO single-run sentetik checkpointleri: `models/ppo/single_run_synthetic/`",
+        "- DQN single-run sentetik checkpointleri: `models/dqn/single_run_synthetic/`",
+        "- A2C single-run sentetik checkpointleri: `models/a2c/single_run_synthetic/`",
+        "- PPO sentetik retraining checkpointleri: `models/ppo/synthetic_rl_retraining/`",
+        "- DQN sentetik retraining checkpointleri: `models/dqn/synthetic_rl_retraining/`",
+        "- A2C sentetik retraining checkpointleri: `models/a2c/synthetic_rl_retraining/`",
+        "- Algoritma bazli sentetik ablation retraining varyantlari: `models/<algorithm>/synthetic_ablation_retraining/<varyant>/`",
+        "- Trace-tabanli PPO checkpointleri: `models/ppo/trace_training/`",
     ]
     return "\n".join(lines) + "\n"
 
@@ -381,16 +419,6 @@ def _build_ablation_section(df, figure_path):
             f"| {row['config_model_type']} | {success * 100:.2f}% | {delta:+.2f}% | {contribution:.2f}% |"
         )
 
-    if os.path.exists(figure_path):
-        lines.extend(
-            [
-                "",
-                "### Figure",
-                "",
-                "![Ablation Impact](../figures/ablation_impact.png)",
-            ]
-        )
-
     return "\n".join(lines) + "\n"
 
 
@@ -437,6 +465,40 @@ def _build_ablation_extended_section(df):
             "- `w_o_reward_shaping` ve `w_o_queue_awareness` sonuclarinin Full Model'e cok yakin olmasi, bu bilesenlerin etkisinin mevcut protokolde yeterince ayrisamamis olabilecegini dusunduruyor.",
         ]
     )
+    return "\n".join(lines) + "\n"
+
+
+def _build_ablation_figure_gallery(figure_dir="results/figures"):
+    if not os.path.isdir(figure_dir):
+        return "## Ablation Figure Galerisi\n\nBu bolum icin henuz figure yok.\n"
+
+    figure_paths = []
+    for root, _, files in os.walk(figure_dir):
+        for file_name in files:
+            if file_name.startswith("synthetic_ablation_") and file_name.endswith("_success_rate.png"):
+                figure_paths.append(os.path.join(root, file_name))
+    figure_paths = sorted(figure_paths)
+
+    if not figure_paths:
+        return "## Ablation Figure Galerisi\n\nBu bolum icin henuz figure yok.\n"
+
+    lines = [
+        "## Ablation Figure Galerisi",
+        "",
+        "Bu bolum, algoritma ve kapsam bazli uretilmis tum sentetik ablation success-rate grafiklerini listeler.",
+        "",
+    ]
+    for figure_path in figure_paths:
+        figure_name = os.path.basename(figure_path)
+        figure_link = "../" + figure_path.replace("\\", "/").removeprefix("results/")
+        lines.extend(
+            [
+                f"### {figure_name}",
+                "",
+                f"![{figure_name}]({figure_link})",
+                "",
+            ]
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -500,22 +562,30 @@ def _build_ablation_retraining_section(df):
 
 
 def write_experiment_report(
-    csv_path="results/raw/master_experiments.csv",
+    csv_path="results/raw",
     output_path="results/tables/offloading_experiment_report.md",
     figure_path="results/figures/ablation_impact.png",
 ):
     df = _load_experiment_df(csv_path)
-    baseline_df = _latest_batch(df, "baseline_")
-    ablation_df = _latest_batch(df[df["config_model_type"].isin(ABLATION_MODELS)].copy(), "ablation_")
+    baseline_df = _latest_batch_for_groups(
+        df,
+        ["baseline_multiseed", "synthetic_policy_evaluation"],
+        ["baseline_", "policy_eval_"],
+    )
+    ablation_df = _latest_batch_for_groups(
+        df[df["config_model_type"].isin(ABLATION_MODELS)].copy(),
+        ["ablation_multiseed", "ablation_multiseed_retrained_ppo", "synthetic_ablation_evaluation"],
+        ["ablation_", "synthetic_ablation_"],
+    )
     retraining_df = _latest_batch_for_groups(
         df,
-        ["phase5_retraining_multiseed", "phase5_baseline_retraining"],
-        ["retrain_", "baseline_retrain_"],
+        ["phase5_retraining_multiseed", "phase5_baseline_retraining", "synthetic_rl_retraining"],
+        ["retrain_", "baseline_retrain_", "synthetic_retrain_"],
     )
     ablation_retraining_df = _latest_batch_for_groups(
         df[df["config_model_type"].isin(ABLATION_MODELS)].copy(),
-        ["ablation_retraining_multiseed", "phase5_ablation_retraining"],
-        ["ablation_retrain_"],
+        ["ablation_retraining_multiseed", "phase5_ablation_retraining", "synthetic_ablation_retraining"],
+        ["ablation_retrain_", "synthetic_ablation_retrain_"],
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -523,7 +593,7 @@ def write_experiment_report(
         handle.write("# Task Offloading Experiment Report\n\n")
         handle.write(
             "Bu dosya `results/tables` altindaki tek kanonik okuma noktasi olarak uretilir. "
-            "Ham veri kaynagi degismeden `results/raw/master_experiments.csv` icinde tutulur.\n\n"
+            "Ham veri workflow bazli CSV dosyalari halinde `results/raw/` altinda tutulur.\n\n"
         )
         handle.write("## Proje Akisi\n\n")
         handle.write(
@@ -532,6 +602,11 @@ def write_experiment_report(
             "- `results/raw/`: kaynaga en yakin deney loglari\n"
             "- `results/tables/offloading_experiment_report.md`: insanlar icin tek ozet rapor\n"
             "- `results/figures/`: gorseller\n\n"
+        )
+        handle.write(
+            "`results/` klasoru raporlar, metrikler ve gorseller icindir. "
+            "`models/` klasoru ise sonraki deneylerde tekrar kullanilan checkpointleri tutar; "
+            "bu nedenle model dosyalari da uretilmis artefakt olsa bile `results/` altina degil `models/` altina konur.\n\n"
         )
         handle.write("## Son Batch Ozeti\n\n")
         handle.write(_build_batch_overview(df))
@@ -555,5 +630,7 @@ def write_experiment_report(
         handle.write(_build_ablation_section(ablation_df, figure_path))
         handle.write("\n")
         handle.write(_build_ablation_extended_section(ablation_df))
+        handle.write("\n")
+        handle.write(_build_ablation_figure_gallery())
         handle.write("\n---\n")
         handle.write(f"*Updated: {datetime.now().isoformat()}*\n")

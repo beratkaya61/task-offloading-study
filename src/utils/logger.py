@@ -66,7 +66,7 @@ class ExperimentLogger:
             if f"metric_{k}" not in flat_data: flat_data[f"metric_{k}"] = v
                 
         # 4. Save to Master CSV smartly (Handling Header differences)
-        csv_path = os.path.join(self.log_dir, "master_experiments.csv")
+        csv_path = os.path.join(self.log_dir, "experiment_results.csv")
         file_exists = os.path.isfile(csv_path)
         
         fieldnames = list(flat_data.keys())

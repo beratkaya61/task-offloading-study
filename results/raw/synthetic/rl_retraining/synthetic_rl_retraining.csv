@@ -1,0 +1,10 @@
+run_id,timestamp,config_seed,config_model_type,config_semantic_mode,config_total_tasks,metric_success_rate,metric_avg_reward,metric_p95_latency,metric_avg_energy,metric_qoe,config_batch_id,config_eval_group
+5d054394,2026-04-02T14:54:13.165579,42,PPO_v2,action_prior,500,0.876,1803.7,1.9738,0.0142,77.73,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+4ebc437a,2026-04-02T14:54:50.440227,43,PPO_v2,action_prior,500,0.856,1712.82,2.0064,0.0148,75.57,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+4f91955f,2026-04-02T14:55:27.561501,44,PPO_v2,action_prior,500,0.84,1641.4,2.0234,0.0138,73.88,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+a10b1191,2026-04-02T14:56:00.365663,42,DQN_v2,action_prior,500,0.838,1702.98,1.9589,0.0124,74.01,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+676a8dda,2026-04-02T14:56:33.429256,43,DQN_v2,action_prior,500,0.848,1674.64,1.9892,0.0166,74.85,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+a88173ef,2026-04-02T14:57:07.381533,44,DQN_v2,action_prior,500,0.862,1670.31,2.0301,0.017,76.05,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+3c6eb399,2026-04-02T14:57:52.410624,42,A2C_v2,action_prior,500,0.838,1702.98,1.9589,0.0124,74.01,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+b45874ed,2026-04-02T14:58:37.409074,43,A2C_v2,action_prior,500,0.848,1674.64,1.9892,0.0166,74.85,synthetic_retrain_20260402_145334,synthetic_rl_retraining
+8f30505c,2026-04-02T14:59:22.481099,44,A2C_v2,action_prior,500,0.862,1670.31,2.0301,0.017,76.05,synthetic_retrain_20260402_145334,synthetic_rl_retraining
