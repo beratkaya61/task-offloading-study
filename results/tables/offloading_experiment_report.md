@@ -16,11 +16,15 @@ Bu dosya `results/tables` altindaki tek kanonik okuma noktasi olarak uretilir. H
 
 | Batch ID | Eval Group | Last Update | Runs | Models | Total Tasks |
 |---|---|---:|---:|---:|---:|
-| synthetic_ablation_a2c_eval_20260402_151843 | synthetic_ablation_evaluation | 2026-04-02T15:19:04.598235 | 27 | 9 | 33750 |
-| synthetic_ablation_dqn_eval_20260402_151811 | synthetic_ablation_evaluation | 2026-04-02T15:18:28.438513 | 27 | 9 | 33750 |
-| synthetic_ablation_ppo_eval_20260402_151704 | synthetic_ablation_evaluation | 2026-04-02T15:17:25.710977 | 27 | 9 | 33750 |
-| policy_eval_20260402_151544 | synthetic_policy_evaluation | 2026-04-02T15:16:02.863311 | 27 | 9 | 13500 |
-| synthetic_retrain_20260402_145334 | synthetic_rl_retraining | 2026-04-02T14:59:22.481099 | 9 | 3 | 4500 |
+| synthetic_ablation_a2c_eval_20260402_182420 | synthetic_ablation_evaluation | 2026-04-02T18:24:42.165519 | 27 | 9 | 33750 |
+| synthetic_ablation_a2c_retrain_20260402_180423 | synthetic_ablation_retraining | 2026-04-02T18:23:40.936364 | 27 | 9 | 13500 |
+| synthetic_ablation_dqn_retrain_20260402_174919 | synthetic_ablation_retraining | 2026-04-02T18:03:48.773451 | 27 | 9 | 13500 |
+| synthetic_ablation_ppo_retrain_20260402_172715 | synthetic_ablation_retraining | 2026-04-02T17:43:36.499767 | 27 | 9 | 13500 |
+| synthetic_ablation_dqn_eval_20260402_172625 | synthetic_ablation_evaluation | 2026-04-02T17:26:41.999237 | 27 | 9 | 33750 |
+| synthetic_ablation_ppo_eval_20260402_172542 | synthetic_ablation_evaluation | 2026-04-02T17:26:03.764837 | 27 | 9 | 33750 |
+| policy_eval_20260402_172508 | synthetic_policy_evaluation | 2026-04-02T17:25:26.844460 | 27 | 9 | 13500 |
+| synthetic_retrain_20260402_171732 | synthetic_rl_retraining | 2026-04-02T17:23:16.555667 | 9 | 3 | 4500 |
+| synthetic_retrain_20260402_165610 | synthetic_rl_retraining | 2026-04-02T17:01:54.335976 | 9 | 3 | 4500 |
 
 ## Bu Rapor Nasil Okunmali
 
@@ -105,11 +109,11 @@ Model ciktilari agent bazli klasorlerde tutulur:
 Bu bolum, ayni modellerin sadece farkli evaluation seed'lerde test edilmesini degil, farkli train seed'lerle sifirdan yeniden egitilmesini ozetler.
 Bu nedenle metodolojik olarak baseline multi-seed evaluation bolumunden daha gucludur.
 
-| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |
-|---|---:|---:|---:|---:|---:|
-| PPO_v2 | 85.73% +- 1.80 | 1719.31 +- 81.34 | 2.001 +- 0.025 | 0.0143 +- 0.0005 | 75.73 +- 1.93 |
-| A2C_v2 | 84.93% +- 1.21 | 1682.64 +- 17.74 | 1.993 +- 0.036 | 0.0153 +- 0.0025 | 74.97 +- 1.03 |
-| DQN_v2 | 84.93% +- 1.21 | 1682.64 +- 17.74 | 1.993 +- 0.036 | 0.0153 +- 0.0025 | 74.97 +- 1.03 |
+| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) | Dominant Action |
+|---|---:|---:|---:|---:|---:|---:|
+| PPO_v2 | 66.60% +- 2.20 | 963.09 +- 134.86 | 3.596 +- 0.074 | 0.1393 +- 0.0021 | 48.62 +- 2.01 | 3 (100.0%) |
+| A2C_v2 | 64.53% +- 1.27 | 766.54 +- 79.36 | 3.610 +- 0.006 | 0.1429 +- 0.0040 | 46.48 +- 1.30 | 3 (100.0%) |
+| DQN_v2 | 64.53% +- 1.27 | 766.54 +- 79.36 | 3.610 +- 0.006 | 0.1429 +- 0.0040 | 46.48 +- 1.30 | 3 (100.0%) |
 
 Bu bolum Faz 5 kapanisi icin kritik kabul edilmelidir; cunku seed'e bagli sans etkisini azaltir ve model karsilastirmasini daha savunulabilir hale getirir.
 
@@ -122,34 +126,34 @@ Bu bolum icin henuz gercek ablation retraining verisi yok. Her varyant sifirdan 
 Bu tablo ayni egitilmis modellerin farkli evaluation seed'lerinde nasil davrandigini ozetler.
 Not: Bu bolum multi-seed evaluation'dir; multi-seed retraining degildir.
 
-| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |
-|---|---:|---:|---:|---:|---:|
-| A2C_v2 | 84.87% +- 0.76 | 1654.81 +- 54.27 | 1.994 +- 0.004 | 0.0126 +- 0.0016 | 74.90 +- 0.77 |
-| CloudOnly | 84.87% +- 0.76 | 1654.81 +- 54.27 | 1.994 +- 0.004 | 0.0126 +- 0.0016 | 74.90 +- 0.77 |
-| DQN_v2 | 84.87% +- 0.76 | 1654.81 +- 54.27 | 1.994 +- 0.004 | 0.0126 +- 0.0016 | 74.90 +- 0.77 |
-| PPO_v2 | 84.87% +- 0.76 | 1654.81 +- 54.27 | 1.994 +- 0.004 | 0.0126 +- 0.0016 | 74.90 +- 0.77 |
-| GreedyLatency | 84.87% +- 0.76 | 1677.17 +- 65.93 | 1.994 +- 0.004 | 0.0126 +- 0.0016 | 74.90 +- 0.77 |
-| GeneticAlgorithm | 84.47% +- 1.15 | 1686.33 +- 27.09 | 2.050 +- 0.003 | 0.0174 +- 0.0012 | 74.22 +- 1.17 |
-| EdgeOnly | 54.67% +- 2.19 | -378.05 +- 172.43 | 4.696 +- 0.013 | 0.0126 +- 0.0016 | 31.19 +- 2.24 |
-| Random | 53.00% +- 1.91 | -875.55 +- 149.29 | 7.139 +- 0.318 | 0.2175 +- 0.0074 | 17.31 +- 1.36 |
-| LocalOnly | 25.60% +- 2.78 | -5411.06 +- 355.15 | 9.339 +- 0.029 | 0.5157 +- 0.0171 | -21.10 +- 2.88 |
+| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) | Dominant Action |
+|---|---:|---:|---:|---:|---:|---:|
+| A2C_v2 | 71.20% +- 1.06 | 1455.89 +- 44.43 | 3.204 +- 0.039 | 0.1399 +- 0.0019 | 55.18 +- 0.86 | 3 (100.0%) |
+| DQN_v2 | 71.20% +- 1.06 | 1455.89 +- 44.43 | 3.204 +- 0.039 | 0.1399 +- 0.0019 | 55.18 +- 0.86 | 3 (100.0%) |
+| PPO_v2 | 71.20% +- 1.06 | 1455.89 +- 44.43 | 3.204 +- 0.039 | 0.1399 +- 0.0019 | 55.18 +- 0.86 | 3 (100.0%) |
+| GeneticAlgorithm | 63.60% +- 0.72 | -1147.93 +- 143.95 | 3.070 +- 0.035 | 0.0376 +- 0.0007 | 48.25 +- 0.62 | 5 (90.3%) |
+| GreedyLatency | 59.53% +- 0.61 | -1960.98 +- 18.77 | 3.252 +- 0.034 | 0.0322 +- 0.0008 | 43.27 +- 0.68 | 5 (98.3%) |
+| CloudOnly | 58.60% +- 0.87 | -2145.31 +- 37.03 | 3.294 +- 0.028 | 0.0326 +- 0.0008 | 42.13 +- 0.83 | 5 (100.0%) |
+| EdgeOnly | 55.00% +- 0.80 | -404.93 +- 41.09 | 4.468 +- 0.056 | 0.0126 +- 0.0008 | 32.66 +- 0.74 | 4 (100.0%) |
+| Random | 53.20% +- 0.87 | -1384.56 +- 163.21 | 7.196 +- 0.486 | 0.2303 +- 0.0156 | 17.22 +- 1.58 | 0 (17.2%) |
+| LocalOnly | 23.67% +- 1.21 | -6041.35 +- 140.75 | 9.382 +- 0.048 | 0.5222 +- 0.0067 | -23.24 +- 1.31 | 0 (100.0%) |
 
 ## Ablation Multi-Seed Sonuclari
 
 Bu tablo semantic bilesenlerin bireysel etkisini coklu evaluation seed uzerinden gosterir.
 Full Model: semantics, reward shaping, semantic prior, confidence weighting, partial offloading, battery awareness, queue awareness ve mobility features acik olan temel sistemdir.
 
-| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |
-|---|---:|---:|---:|---:|---:|
-| full_model | 85.52% +- 0.56 | 1674.39 +- 17.88 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_battery_awareness | 85.52% +- 0.56 | 1674.39 +- 17.88 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_confidence | 85.52% +- 0.56 | 1610.74 +- 20.34 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_partial_offloading | 85.52% +- 0.56 | 1674.39 +- 17.88 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_queue_awareness | 85.52% +- 0.56 | 1674.39 +- 17.88 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_semantic_prior | 85.52% +- 0.56 | 1674.39 +- 17.88 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_reward_shaping | 85.52% +- 0.56 | -57.64 +- 0.18 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_semantics | 85.52% +- 0.56 | 1653.31 +- 15.36 | 1.999 +- 0.011 | 0.0128 +- 0.0015 | 75.52 +- 0.61 |
-| w_o_mobility_features | 75.73% +- 1.85 | 612.83 +- 69.72 | 2.615 +- 0.033 | 0.2555 +- 0.0077 | 62.66 +- 1.90 |
+| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) | Dominant Action |
+|---|---:|---:|---:|---:|---:|---:|
+| full_model | 71.15% +- 1.57 | 1478.28 +- 73.80 | 3.236 +- 0.029 | 0.1373 +- 0.0010 | 54.96 +- 1.60 | 3 (100.0%) |
+| w_o_battery_awareness | 71.15% +- 1.57 | 1478.28 +- 73.80 | 3.236 +- 0.029 | 0.1373 +- 0.0010 | 54.96 +- 1.60 | 3 (100.0%) |
+| w_o_confidence | 71.15% +- 1.57 | 1432.21 +- 76.15 | 3.236 +- 0.029 | 0.1373 +- 0.0010 | 54.96 +- 1.60 | 3 (100.0%) |
+| w_o_reward_shaping | 71.15% +- 1.57 | -93.25 +- 0.87 | 3.236 +- 0.029 | 0.1373 +- 0.0010 | 54.96 +- 1.60 | 3 (100.0%) |
+| w_o_queue_awareness | 71.15% +- 1.57 | 1478.28 +- 73.80 | 3.236 +- 0.029 | 0.1373 +- 0.0010 | 54.96 +- 1.60 | 3 (100.0%) |
+| w_o_semantic_prior | 71.15% +- 1.57 | 1478.28 +- 73.80 | 3.236 +- 0.029 | 0.1373 +- 0.0010 | 54.96 +- 1.60 | 3 (100.0%) |
+| w_o_semantics | 71.15% +- 1.57 | 2011.41 +- 62.65 | 3.236 +- 0.029 | 0.1373 +- 0.0010 | 54.96 +- 1.60 | 3 (100.0%) |
+| w_o_mobility_features | 63.33% +- 1.07 | 852.17 +- 111.72 | 3.602 +- 0.109 | 0.3157 +- 0.0020 | 45.32 +- 1.60 | 3 (100.0%) |
+| w_o_partial_offloading | 54.69% +- 1.14 | -406.00 +- 70.20 | 4.505 +- 0.040 | 0.0126 +- 0.0003 | 32.17 +- 0.99 | 3 (100.0%) |
 
 ### Delta Analizi
 
@@ -157,19 +161,19 @@ Delta analizi, her ablation senaryosunun Full Model'e gore ne kadar iyilestigini
 Pozitif delta, ilgili varyantin Full Model'den daha yuksek success verdigini; negatif delta ise daha kotu oldugunu anlatir.
 Contribution kolonu, cikarilan bilesenin yaklasik etkisini `-delta` olarak okumayi kolaylastirir.
 
-Baseline (Full Model): 85.52%
+Baseline (Full Model): 71.15%
 
 | Ablation | Mean Success % | Delta vs Full | Contribution |
 |---|---:|---:|---:|
-| full_model | 85.52% | +0.00% | 0.00% |
-| w_o_battery_awareness | 85.52% | +0.00% | -0.00% |
-| w_o_confidence | 85.52% | +0.00% | -0.00% |
-| w_o_partial_offloading | 85.52% | +0.00% | -0.00% |
-| w_o_queue_awareness | 85.52% | +0.00% | -0.00% |
-| w_o_semantic_prior | 85.52% | +0.00% | -0.00% |
-| w_o_reward_shaping | 85.52% | +0.00% | -0.00% |
-| w_o_semantics | 85.52% | +0.00% | -0.00% |
-| w_o_mobility_features | 75.73% | -9.79% | 9.79% |
+| full_model | 71.15% | +0.00% | 0.00% |
+| w_o_battery_awareness | 71.15% | +0.00% | -0.00% |
+| w_o_confidence | 71.15% | +0.00% | -0.00% |
+| w_o_reward_shaping | 71.15% | +0.00% | -0.00% |
+| w_o_queue_awareness | 71.15% | +0.00% | -0.00% |
+| w_o_semantic_prior | 71.15% | +0.00% | -0.00% |
+| w_o_semantics | 71.15% | +0.00% | -0.00% |
+| w_o_mobility_features | 63.33% | -7.81% | 7.81% |
+| w_o_partial_offloading | 54.69% | -16.45% | 16.45% |
 
 ## Kapsamli Ablation Analizi
 
@@ -178,15 +182,15 @@ Amac, ablation sonuclarini success, enerji, tail-latency ve QoE eksenlerinde hiz
 
 | Ablation Model | Success Rate (mean +- std) | Avg Energy (J) | P95 Latency (s) | QoE Score | Delta vs Baseline |
 |---|---:|---:|---:|---:|---:|
-| full_model | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | 0.00% (Baseline) |
-| w_o_battery_awareness | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | +0.00% |
-| w_o_confidence | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | +0.00% |
-| w_o_partial_offloading | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | +0.00% |
-| w_o_queue_awareness | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | +0.00% |
-| w_o_semantic_prior | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | +0.00% |
-| w_o_reward_shaping | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | +0.00% |
-| w_o_semantics | 85.52% +- 0.56 | 0.013 | 1.999 | 75.52 | +0.00% |
-| w_o_mobility_features | 75.73% +- 1.85 | 0.256 | 2.615 | 62.66 | -9.79% |
+| full_model | 71.15% +- 1.57 | 0.137 | 3.236 | 54.96 | 0.00% (Baseline) |
+| w_o_battery_awareness | 71.15% +- 1.57 | 0.137 | 3.236 | 54.96 | +0.00% |
+| w_o_confidence | 71.15% +- 1.57 | 0.137 | 3.236 | 54.96 | +0.00% |
+| w_o_reward_shaping | 71.15% +- 1.57 | 0.137 | 3.236 | 54.96 | +0.00% |
+| w_o_queue_awareness | 71.15% +- 1.57 | 0.137 | 3.236 | 54.96 | +0.00% |
+| w_o_semantic_prior | 71.15% +- 1.57 | 0.137 | 3.236 | 54.96 | +0.00% |
+| w_o_semantics | 71.15% +- 1.57 | 0.137 | 3.236 | 54.96 | +0.00% |
+| w_o_mobility_features | 63.33% +- 1.07 | 0.316 | 3.602 | 45.32 | -7.81% |
+| w_o_partial_offloading | 54.69% +- 1.14 | 0.013 | 4.505 | 32.17 | -16.45% |
 
 ### Kisa Yorum
 
@@ -203,9 +207,17 @@ Bu bolum, algoritma ve kapsam bazli uretilmis tum sentetik ablation success-rate
 
 ![synthetic_ablation_a2c_multi_seed_evaluation_success_rate.png](../figures/synthetic/ablation/synthetic_ablation_a2c_multi_seed_evaluation_success_rate.png)
 
+### synthetic_ablation_a2c_multi_seed_retraining_success_rate.png
+
+![synthetic_ablation_a2c_multi_seed_retraining_success_rate.png](../figures/synthetic/ablation/synthetic_ablation_a2c_multi_seed_retraining_success_rate.png)
+
 ### synthetic_ablation_dqn_multi_seed_evaluation_success_rate.png
 
 ![synthetic_ablation_dqn_multi_seed_evaluation_success_rate.png](../figures/synthetic/ablation/synthetic_ablation_dqn_multi_seed_evaluation_success_rate.png)
+
+### synthetic_ablation_dqn_multi_seed_retraining_success_rate.png
+
+![synthetic_ablation_dqn_multi_seed_retraining_success_rate.png](../figures/synthetic/ablation/synthetic_ablation_dqn_multi_seed_retraining_success_rate.png)
 
 ### synthetic_ablation_ppo_multi_seed_evaluation_success_rate.png
 
@@ -217,4 +229,4 @@ Bu bolum, algoritma ve kapsam bazli uretilmis tum sentetik ablation success-rate
 
 
 ---
-*Updated: 2026-04-02T15:25:28.481711*
+*Updated: 2026-04-02T18:24:42.212220*

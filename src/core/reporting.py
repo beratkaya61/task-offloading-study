@@ -29,6 +29,14 @@ REQUIRED_COLUMNS = [
     "metric_p95_latency",
     "metric_avg_energy",
     "metric_qoe",
+    "metric_unique_actions",
+    "metric_action_0_rate",
+    "metric_action_1_rate",
+    "metric_action_2_rate",
+    "metric_action_3_rate",
+    "metric_action_4_rate",
+    "metric_action_5_rate",
+    "metric_dominant_action",
     "config_batch_id",
     "config_eval_group",
 ]
@@ -68,6 +76,26 @@ def _load_experiment_df(csv_path):
 
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    numeric_columns = [
+        "config_seed",
+        "config_total_tasks",
+        "metric_success_rate",
+        "metric_avg_reward",
+        "metric_p95_latency",
+        "metric_avg_energy",
+        "metric_qoe",
+        "metric_unique_actions",
+        "metric_action_0_rate",
+        "metric_action_1_rate",
+        "metric_action_2_rate",
+        "metric_action_3_rate",
+        "metric_action_4_rate",
+        "metric_action_5_rate",
+        "metric_dominant_action",
+    ]
+    for column in numeric_columns:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
     return df
 
 
@@ -128,13 +156,21 @@ def _aggregate_results(df):
     if df.empty:
         return pd.DataFrame()
 
-    grouped = (
-        df.groupby("config_model_type")[
-            ["metric_success_rate", "metric_avg_reward", "metric_p95_latency", "metric_avg_energy", "metric_qoe"]
-        ]
-        .agg(["mean", "std"])
-        .reset_index()
-    )
+    agg_map = {
+        "metric_success_rate": ["mean", "std"],
+        "metric_avg_reward": ["mean", "std"],
+        "metric_p95_latency": ["mean", "std"],
+        "metric_avg_energy": ["mean", "std"],
+        "metric_qoe": ["mean", "std"],
+        "metric_unique_actions": ["mean"],
+        "metric_action_0_rate": ["mean"],
+        "metric_action_1_rate": ["mean"],
+        "metric_action_2_rate": ["mean"],
+        "metric_action_3_rate": ["mean"],
+        "metric_action_4_rate": ["mean"],
+        "metric_action_5_rate": ["mean"],
+    }
+    grouped = df.groupby("config_model_type").agg(agg_map).reset_index()
     grouped.columns = ["_".join(col).strip("_") for col in grouped.columns.values]
     return grouped.sort_values("metric_success_rate_mean", ascending=False)
 
@@ -149,6 +185,15 @@ def _percent_mean_std(mean_value, std_value):
 
 def _scalar_mean_std(mean_value, std_value, precision):
     return f"{float(mean_value):.{precision}f} +- {_safe_std(std_value):.{precision}f}"
+
+
+def _dominant_action_text(row):
+    action_rates = {
+        index: float(row.get(f"metric_action_{index}_rate_mean", 0.0) or 0.0)
+        for index in range(6)
+    }
+    dominant_action = max(action_rates, key=action_rates.get)
+    return f"{dominant_action} ({action_rates[dominant_action] * 100:.1f}%)"
 
 
 def _display_eval_group(eval_group):
@@ -318,8 +363,8 @@ def _build_retraining_section(df):
         "Bu bolum, ayni modellerin sadece farkli evaluation seed'lerde test edilmesini degil, farkli train seed'lerle sifirdan yeniden egitilmesini ozetler.",
         "Bu nedenle metodolojik olarak baseline multi-seed evaluation bolumunden daha gucludur.",
         "",
-        "| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |",
-        "|---|---:|---:|---:|---:|---:|",
+        "| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) | Dominant Action |",
+        "|---|---:|---:|---:|---:|---:|---:|",
     ]
 
     for _, row in grouped.iterrows():
@@ -329,7 +374,8 @@ def _build_retraining_section(df):
             f"{_scalar_mean_std(row['metric_avg_reward_mean'], row['metric_avg_reward_std'], 2)} | "
             f"{_scalar_mean_std(row['metric_p95_latency_mean'], row['metric_p95_latency_std'], 3)} | "
             f"{_scalar_mean_std(row['metric_avg_energy_mean'], row['metric_avg_energy_std'], 4)} | "
-            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} |"
+            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} | "
+            f"{_dominant_action_text(row)} |"
         )
 
     lines.extend(
@@ -352,8 +398,8 @@ def _build_baseline_section(df):
         "Bu tablo ayni egitilmis modellerin farkli evaluation seed'lerinde nasil davrandigini ozetler.",
         "Not: Bu bolum multi-seed evaluation'dir; multi-seed retraining degildir.",
         "",
-        "| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |",
-        "|---|---:|---:|---:|---:|---:|",
+        "| Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) | Dominant Action |",
+        "|---|---:|---:|---:|---:|---:|---:|",
     ]
     for _, row in grouped.iterrows():
         lines.append(
@@ -362,7 +408,8 @@ def _build_baseline_section(df):
             f"{_scalar_mean_std(row['metric_avg_reward_mean'], row['metric_avg_reward_std'], 2)} | "
             f"{_scalar_mean_std(row['metric_p95_latency_mean'], row['metric_p95_latency_std'], 3)} | "
             f"{_scalar_mean_std(row['metric_avg_energy_mean'], row['metric_avg_energy_std'], 4)} | "
-            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} |"
+            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} | "
+            f"{_dominant_action_text(row)} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -381,8 +428,8 @@ def _build_ablation_section(df, figure_path):
         "Bu tablo semantic bilesenlerin bireysel etkisini coklu evaluation seed uzerinden gosterir.",
         "Full Model: semantics, reward shaping, semantic prior, confidence weighting, partial offloading, battery awareness, queue awareness ve mobility features acik olan temel sistemdir.",
         "",
-        "| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |",
-        "|---|---:|---:|---:|---:|---:|",
+        "| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) | Dominant Action |",
+        "|---|---:|---:|---:|---:|---:|---:|",
     ]
 
     for _, row in grouped.iterrows():
@@ -392,7 +439,8 @@ def _build_ablation_section(df, figure_path):
             f"{_scalar_mean_std(row['metric_avg_reward_mean'], row['metric_avg_reward_std'], 2)} | "
             f"{_scalar_mean_std(row['metric_p95_latency_mean'], row['metric_p95_latency_std'], 3)} | "
             f"{_scalar_mean_std(row['metric_avg_energy_mean'], row['metric_avg_energy_std'], 4)} | "
-            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} |"
+            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} | "
+            f"{_dominant_action_text(row)} |"
         )
 
     lines.extend(
@@ -520,8 +568,8 @@ def _build_ablation_retraining_section(df):
         "Bu bolum, ablation varyantlarinin sadece test edilmesini degil, her birinin ayri ayri sifirdan yeniden egitilmesini ozetler.",
         "Bu nedenle semantic bilesen katkisini okumak icin en guvenilir Faz 5 tablosu budur.",
         "",
-        "| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) |",
-        "|---|---:|---:|---:|---:|---:|",
+        "| Ablation Model | Success Rate (mean +- std) | Avg Reward (mean +- std) | P95 Latency (mean +- std) | Avg Energy (mean +- std) | QoE (mean +- std) | Dominant Action |",
+        "|---|---:|---:|---:|---:|---:|---:|",
     ]
 
     for _, row in grouped.iterrows():
@@ -531,7 +579,8 @@ def _build_ablation_retraining_section(df):
             f"{_scalar_mean_std(row['metric_avg_reward_mean'], row['metric_avg_reward_std'], 2)} | "
             f"{_scalar_mean_std(row['metric_p95_latency_mean'], row['metric_p95_latency_std'], 3)} | "
             f"{_scalar_mean_std(row['metric_avg_energy_mean'], row['metric_avg_energy_std'], 4)} | "
-            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} |"
+            f"{_scalar_mean_std(row['metric_qoe_mean'], row['metric_qoe_std'], 2)} | "
+            f"{_dominant_action_text(row)} |"
         )
 
     lines.extend(

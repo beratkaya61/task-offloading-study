@@ -19,6 +19,14 @@ EXPERIMENT_LOG_COLUMNS = [
     "metric_p95_latency",
     "metric_avg_energy",
     "metric_qoe",
+    "metric_unique_actions",
+    "metric_action_0_rate",
+    "metric_action_1_rate",
+    "metric_action_2_rate",
+    "metric_action_3_rate",
+    "metric_action_4_rate",
+    "metric_action_5_rate",
+    "metric_dominant_action",
     "config_batch_id",
     "config_eval_group",
 ]
@@ -73,6 +81,7 @@ def evaluate_policy(
         print(f"[EVAL] Custom baseline model detected: {run_name}")
 
     results = []
+    action_counts = {index: 0 for index in range(6)}
 
     for _ in range(num_episodes):
         obs, _ = env.reset()
@@ -90,6 +99,7 @@ def evaluate_policy(
                 action = int(np.asarray(action).reshape(-1)[0])
             else:
                 action, _ = model.predict(obs, deterministic=True)
+            action_counts[int(action)] = action_counts.get(int(action), 0) + 1
 
             obs, reward, done, truncated, info = env.step(action)
             done = done or truncated
@@ -122,6 +132,13 @@ def evaluate_policy(
     avg_energy = float(np.mean([row["avg_energy"] for row in results]))
     avg_qoe = float(np.mean([row["qoe"] for row in results]))
     total_tasks = int(sum(row["steps"] for row in results))
+    total_actions = max(1, sum(action_counts.values()))
+    action_rates = {
+        f"metric_action_{index}_rate": round(action_counts.get(index, 0) / total_actions, 4)
+        for index in range(6)
+    }
+    unique_actions = sum(1 for count in action_counts.values() if count > 0)
+    dominant_action = max(action_counts, key=action_counts.get) if action_counts else -1
 
     os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
     normalize_experiment_csv(csv_path)
@@ -138,9 +155,12 @@ def evaluate_policy(
         "metric_p95_latency": round(avg_p95_latency, 4),
         "metric_avg_energy": round(avg_energy, 4),
         "metric_qoe": round(avg_qoe, 2),
+        "metric_unique_actions": unique_actions,
+        "metric_dominant_action": dominant_action,
         "config_batch_id": "",
         "config_eval_group": "",
     }
+    log_entry.update(action_rates)
     if extra_fields:
         log_entry.update(extra_fields)
 
@@ -152,7 +172,7 @@ def evaluate_policy(
 
     print(
         f"[EVAL] {run_name} evaluated. Average success: {avg_success:.2%}, "
-        f"P95 latency: {avg_p95_latency:.3f}s"
+        f"P95 latency: {avg_p95_latency:.3f}s, dominant action: {dominant_action}"
     )
     return log_entry
 

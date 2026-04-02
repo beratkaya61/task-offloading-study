@@ -1,4 +1,4 @@
-def calculate_reward(action, delay, energy, task, device, local_energy_pred):
+def calculate_reward(action, delay, energy, task, device, local_energy_pred, edge_energy_ratio=None, edge_energy_cost=0.0):
     """
     Calculates the reward (or penalty) for an offloading decision made by the RL Agent.
     Calibrated based on Phase 5 findings to reduce over-reliance on semantic shaping.
@@ -8,8 +8,9 @@ def calculate_reward(action, delay, energy, task, device, local_energy_pred):
     
     # 1. Core Objectives: Minimize Delay and Energy (Strengthened based on Phase 5)
     # Increased weights to ensure physical reality isn't ignored without shaping
-    reward -= (delay * 35.0) 
+    reward -= (delay * 35.0)
     reward -= (energy * 5.0)
+    reward -= edge_energy_cost * 1.5
     
     # 2. LLM Semantic Alignment Bonus (With Confidence Thresholding)
     semantic = task.semantic_analysis
@@ -29,14 +30,19 @@ def calculate_reward(action, delay, energy, task, device, local_energy_pred):
         reward -= 12.0 * conf_factor # Slightly higher penalty for disobeying high-conf rec
         
     # 3. Penalize Cloud Cost
+    cloud_cost = 30.0 + 18.0 * min(1.0, getattr(task, "size_bits", 0.0) / 1e7)
     if action == 5:
-        reward -= 20.0 # Adjusted cost
+        reward -= cloud_cost
         
     priority_score = semantic.get('priority_score', 0.5) if semantic else 0.5
     
     # 4. Deadline Miss Penalty (Normalized by priority)
-    if delay > task.deadline:
-        reward -= 60.0 * priority_score # Miss is worse for critical tasks
+    deadline = max(0.1, task.deadline)
+    if delay > deadline:
+        reward -= 75.0 * priority_score
+    else:
+        slack_ratio = max(0.0, (deadline - delay) / deadline)
+        reward += 18.0 * slack_ratio * priority_score
         
     # 5. Battery Awareness (Exponential Penalty - Calibrated Phase 5)
     battery_pct = (device.battery / 10000.0) * 100.0 if hasattr(device, 'battery') else 100.0
@@ -48,15 +54,21 @@ def calculate_reward(action, delay, energy, task, device, local_energy_pred):
             reward -= 40.0 * (severity ** 2)
         else:
             reward += 10.0 * severity # Reward local conservation
+
+    if 1 <= action <= 4 and edge_energy_ratio is not None and edge_energy_ratio < 0.25:
+        severity = (0.25 - edge_energy_ratio) / 0.25
+        reward -= 35.0 * (severity ** 2)
             
     # 6. Granular Partial Offloading Utilities (Awareness of splits)
-    if 1 <= action <= 3:
+    if 1 <= action <= 4:
         local_delay_only = task.cpu_cycles / 1e9
         if delay < local_delay_only:
             reward += 12.0 * ((local_delay_only - delay) / local_delay_only)
-        
-        # Energy saving utility
+
         reward += 5.0 * (1.0 - energy / max(1e-5, local_energy_pred))
+
+    if action == 0 and delay <= deadline:
+        reward += 4.0
         
     return reward
 

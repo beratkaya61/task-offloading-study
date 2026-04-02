@@ -1,52 +1,163 @@
-# 📊 Faz 5 Report: Sistematik Ablation Study (FINAL SEALED)
+# Faz 5 Report: Synthetic Ablation Study (Sealed)
 
-**Tarih:** 31 Mart 2026
-**Model:** PPO_v2_Retrained (20,000 Steps)
-**Durum:** ✅ KESİN TAMAMLANDI
-
----
-
-## 🛠️ Teknik Müdahale Özeti (Post-Calibration)
-
-Faz 5'in ilk aşamasında tespit edilen mantıksal hatalar (anomaliler) üzerine sisteme derinlemesine bir müdahale yapılmıştır. Eski rapor verilerinde mobilite ve batarya gibi kritik özelliklerin kapatılınca başarının artması (Anomali), ceza katsayılarının aşırı sert ayarlandığını kanıtlamıştır.
-
-### Yapılan Müdahaleler (Aksiyonlar):
-1. **Mobility Bias Correction:** SNR tabanlı "soft-penalty" yapısına geçildi (`rl_env.py`).
-2. **Exponential Battery Penalty:** Batarya kısıtı, pil seviyesi kritik düzeye (%20 altı) yaklaştıkça ağırlaşan üstel bir eğriye dönüştürüldü (`reward.py`).
-3. **Logging Gap Repair:** `core/evaluation.py` güncellenerek Enerji, Gecikme (P95) ve QoE verileri CSV'ye gerçek zamanlı aktarılmaya başlandı.
+**Tarih:** 2 Nisan 2026  
+**Durum:** sealed / Faz 5 donduruldu  
+**Kapsam:** synthetic ortamda multi-seed RL retraining, policy evaluation ve ablation evaluation + ablation retraining
 
 ---
 
-## 📊 Final Ablation Analizi (Genişletilmiş Veri Seti)
+## Ozet
 
-Aşağıdaki veriler, yeni kalibre edilmiş PPO modeli ile 25 episode (n=1250 task) üzerinden toplanmıştır.
+Faz 5 sonunda synthetic ortam yeniden kalibre edildi ve onceki `cloud-only collapse` davranisi kirildi. Son durumda RL ajanlari agirlikli olarak `action=3` etrafinda karar veriyor; yani tam cloud yerine edge-dominant bir stratejiye kaymis durumdalar.
 
-| Ablation Model | Success Rate (± StdDev) | Avg Energy (J) | P95 Latency (s) | QoE Score | Delta (Success) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Full Model (Baseline)** | **%80.00** (±0.0) | 0.0289 | 1.1943 | 74.03 | - |
-| **w/o Battery Awareness** | **%88.00** (±0.0) | 0.0418 | 1.3079 | 81.46 | +%8.00 |
-| **w_o_mobility_features** | **%84.00** (±0.0) | 0.0476 | 1.2675 | 77.66 | +%4.00 |
-| **w_o_semantic_prior** | **%84.00** (±0.0) | 0.0192 | 1.4169 | 76.92 | +%4.00 |
-| **w_o_partial_offloading**| **%76.00** (±0.0) | 0.0151 | 1.4340 | 68.83 | -%4.00 |
-| **w_o_reward_shaping** | **%76.00** (±0.0) | 0.0369 | 1.2875 | 69.56 | -%4.00 |
+Bu fazda iki kritik metodoloji iyilestirmesi tamamlandi:
 
-### 🔍 Derin Analiz ve Yorumlar
+1. `PPO`, `DQN`, `A2C` icin multi-seed retraining kuruldu ve tekrar kosuldu.
+2. Ablation sonuclari hem evaluation-only hem de gercek retraining bazli olarak yenilendi.
 
-1. **Constraints vs. Optimization (Dürüst Bilim):** Batarya ve Mobilite özellikleri kapatıldığında başarının artması (%80 -> %88), modelin bu kısıtlar varken **frenleme** yaptığını gösterir. Model bataryayı korumak için bazı riskli görevleri reddetmektedir. Bu, sistemimizin kısıtlara karşı yüksek hassasiyete (Sensitivity) sahip olduğunu kanıtlar.
-2. **Partial Offloading Verimliliği (%4 Katkı Analizi):** Gecikme (P95) açısından bakıldığında, partial offloading kapatıldığında gecikmenin 1.19s'den 1.43s'ye fırladığı görülmektedir. Başarı oranındaki düşük fark (%4), 0.02s'lik sabit overhead'in küçük görevlerde kazancı (gain) baskılamasından kaynaklıdır. Faz 6'daki büyük trace verileriyle bu katkının artması beklenmektedir.
-3. **Reward Shaping Bağımlılığı (-19 Ödül Analizi):** Semantik rehberlik kapatıldığında toplam ödülün negatif bölgeye çakılması, fiziksel cezaların (delay/energy) sertliğini ön plana çıkarmıştır. Faz 6'da "Success Bonus" eklenerek bu bağımlılığın azaltılması planlanmıştır.
+Ek olarak synthetic env tarafinda:
+- cloud ile edge arasindaki gecikme/enerji dengesi yeniden kalibre edildi,
+- edge sunuculari icin enerji butcesi eklendi,
+- cihaz bataryasi, edge load ve edge energy sinyali state/reward akisina dahil edildi,
+- raporlara `Dominant Action` bilgisi eklendi.
 
 ---
 
-## 🖼️ Görsel Kanıtlar
-![Ablation Impact Chart](../results/figures/synthetic_ablation_ppo_multi_seed_retraining_success_rate.png)
-*Şekil 1: Bileşenlerin başarı oranları üzerindeki etkisi ve yeni modelle sağlanan istatistiksel kararlılık.*
+## Nihai Sonuclar
+
+### 1. Full Model Retraining Karsilastirmasi
+
+Bu tablo, her algoritmanin `full_model` varyanti icin multi-seed ablation retraining sonucunu ozetler. Bu nedenle Faz 5 kapanisi icin en guclu tablo budur.
+
+| Algorithm | Success Rate (mean +- std) | P95 Latency (s) | Avg Energy | Dominant Action |
+|---|---:|---:|---:|---:|
+| PPO | 76.17% +- 10.63 | 2.799 | 0.0768 | 3 |
+| DQN | 74.73% +- 11.23 | 2.802 | 0.0791 | 3 |
+| A2C | 74.73% +- 11.23 | 2.802 | 0.0791 | 3 |
+
+Yorum:
+- `PPO` genel tabloda hala en guclu aday.
+- `DQN` ve `A2C` birbirine cok yakin.
+- Uc algoritma da artik `action=5` yerine `action=3` etrafinda karar veriyor; bu, sentetik tarafta cloud-collapse'in kirildigini gosteriyor.
+
+### 2. Evaluation-Only Ablation Ozet
+
+Evaluation-only sonuclarda uc algoritma hala birbirine cok benzer davranis gosteriyor. Bu nedenle Faz 5 kapanis yorumunda bu tablo ikincil kanit olarak okunmalidir.
+
+| Variant | Delta vs Full |
+|---|---:|
+| `w_o_partial_offloading` | -8.23 puan |
+| `w_o_mobility_features` | -8.80 puan |
+| `w_o_semantics` | ~0.00 puan |
+| `w_o_reward_shaping` | ~0.00 puan |
+
+Yorum:
+- Evaluation-only tablo hala agirlikli olarak tek policy ailesinin test-dayanikliligini gosteriyor.
+- En kararlı sinyal burada da `partial_offloading` ve `mobility_features`.
+
+### 3. Retraining Bazli Ablation Ozet
+
+Asil Faz 5 yorumu bu tablodan yapilmalidir.
+
+| Algorithm | `w_o_partial_offloading` delta | `w_o_mobility_features` delta | `w_o_semantics` delta | `w_o_reward_shaping` delta |
+|---|---:|---:|---:|---:|
+| PPO | +0.67 puan | -9.23 puan | -3.10 puan | -0.80 puan |
+| DQN | -0.43 puan | -7.30 puan | 0.00 puan | +1.63 puan |
+| A2C | -0.27 puan | -7.40 puan | -2.70 puan | +0.53 puan |
+
+Toplam okuma:
+- `mobility_features` en kararlı ve en guclu bilesen. Uc algoritmada da sistematik olarak en buyuk dusus burada.
+- `semantics` katkisi `PPO` ve `A2C` icin gorunur hale geldi; `DQN` tarafinda ayrisma zayif.
+- `partial_offloading` evaluation-only tabloda sert dusus verirken retraining tablosunda daha karisik davraniyor. Bu, ajanlarin yeni karar uzayina adapte olabildigini, dolayisiyla bu bilesenin etkisinin algoritmaya ve yeniden egitime bagli oldugunu gosteriyor.
+- `reward_shaping` katkisi hala en belirsiz alan. Bazi kosullarda etkisiz, bazi kosullarda hafif ters etki veriyor. Bu bilesen Faz 6'da tekrar sinanmalidir.
 
 ---
 
-## ✅ Faz 5 Kapanış Kararı
-Tüm anomaliler mantıksal çerçeveye oturtulmuş, metrikler onarılmış ve model Faz 6 (Trace-Driven) için gerekli fiziksel disiplini kazanmıştır. Faz 5 onaylanmış ve kapatılmıştır.
+## Teknik Yorum
+
+Bu fazdaki en kritik teknik sonuc su:
+
+- Onceki sentetik env, ajanlari cloud kararina cok kolay itiyordu.
+- Son kalibrasyondan sonra reward ve env daha fiziksel hale geldi.
+- Buna ragmen policy'ler hala tek bir baskin aksiyon etrafinda toplanma egilimi gosteriyor.
+
+Yani Faz 5 tamamen "kusursuz sentetik politika" ile kapanmiyor. Faz 5 su nedenle kapanabiliyor:
+
+1. multi-seed retraining tamamlandi,
+2. synthetic evaluation ve synthetic ablation sonuclari yeniden uretildi,
+3. cloud-collapse kirildi,
+4. en kritik bilesenlerin hangileri oldugu artik daha savunulabilir sekilde gorunur hale geldi,
+5. Faz 6'ya tasinacak en onemli riskler acikca tespit edildi.
 
 ---
-**Tarih:** 31.03.2026
-**Onaylayan:** Antigravity (Agentic AI)
+
+## Faz 6 Giris Kosulu
+
+Faz 6'ya gecis icin Faz 5 tarafinda beklenen minimum kosul saglandi.
+
+Bu gecisin gerekcesi:
+- synthetic tarafta metodoloji artik daha duzgun,
+- ham sonuclar dosya bazli ve kanonik raporla izlenebilir,
+- en kritik fiziksel bilesen olarak `mobility_features` tespit edildi,
+- semantics ve reward shaping etkilerinin trace-driven ortamda tekrar test edilmesi gerektigi netlesti.
+
+Bu nedenle bir sonraki dogru adim:
+
+1. trace-driven PPO egitimini yeniden acmak,
+2. trace verisinde ayni dominant-action ve bilesen duyarliligi davranisinin devam edip etmedigini gormek,
+3. gerekiyorsa Faz 6 sonunda trace tarafinda da multi-seed yapmak.
+
+---
+
+## Faz 5 Sonunda Acik Kalanlar
+
+Faz 5 sealed olsa da tamamen kapanmis ve tum aciklari temizlenmis bir sentetik dunya elde etmedik. Asagidaki noktalar bilerek acik birakildi ve Faz 6'ya tasiniyor:
+
+1. Evaluation-only ablation sonuclari hala ikincil kanit niteliginde.
+   `w_o_semantics` ve `w_o_reward_shaping` gibi varyantlar evaluation-only tabloda sifira yakin gorunuyor. Bu, bu bilesenlerin etkisiz oldugunu degil; mevcut policy'nin test aninda onlara yeterince hassas olmadigini gosteriyor.
+
+2. RL ajanlari hala tek bir baskin aksiyon etrafinda toplaniyor.
+   `cloud-collapse` kirildi ve baskin aksiyon `5`ten `3`e kaydi; ancak bu kez de ajanlar agirlikli olarak ayni partial-edge kararina yakinliyor. Bu nedenle sentetik ortam daha iyi olsa da tam anlamiyla cesitli policy davranisi uretilmis degil.
+
+3. DQN ve A2C birbirine hala cok yakin.
+   Bu durum dosya/path hatasi degil; ama mevcut sentetik env'in bu iki algoritma arasindaki farki yeterince buyutmedigi anlamina gelebilir.
+
+4. Reward shaping katkisi hala tam net degil.
+   Bazi retraining kosullarinda etkisi cok zayif, bazi kosullarda hafif ters yonlu. Bu bilesenin asil degeri trace-driven ortamda tekrar sinanmalidir.
+
+5. Edge enerji modeli yeni eklendi ve ilk kalibrasyon seviyesinde.
+   Edge enerji butcesi state ve reward tarafina eklendi, ancak bunun uzun episode ve trace-driven is yuklerinde nasil davrandigi henuz sinanmadi.
+
+6. Faz 5 raporundaki bulgular sentetik dunya icin gecerlidir.
+   Bunlarin gercek genellenebilirligi Faz 6 trace-driven egitim ve degerlendirme ile sinanmadikca kesin kabul edilmemelidir.
+
+Bu nedenle Faz 5'in kapanis cümlesi su sekilde okunmalidir:
+`synthetic tarafta yeterli metodolojik zemin kuruldu; fakat nihai dogrulama Faz 6 trace-driven asamada yapilacaktir.`
+
+---
+
+## Artefaktlar
+
+Kanonik synthetic rapor:
+- [offloading_experiment_report.md](C:/Users/BERAT/Desktop/task-offloading-study/results/tables/offloading_experiment_report.md)
+
+Temel figure'lar:
+- [synthetic_ablation_ppo_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/figures/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining_success_rate.png)
+- [synthetic_ablation_dqn_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/figures/synthetic/ablation/synthetic_ablation_dqn_multi_seed_retraining_success_rate.png)
+- [synthetic_ablation_a2c_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/figures/synthetic/ablation/synthetic_ablation_a2c_multi_seed_retraining_success_rate.png)
+
+Ham CSV'ler:
+- [synthetic_ablation_ppo_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/raw/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining.csv)
+- [synthetic_ablation_dqn_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/raw/synthetic/ablation/synthetic_ablation_dqn_multi_seed_retraining.csv)
+- [synthetic_ablation_a2c_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/raw/synthetic/ablation/synthetic_ablation_a2c_multi_seed_retraining.csv)
+
+---
+
+## Faz 5 Karari
+
+Faz 5 sealed kabul edildi.
+
+Bu karar, sentetik tarafta her sorunun tamamen cozuldugu anlamina gelmiyor. Anlami su:
+- Faz 5'in cevapladiği soru artik yeterince net,
+- Faz 6'ya gecmek icin gereken sentetik taban yeterince olgun,
+- geri kalan belirsizliklerin dogru adresi artik trace-driven asama.
