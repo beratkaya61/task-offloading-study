@@ -1,9 +1,9 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Faz 7 Report: Two-Stage Training
 
-**Tarih:** 8 April 2026  
-**Durum:** 7.1 ve 7.2 tamamlandi / 7.3 icin hazir  
+**Tarih:** 9 April 2026  
+**Durum:** 7.1, 7.2 ve 7.3 tamamlandi / 7.4 acik  
 **Kapsam:** oracle label uretimi, supervised pretraining, PPO fine-tuning ve `scratch vs pretrained` karsilastirmasi
 
 ---
@@ -35,87 +35,135 @@ Uretilen artefaktlar:
 - experiment scripti: `experiments/synthetic/generate_oracle_labels.py`
 
 Dataset ozeti:
-- toplam satir: `9000`
-- objective'ler: `latency_oracle`, `energy_oracle`, `weighted_objective_oracle`
+- toplam satir: `12000`
+- objective'ler: `latency_oracle`, `energy_oracle`, `weighted_objective_oracle`, `reward_aligned_oracle`
 - split dagilimi:
-  - train: `6300`
-  - val: `1350`
-  - test: `1350`
+  - train: `8400`
+  - val: `1800`
+  - test: `1800`
 
 Kalibrasyon sonrasi bulgular:
-- `latency_oracle`: `cloud` agirlikli (`97.50%`)
-- `energy_oracle`: `cloud` agirlikli (`97.70%`)
-- `weighted_objective_oracle`:
-  - `edge_75`: `59.57%`
-  - `cloud`: `39.37%`
-  - diger aksiyonlar: dusuk ama gorunur seviyede
+- `latency_oracle`: `cloud` agirlikli
+- `energy_oracle`: `cloud` agirlikli
+- `weighted_objective_oracle`: daha dengeli, `edge_75` agirlikli
+- `reward_aligned_oracle`: RL reward ile daha dogrudan hizali ogretmen secenegi olarak eklendi
 
 Yorum:
-- `latency_oracle` ve `energy_oracle` analiz amacli tutulabilir
-- supervised pretraining icin asil teacher policy `weighted_objective_oracle` oldu
-- cloud bias kalibrasyonla kirildi ve daha kullanisli bir ogretmen davranisi elde edildi
+- Faz 7 icindeki ana teknik bosluk teacher objective ile RL reward arasindaki uyumdu
+- bu nedenle reward-aligned teacher ayri olarak denenip reward mantigina daha yakin bir ogretmen uretildi
 
 ---
 
 ## 7.2 Supervised Pretraining
 
 Uretilen artefaktlar:
-- pretrained checkpoint: `models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip`
+- weighted teacher checkpoint: `models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip`
+- reward-aligned teacher checkpoint: `models/ppo/pretrained/ppo_reward_aligned_pretrained.zip`
 - metrics CSV: `results/raw/synthetic/pretraining/supervised_pretraining_metrics.csv`
 - ozet rapor: `results/tables/supervised_pretraining_report.md`
 - config: `configs/synthetic/supervised_pretraining.yaml`
 - experiment scripti: `experiments/synthetic/run_supervised_pretraining.py`
 
 Guncel sonuclar:
-- objective: `weighted_objective_oracle`
-- configured epoch count: `30`
-- executed epoch count: `16`
-- early stopping patience: `5`
-- early stopping triggered: `yes`
-- best epoch: `11`
-- best validation accuracy: `78.00%`
-- final train accuracy: `80.33%`
-- final validation accuracy: `78.00%`
-- final test accuracy: `80.22%`
+- weighted teacher ile en iyi sonuc:
+  - best validation accuracy: `78.00%`
+  - final test accuracy: `80.22%`
+- reward-aligned teacher ile:
+  - min margin filter: `10.0`
+  - best validation accuracy: `59.51%`
+  - final test accuracy: `61.03%`
 
 Yorum:
-- `15 epoch` yerine `30 epoch + early stopping` denenmesine ragmen en iyi sonuc yine `epoch 11` civarinda kaldi
-- bu, pretraining tarafinin fazla kisitli kalmadigini; aksine bu teacher dataset uzerinde erken doyuma ulastigini gosteriyor
-- yani daha uzun schedule kaliteyi artirmadi ama mevcut sonucun tesadufi olmadigini dogruladi
+- reward-aligned teacher, reward mantigina daha yakin ama supervised taklit acisindan daha zor bir hedef cikardi
+- bu da teacher objective ile reward uyumunun tek basina yeterli olmadigini; teacher davranisinin ogrenilebilir olmasinin da kritik oldugunu gosterdi
 
 ---
 
-## Planlanan Alt Adimlar
+## 7.3 PPO Staged Training Karsilastirmasi
 
-1. Oracle / heuristic label uretimi  
-   durum: tamamlandi ve kalibre edildi
-2. Supervised pretraining  
-   durum: tamamlandi
-3. PPO fine-tuning  
-   durum: siradaki adim
-4. `PPO from scratch` vs `Pretrained + PPO` karsilastirmasi  
-   durum: henuz baslamadi
+Uretilen artefaktlar:
+- final sonuc CSV'si: `results/raw/synthetic/staged_training/staged_training_comparison.csv`
+- ilerleme logu: `results/raw/synthetic/staged_training/staged_training_progress.csv`
+- ozet rapor: `results/tables/staged_training_comparison_report.md`
+- checkpointler:
+  - `models/ppo/staged_training/scratch/`
+  - `models/ppo/staged_training/pretrained/`
+
+Calistirilan iterasyonlar:
+1. weighted teacher + varsayilan fine-tuning
+2. weighted teacher + dusuk LR fine-tuning (`1e-4`)
+3. reward-aligned teacher + dusuk LR fine-tuning (`1e-4`)
+4. reward-aligned teacher + policy anchoring (agresif schedule)
+5. reward-aligned teacher + policy anchoring (hafif schedule)
+
+Ana bulgular:
+- iterasyon 1: pretrained daha hizli isinmis ama finalde geride kalmistir
+- iterasyon 2: fark daralmistir
+- iterasyon 3: final metriklerde scratch ile esitlik yakalanmistir
+- iterasyon 4: anchoring fazla agresif oldugunda bir seed `edge_75` tarafinda sapmis ve final kalite dusmustur
+- iterasyon 5: hafif anchoring ile final parity korunurken erken ogrenme avantaji daha net hale gelmistir
+
+Son iterasyonun net sonucu:
+- `PPO_from_scratch`
+  - success: `83.67% +- 0.76`
+  - p95 latency: `2.006 +- 0.029`
+  - avg energy: `0.0140 +- 0.0016`
+  - QoE: `73.64 +- 0.90`
+- `PPO_pretrained_finetuned`
+  - success: `83.67% +- 0.76`
+  - p95 latency: `2.006 +- 0.029`
+  - avg energy: `0.0140 +- 0.0016`
+  - QoE: `73.64 +- 0.90`
+
+Faz 7.3'e ozgu ara metrikler:
+- deadline miss ratio
+- energy per success
+- step-to-75% success
+- best success during training
+- success curve AUC
+- success 95% CI
+
+Yorum:
+- `Pretrained + PPO`, `%75` success esigine ortalama `10000` stepte ulasiyor
+- `Scratch PPO`, ayni esige ortalama `18333` stepte ulasiyor
+- `success curve AUC` karsilastirmasi da pretrained lehine dondu: `0.6710` vs `0.6443`
+- yani staged training'in `daha hizli isinma / daha hizli kullanisli politika bulma` hedefi bu son iterasyonda daha net bicimde desteklendi
+- final performans tarafinda ise parity yakalandi; staged training artik geride degil, fakat acik bir ustunluk de kurmuyor
+- iki tarafin da finalde `full cloud` agirlikli politikaya yakinlamasi, env/reward yapisinin hala ayni cekim noktasina ittigini gosteriyor
+
+Cikarim:
+- Faz 7 amacinin `sample efficiency` kismi desteklendi
+- Faz 7 amacinin `final performansi yukari tasima` kismi icin parity yakalandi ama ustunluk kanitlanmadi
+- sonraki bilimsel soru artik "staged training faydali mi?" degil, "warm-start avantajini final kaliteye nasil tasiriz?" sorusudur
 
 ---
 
-## Henuz Tamamlanmayanlar
+## Siradaki Asamalar
 
-- pretrained PPO icin RL fine-tuning hatti kurulmadi
-- `scratch PPO` ile ayni protokolde karsilastirma henuz uretilmedi
-- convergence / sample efficiency tablosu henuz yazilmadi
-- gelismis metrik ve istatistiksel analiz paketi atlanmadi; guncel uygulama sirasinda Faz 9 olarak takip ediliyor ve yol haritasi notu `task.md` ile `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` icinde tutuluyor.
+### 4. Faz 7 Kapanis Testi ve Son Yorum
+
+Kalan is:
+- Faz 7'nin kapanis notu yazilacak
+- staged training sonucunun final yorumu netlestirilecek
+- Faz 9'da tekrar ele alinacak gelismis metrik ve istatistik paketi icin devralma notu korunacak
 
 ---
 
-## Faz 7'de Beklenen Ana Kanit
+## Done Kriteri
 
-Faz 7 sonunda su soruya cevap verilmis olmali:
+Faz 7 tamamlandi denebilmesi icin asgari olarak su kosullar aranacak:
+- oracle label dataset'i tekrar uretilebilir olmali
+- supervised pretraining calisir halde olmali
+- pretrained checkpoint kaydedilmeli
+- `scratch PPO` ve `Pretrained + PPO` ayni protokolde karsilastirilmali
+- Faz 7 raporunda convergence veya sample efficiency farki acikca gosterilmeli
 
-`staged training, ayni PPO ajanini sifirdan baslatmaya gore daha hizli, daha stabil veya daha basarili hale getiriyor mu?`
+Durum:
+- butun teknik kosullar saglandi
+- son kapanis yorumu ve faz tamamlama notu icin `7.4` acik tutuluyor
 
 ---
 
 ## Sonraki Dogru Adim
 
-Bir sonraki teknik adim, pretrained checkpoint'i RL fine-tuning akisina baglamak ve ayni protokolde `scratch PPO` ile karsilastirmayi baslatmaktir.
-
+Bir sonraki dogru uygulama adimi, Faz 7.4 kapanis notunu yazmak ve staged-training bulgusunu Faz 9'da genisletilecek zorunlu metrik paketiyle iliskilendirmektir.

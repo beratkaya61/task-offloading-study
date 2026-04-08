@@ -32,6 +32,7 @@ class OracleDecision:
     action: int
     objective: str
     score: float
+    score_margin: float
     predicted_delay: float
     predicted_energy: float
     predicted_reward: float
@@ -199,6 +200,11 @@ def _score_outcome(
         return delay + (deadline_penalty * deadline) + (0.15 * energy_norm)
     if objective == "energy_oracle":
         return energy + (0.20 * delay_norm) + (deadline_penalty * 0.5)
+    if objective == "reward_aligned_oracle":
+        reward_score = -float(outcome["reward"])
+        reward_score += 0.10 * delay_norm
+        reward_score += 0.05 * energy_norm
+        return reward_score
 
     return (
         scoring_cfg.get("delay_weight", 0.46) * delay_norm
@@ -232,6 +238,7 @@ def choose_oracle_action(
                 action=outcome["action"],
                 objective=objective,
                 score=float(score),
+                score_margin=0.0,
                 predicted_delay=outcome["delay"],
                 predicted_energy=outcome["energy"],
                 predicted_reward=outcome["reward"],
@@ -244,7 +251,11 @@ def choose_oracle_action(
             )
         )
 
-    return sorted(candidates, key=lambda x: (x.score, x.predicted_delay, x.predicted_energy))[0]
+    ranked = sorted(candidates, key=lambda x: (x.score, x.predicted_delay, x.predicted_energy))
+    best = ranked[0]
+    second_best_score = ranked[1].score if len(ranked) > 1 else ranked[0].score
+    best.score_margin = float(second_best_score - best.score)
+    return best
 
 
 def _split_name(index: int, total: int, train_ratio: float, val_ratio: float) -> str:
@@ -327,7 +338,7 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
     scoring_cfg = config.get("scoring", {})
     objectives: Iterable[str] = config.get(
         "objectives",
-        ["latency_oracle", "energy_oracle", "weighted_objective_oracle"],
+        ["latency_oracle", "energy_oracle", "weighted_objective_oracle", "reward_aligned_oracle"],
     )
 
     seed = int(config.get("seed", 42))
@@ -365,6 +376,7 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
                     "oracle_action": decision.action,
                     "oracle_action_name": ACTION_LABELS[decision.action],
                     "oracle_score": round(decision.score, 6),
+                    "oracle_margin": round(decision.score_margin, 6),
                     "predicted_delay": round(decision.predicted_delay, 6),
                     "predicted_energy": round(decision.predicted_energy, 6),
                     "predicted_reward": round(decision.predicted_reward, 6),
@@ -416,10 +428,21 @@ class OracleLabelDataset(Dataset):
         return self.observations[index], self.labels[index]
 
 
-def _read_oracle_rows(csv_path: Path, objective: str) -> List[Dict[str, object]]:
+def _read_oracle_rows(csv_path: Path, objective: str, min_margin: float = 0.0) -> List[Dict[str, object]]:
     with open(csv_path, "r", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
-        return [row for row in reader if row.get("objective") == objective]
+        rows = [row for row in reader if row.get("objective") == objective]
+    if min_margin > 0.0:
+        filtered = []
+        for row in rows:
+            try:
+                margin = float(row.get("oracle_margin", 0.0))
+            except (TypeError, ValueError):
+                margin = 0.0
+            if margin >= min_margin:
+                filtered.append(row)
+        return filtered
+    return rows
 
 
 def _split_rows(rows: List[Dict[str, object]]) -> Dict[str, List[Dict[str, object]]]:
@@ -481,13 +504,14 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
     config = load_config(config_path)
     dataset_path = Path(config.get("dataset", {}).get("csv_path", "results/raw/synthetic/pretraining/oracle_label_dataset.csv"))
     objective = str(config.get("dataset", {}).get("objective", "weighted_objective_oracle"))
+    min_margin = float(config.get("dataset", {}).get("min_margin", 0.0))
     batch_size = int(config.get("training", {}).get("batch_size", 128))
     epochs = int(config.get("training", {}).get("epochs", 15))
     learning_rate = float(config.get("training", {}).get("learning_rate", 1e-3))
     patience = int(config.get("training", {}).get("early_stopping_patience", 5))
     min_delta = float(config.get("training", {}).get("early_stopping_min_delta", 1e-4))
 
-    rows = _read_oracle_rows(dataset_path, objective)
+    rows = _read_oracle_rows(dataset_path, objective, min_margin=min_margin)
     split_rows = _split_rows(rows)
     train_ds = OracleLabelDataset(split_rows.get("train", []))
     val_ds = OracleLabelDataset(split_rows.get("val", []))
@@ -575,6 +599,7 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
         "# Supervised Pretraining Report",
         "",
         f"- Objective: `{objective}`",
+        f"- Min margin filter: `{min_margin}`",
         f"- Configured epoch count: `{epochs}`",
         f"- Executed epoch count: `{len(metrics_rows)}`",
         f"- Early stopping patience: `{patience}`",

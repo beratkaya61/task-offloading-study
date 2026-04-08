@@ -1,4 +1,4 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 
@@ -60,7 +60,7 @@ Not:
 ## Faz 7 - Two-Stage Training (AgentVNE Concept)
 - [x] 7.1 Oracle / heuristic labels [results/raw/synthetic/pretraining/oracle_label_dataset.csv uretildi; kalibrasyon notu Phase_7_Report.md icine dusuldu]
 - [x] 7.2 Imitation / supervised pretraining [models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip uretildi; best epoch 11, val acc 78.00%, test acc 80.22%, 30 epoch config early stopping ile 16 epochta durdu]
-- [ ] 7.3 Fine-tune PPO vs scratch comparison
+- [x] 7.3 Fine-tune PPO vs scratch comparison [results/tables/staged_training_comparison_report.md ile tamamlandi; pretrained hizli isinirken; reward-aligned teacher ve hafif policy anchoring ile final parity korundu, step-to-75% success 10000 step seviyesine cekildi ve sample-efficiency sinyali guclendirildi]
 - [ ] 7.4 Phase 7 test and commit
 
 ## Faz 8 - Graph-Aware Policy Upgrade
@@ -98,6 +98,11 @@ Not:
 
 - Trace-to-task ceviri varsayimlari v2_docs/trace_mapping_assumptions.md icinde merkezi olarak belgelendi.
 - Domain-shift akisi experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml uzerinden calistirildi; guncel tablo results/tables/trace_domain_shift_report.md icinde tutuluyor.
+
+
+
+
+
 
 
 

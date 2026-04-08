@@ -9,15 +9,15 @@ Dataset, supervised pretraining oncesi observation -> action etiketi ureten ogre
 
 - Seed: `42`
 - Episode sayisi: `60`
-- Objective'ler: `latency_oracle, energy_oracle, weighted_objective_oracle`
+- Objective'ler: `latency_oracle, energy_oracle, weighted_objective_oracle, reward_aligned_oracle`
 
 ## Split Dagilimi
 
 | Split | Sample Count |
 |---|---:|
-| train | 6300 |
-| val | 1350 |
-| test | 1350 |
+| train | 8400 |
+| val | 1800 |
+| test | 1800 |
 
 ## Objective Bazli Action Dagilimi
 
@@ -50,3 +50,13 @@ Dataset, supervised pretraining oncesi observation -> action etiketi ureten ogre
 | edge_50 | 7 | 0.23% |
 | edge_75 | 1787 | 59.57% |
 | local | 18 | 0.60% |
+
+### reward_aligned_oracle
+
+| Action | Count | Ratio |
+|---|---:|---:|
+| cloud | 1017 | 33.90% |
+| edge_100 | 3 | 0.10% |
+| edge_50 | 21 | 0.70% |
+| edge_75 | 1905 | 63.50% |
+| local | 54 | 1.80% |

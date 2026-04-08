@@ -1,9 +1,10 @@
-﻿seed: 42
+seed: 42
 
 objectives:
   - "latency_oracle"
   - "energy_oracle"
   - "weighted_objective_oracle"
+  - "reward_aligned_oracle"
 
 env:
   max_steps: 50

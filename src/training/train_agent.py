@@ -1,11 +1,16 @@
 import argparse
+import csv
 import os
 import random
 import time
+from datetime import datetime
 
+import numpy as np
 import simpy
+import torch
+from torch.utils.data import DataLoader, TensorDataset
 from stable_baselines3 import A2C, DQN, PPO
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList
 
 from src.core.config import load_config
 from src.core.evaluation import evaluate_policy
@@ -137,6 +142,172 @@ def create_model(algorithm, env, hyperparams):
     return model_class("MlpPolicy", env, verbose=0, **model_kwargs)
 
 
+def _load_anchor_dataloader(dataset_path, objective, min_margin=0.0, batch_size=128):
+    rows = []
+    with open(dataset_path, "r", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            if row.get("objective") != objective:
+                continue
+            if row.get("split", "train") != "train":
+                continue
+            try:
+                margin = float(row.get("oracle_margin", 0.0))
+            except (TypeError, ValueError):
+                margin = 0.0
+            if margin < float(min_margin):
+                continue
+            rows.append(row)
+
+    if not rows:
+        raise ValueError(f"No anchor samples found for objective={objective!r} min_margin={min_margin}")
+
+    observations = torch.tensor(
+        [[float(row[f"obs_{i}"]) for i in range(12)] for row in rows],
+        dtype=torch.float32,
+    )
+    labels = torch.tensor([int(row["oracle_action"]) for row in rows], dtype=torch.long)
+    dataset = TensorDataset(observations, labels)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+
+class PolicyAnchoringCallback(BaseCallback):
+    def __init__(self, anchor_loader, interval_steps, until_step, batches_per_round, loss_weight=1.0, verbose=0):
+        super().__init__(verbose)
+        self.anchor_loader = anchor_loader
+        self.interval_steps = int(interval_steps)
+        self.until_step = int(until_step)
+        self.batches_per_round = int(batches_per_round)
+        self.loss_weight = float(loss_weight)
+        self._criterion = torch.nn.CrossEntropyLoss()
+        self._loader_iter = iter(anchor_loader)
+
+    def _next_batch(self):
+        try:
+            return next(self._loader_iter)
+        except StopIteration:
+            self._loader_iter = iter(self.anchor_loader)
+            return next(self._loader_iter)
+
+    def _on_step(self) -> bool:
+        if self.interval_steps <= 0 or self.batches_per_round <= 0:
+            return True
+        if self.num_timesteps > self.until_step:
+            return True
+        if self.num_timesteps % self.interval_steps != 0:
+            return True
+
+        self.model.policy.train()
+        losses = []
+        for _ in range(self.batches_per_round):
+            observations, labels = self._next_batch()
+            observations = observations.to(self.model.device)
+            labels = labels.to(self.model.device)
+            distribution = self.model.policy.get_distribution(observations)
+            logits = distribution.distribution.logits
+            loss = self._criterion(logits, labels) * self.loss_weight
+            self.model.policy.optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.policy.parameters(), max_norm=0.5)
+            self.model.policy.optimizer.step()
+            losses.append(float(loss.item()))
+
+        if self.verbose:
+            avg_loss = sum(losses) / max(1, len(losses))
+            print(f"[ANCHOR] Step {self.num_timesteps}: auxiliary BC loss {avg_loss:.4f}")
+        return True
+
+
+def _evaluate_model_no_log(env, model, num_episodes=5):
+    results = []
+    for _ in range(num_episodes):
+        obs, _ = env.reset()
+        done = False
+        episode_reward = 0.0
+        step_count = 0
+        episode_latencies = []
+        episode_energies = []
+        episode_successes = 0
+
+        while not done:
+            obs_batch = obs[np.newaxis, :]
+            action, _ = model.predict(obs_batch, deterministic=True)
+            action = int(np.asarray(action).reshape(-1)[0])
+            obs, reward, done, truncated, info = env.step(action)
+            done = done or truncated
+            episode_reward += reward
+            step_count += 1
+            episode_latencies.append(info.get("delay", 0.0))
+            episode_energies.append(info.get("energy", 0.0))
+            if info.get("task_success", False):
+                episode_successes += 1
+
+        p95_latency = np.percentile(episode_latencies, 95) if episode_latencies else 0.0
+        avg_energy = float(np.mean(episode_energies)) if episode_energies else 0.0
+        success_rate = episode_successes / max(1, step_count)
+        qoe = 100.0 * success_rate - (p95_latency * 5.0)
+        results.append(
+            {
+                "reward": float(episode_reward),
+                "success_rate": float(success_rate),
+                "p95_latency": float(p95_latency),
+                "avg_energy": float(avg_energy),
+                "qoe": float(qoe),
+            }
+        )
+
+    return {
+        "avg_reward": float(np.mean([row["reward"] for row in results])) if results else 0.0,
+        "success_rate": float(np.mean([row["success_rate"] for row in results])) if results else 0.0,
+        "p95_latency": float(np.mean([row["p95_latency"] for row in results])) if results else 0.0,
+        "avg_energy": float(np.mean([row["avg_energy"] for row in results])) if results else 0.0,
+        "qoe": float(np.mean([row["qoe"] for row in results])) if results else 0.0,
+    }
+
+
+class PeriodicEvaluationCallback(BaseCallback):
+    def __init__(self, eval_env, eval_interval_steps, eval_episodes, progress_csv_path, run_name, init_mode, seed, extra_fields=None, verbose=0):
+        super().__init__(verbose)
+        self.eval_env = eval_env
+        self.eval_interval_steps = eval_interval_steps
+        self.eval_episodes = eval_episodes
+        self.progress_csv_path = progress_csv_path
+        self.run_name = run_name
+        self.init_mode = init_mode
+        self.seed = seed
+        self.extra_fields = extra_fields or {}
+
+    def _on_step(self) -> bool:
+        if self.eval_interval_steps <= 0:
+            return True
+        if self.num_timesteps % self.eval_interval_steps != 0:
+            return True
+
+        metrics = _evaluate_model_no_log(self.eval_env, self.model, num_episodes=self.eval_episodes)
+        row = {
+            "timestamp": datetime.now().isoformat(),
+            "training_step": self.num_timesteps,
+            "run_name": self.run_name,
+            "init_mode": self.init_mode,
+            "seed": self.seed,
+            "metric_success_rate": round(metrics["success_rate"], 4),
+            "metric_avg_reward": round(metrics["avg_reward"], 2),
+            "metric_p95_latency": round(metrics["p95_latency"], 4),
+            "metric_avg_energy": round(metrics["avg_energy"], 4),
+            "metric_qoe": round(metrics["qoe"], 2),
+        }
+        row.update(self.extra_fields)
+
+        os.makedirs(os.path.dirname(self.progress_csv_path) or ".", exist_ok=True)
+        write_header = not os.path.exists(self.progress_csv_path)
+        with open(self.progress_csv_path, "a", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(row.keys()))
+            if write_header:
+                writer.writeheader()
+            writer.writerow(row)
+        return True
+
+
 def train_single_agent(
     algorithm,
     total_timesteps=30000,
@@ -149,6 +320,14 @@ def train_single_agent(
     extra_eval_fields=None,
     env_overrides=None,
     env_kwargs=None,
+    hyperparam_overrides=None,
+    init_model_path=None,
+    init_mode="scratch",
+    progress_csv_path=None,
+    eval_interval_steps=0,
+    progress_eval_episodes=5,
+    progress_extra_fields=None,
+    anchor_config=None,
 ):
     algorithm = algorithm.lower()
     if algorithm not in ALGORITHM_DEFAULTS:
@@ -157,9 +336,15 @@ def train_single_agent(
     cfg = load_config(config_path)
     hyperparams = _resolve_hyperparameters(algorithm, cfg)
     env_overrides = env_overrides or {}
+    hyperparam_overrides = hyperparam_overrides or {}
+    anchor_config = anchor_config or {}
     for key in ("max_steps", "num_edge_servers", "num_devices"):
         if key in env_overrides:
             hyperparams[key] = env_overrides[key]
+    for key, value in hyperparam_overrides.items():
+        if key in {"model_class", "default_save_path", "default_run_name"}:
+            continue
+        hyperparams[key] = value
     env = build_training_env(
         seed=seed,
         max_steps=hyperparams["max_steps"],
@@ -174,14 +359,65 @@ def train_single_agent(
     print("[TRAIN] Initializing Training Environment...")
     print(f"[TRAIN] Algorithm: {algorithm.upper()}")
     print(f"[TRAIN] Seed: {seed}")
+    print(f"[TRAIN] Init Mode: {init_mode}")
     print(f"[TRAIN] Total Timesteps: {total_timesteps}")
+    if hyperparam_overrides:
+        print(f"[TRAIN] Hyperparameter overrides: {hyperparam_overrides}")
 
-    model = create_model(algorithm, env, hyperparams)
+    if init_model_path:
+        if algorithm != "ppo":
+            raise ValueError("Pretrained initialization is currently supported only for PPO")
+        loaded_model = PPO.load(init_model_path, device=hyperparams.get("device", "cpu"))
+        model = create_model(algorithm, env, hyperparams)
+        model.set_parameters(loaded_model.get_parameters(), exact_match=True)
+        print(f"[TRAIN] Loaded pretrained checkpoint weights: {init_model_path}")
+    else:
+        model = create_model(algorithm, env, hyperparams)
+
+    callbacks = [SimpleLoggingCallback(check_freq=5000)]
+    if algorithm == "ppo" and init_model_path and anchor_config.get("enabled", False):
+        anchor_loader = _load_anchor_dataloader(
+            dataset_path=anchor_config["dataset_path"],
+            objective=anchor_config.get("objective", "reward_aligned_oracle"),
+            min_margin=float(anchor_config.get("min_margin", 0.0)),
+            batch_size=int(anchor_config.get("batch_size", 128)),
+        )
+        callbacks.append(
+            PolicyAnchoringCallback(
+                anchor_loader=anchor_loader,
+                interval_steps=int(anchor_config.get("interval_steps", 2500)),
+                until_step=int(anchor_config.get("until_step", 15000)),
+                batches_per_round=int(anchor_config.get("batches_per_round", 4)),
+                loss_weight=float(anchor_config.get("loss_weight", 0.5)),
+                verbose=1,
+            )
+        )
+    if progress_csv_path and eval_interval_steps > 0:
+        eval_env = build_training_env(
+            seed=seed + 1000,
+            max_steps=hyperparams["max_steps"],
+            num_edge_servers=hyperparams["num_edge_servers"],
+            num_devices=hyperparams["num_devices"],
+            env_kwargs=env_kwargs,
+        )
+        callbacks.append(
+            PeriodicEvaluationCallback(
+                eval_env=eval_env,
+                eval_interval_steps=eval_interval_steps,
+                eval_episodes=progress_eval_episodes,
+                progress_csv_path=progress_csv_path,
+                run_name=resolved_run_name,
+                init_mode=init_mode,
+                seed=seed,
+                extra_fields=progress_extra_fields,
+            )
+        )
+
+    callback = CallbackList(callbacks)
 
     print(f"[TRAIN] Starting Training ({total_timesteps} steps)...")
-    logging_callback = SimpleLoggingCallback(check_freq=5000)
     start_time = time.time()
-    model.learn(total_timesteps=total_timesteps, callback=logging_callback, progress_bar=False)
+    model.learn(total_timesteps=total_timesteps, callback=callback, progress_bar=False)
     training_time = time.time() - start_time
 
     save_dir = os.path.dirname(resolved_save_path)
@@ -206,6 +442,7 @@ def train_single_agent(
     return {
         "algorithm": algorithm,
         "seed": seed,
+        "init_mode": init_mode,
         "save_path": f"{resolved_save_path}.zip",
         "training_time_sec": training_time,
         "evaluation": eval_result,
@@ -245,3 +482,5 @@ def train():
 
 if __name__ == "__main__":
     train()
+
+
