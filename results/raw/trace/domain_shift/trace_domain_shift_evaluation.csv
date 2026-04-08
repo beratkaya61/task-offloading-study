@@ -1,0 +1,3 @@
+timestamp,batch_id,train_domain,test_domain,model_name,checkpoint_path,status,metric_success_rate,metric_p95_latency,metric_avg_energy,metric_unique_actions,metric_dominant_action,config_total_tasks
+2026-04-08T11:16:19.175992,trace_domain_shift_20260408_111616,synthetic,trace,PPO,models\ppo\synthetic_rl_retraining\seed42.zip,completed,0.996,0.5618,0.0255,1,3,250
+2026-04-08T11:16:20.416121,trace_domain_shift_20260408_111616,trace,synthetic,PPO,models\ppo\trace_training\ppo_v3_trace_best.zip,completed,0.532,4.6883,0.0101,1,4,250

@@ -1,0 +1,4 @@
+timestamp,batch_id,split,checkpoint_path,num_episodes,metric_success_rate_mean,metric_success_rate_std,metric_success_rate_min,metric_success_rate_max,metric_avg_delay_mean,metric_avg_energy_mean,status
+2026-04-08T13:36:13.888780,trace_holdout_20260408_133609,train,models\ppo\trace_training\ppo_v3_trace_best.zip,80,99.38,1.08,96.0,100.0,0.3245,0.0128,completed
+2026-04-08T13:36:14.233700,trace_holdout_20260408_133609,val,models\ppo\trace_training\ppo_v3_trace_best.zip,10,99.0,1.0,98.0,100.0,0.3453,0.0207,completed
+2026-04-08T13:36:14.625276,trace_holdout_20260408_133609,test,models\ppo\trace_training\ppo_v3_trace_best.zip,10,99.6,0.8,98.0,100.0,0.3317,0.0128,completed

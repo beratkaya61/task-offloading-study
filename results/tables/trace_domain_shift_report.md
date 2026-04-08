@@ -1,15 +1,15 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Trace Domain-Shift Report
 
-Bu rapor, Faz 6 kapsaminda domain shift kavramini olcmek icin ayrildi.
-
+Bu rapor, Faz 6 kapsaminda domain shift kavramini olcmek icin uretilir.
 Domain shift, bir veri dagiliminda egitilen modelin farkli bir veri dagiliminda ne kadar bozuldugunu gosterir.
-Bu projede temel capraz testler sunlardir:
 - synthetic train -> trace test
 - trace train -> synthetic test
 
-## Durum
+## Son Durum
 
-Bu dosya simdilik bir rapor iskelesidir.
-Nihai sayilar experiments/trace/evaluate_domain_shift.py calistirildiginda yenilenecektir.
+| Train Domain | Test Domain | Model | Success Rate | P95 Latency | Avg Energy | Dominant Action | Status |
+|---|---|---|---:|---:|---:|---:|---|
+| synthetic | trace | PPO | 99.60% | 0.5618 | 0.0255 | 3 | completed |
+| trace | synthetic | PPO | 53.20% | 4.6883 | 0.0101 | 4 | completed |

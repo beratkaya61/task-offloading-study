@@ -87,7 +87,7 @@ data:
 # 5. Focus: Real trace data should help model learn realistic task distributions
 
 logging:
-  log_dir: "results/raw/trace_training"
+  log_dir: "results/raw/trace/training"
   tensorboard: true
   checkpoint_dir: "models/ppo/trace_training"
   report_path: "phase_reports/Phase_6_Report.md"
@@ -95,4 +95,5 @@ logging:
 device:
   cuda: true
   device_id: 0
+
 

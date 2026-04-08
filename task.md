@@ -41,8 +41,8 @@ Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 - [x] 6.2 Basic trace-to-task mapping via `src/core/trace_processor.py`
 - [x] 6.3 Success Bonus (+100 sparse reward) Integration to reduce Semantic Dependency
 - [x] 6.4 Adaptive/Dynamic Switching Overhead for Partial Offloading
-- [ ] 6.5 Domain shift analysis (Synthetic vs Trace results) [scaffold + config + report template eklendi; final kosu bekleniyor]
-- [ ] 6.6 Phase 6 final test/report
+- [x] 6.5 Domain shift analysis (Synthetic vs Trace results) [results/tables/trace_domain_shift_report.md ile tamamlandi]
+- [x] 6.6 Phase 6 final test/report [results/tables/trace_holdout_test_report.md ve phase_reports/Phase_6_Report.md ile tamamlandi]
 
 Not:
 - `src/core/trace_loader.py` artik raw trace CSV ve kaydedilmis train/val/test episode split JSON dosyalarini yukleyebiliyor.
@@ -84,5 +84,7 @@ Not:
 
 
 - Trace-to-task ceviri varsayimlari v2_docs/trace_mapping_assumptions.md icinde merkezi olarak belgelendi.
-- Domain-shift icin experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml iskeleti eklendi; final tablo trace checkpoint ile doldurulacak.
+- Domain-shift akisi experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml uzerinden calistirildi; guncel tablo results/tables/trace_domain_shift_report.md icinde tutuluyor.
+
+
 

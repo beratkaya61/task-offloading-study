@@ -1,0 +1,13 @@
+﻿checkpoint_path: "models/ppo/trace_training/ppo_v3_trace_best.zip"
+training_config: "configs/trace/ppo_training.yaml"
+
+evaluation:
+  seed: 42
+  splits:
+    - "train"
+    - "val"
+    - "test"
+
+output:
+  csv_path: "results/raw/trace/holdout/trace_holdout_evaluation.csv"
+  report_path: "results/tables/trace_holdout_test_report.md"

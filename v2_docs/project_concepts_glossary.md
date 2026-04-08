@@ -252,9 +252,26 @@ Tipik iki yon:
 - synthetic train -> trace test
 - trace train -> synthetic test
 
+### Cross-Domain Asymmetry
+Domain shift sonuclarinin iki yonunun ayni siddette olmamasidir.
+Ornek: synthetic train -> trace test cok iyi giderken, trace train -> synthetic test belirgin sekilde bozulabilir.
+Bu, iki veri dagiliminin birbirine esit derecede benzemedigini gosterir.
+
 ### Generalization
 Modelin sadece kendi egitim dagiliminda degil, yeni ve farkli kosullarda da makul performans gosterebilmesidir.
 Domain-shift analizi bunun pratik olcusudur.
+
+### Validation Split
+Egitim sirasinda model secimi, erken durdurma veya ara kontrol icin kullanilan ayri veri bolumudur.
+Bu projede trace tarafinda `val_episodes.json` bu rolu tasir.
+
+### Test Split
+Model secimi bittikten sonra son ve tarafsiz degerlendirme icin ayrilan veri bolumudur.
+Bu projede `test_episodes.json`, Faz 6 kapanisindan once ayri hold-out test olarak kullanilmasi gereken bolumdur.
+
+### Hold-Out Evaluation
+Egitimde veya model seciminde kullanilmayan veri uzerindeki son kontrol kosusudur.
+Amac, validation'da gorulen basarinin gercekten genellenip genellenmedigini dogrulamaktir.
 
 ### Switching Overhead
 Partial offloading yaparken koordinasyon, parcaya ayirma, aktarim veya karar degisimi nedeniyle gelen ek maliyettir.
@@ -387,3 +404,4 @@ Belirli bir script veya deney turunun urettigi toplu kayit dosyasidir.
 - Yeni bir kavram ortaya cikarsa bu dosyaya ekleyelim.
 - Faz raporlarinda uzun aciklama yerine burada tanim verip raporlari daha okunur tutabiliriz.
 - Bu sozluk, proje ilerledikce yasayan bir dokuman gibi buyutulmelidir.
+

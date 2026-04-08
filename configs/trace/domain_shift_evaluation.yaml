@@ -19,9 +19,7 @@ data:
 
 models:
   synthetic_ppo: models/ppo/synthetic_rl_retraining/seed42.zip
-  trace_candidates:
-    - models/ppo/trace_training/ppo_v3_trace_best.zip
-    - models/ppo_v3_trace/ppo_v3_trace_best.zip
+  trace_ppo: models/ppo/trace_training/ppo_v3_trace_best.zip
 
 output:
   csv_path: results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv

@@ -784,5 +784,8 @@ Bu sÄ±rayÄ± bozma.
 
 
 > Trace mapping assumptions dokumani olusturuldu: v2_docs/trace_mapping_assumptions.md
-> Domain-shift evaluation icin config + script iskeleti eklendi: configs/trace/domain_shift_evaluation.yaml, experiments/trace/evaluate_domain_shift.py
+> Domain-shift evaluation config + scripti calistirildi: configs/trace/domain_shift_evaluation.yaml, experiments/trace/evaluate_domain_shift.py
+> Guncel domain-shift tablosu: results/tables/trace_domain_shift_report.md`r`n> Guncel hold-out test raporu: results/tables/trace_holdout_test_report.md
+
+
 
