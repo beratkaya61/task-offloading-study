@@ -1,4 +1,4 @@
-"""
+﻿"""
 Faz 6: Trace-driven Training for Task Offloading
 
 Orchestrator for training PPO_v3 on real/synthetic mobility traces
@@ -151,11 +151,17 @@ class TraceTrainingOrchestrator:
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.report_path.parent.mkdir(parents=True, exist_ok=True)
         
-        logger.info(f"✅ Initialized TraceTrainingOrchestrator")
+        logger.info(f"âœ… Initialized TraceTrainingOrchestrator")
         logger.info(f"   Config: {config_path}")
         logger.info(f"   Log dir: {self.log_dir}")
         logger.info(f"   Checkpoint dir: {self.checkpoint_dir}")
         logger.info(f"   Report path: {self.report_path}")
+
+    def _success_bonus(self) -> float:
+        env_cfg = self.config_dict['environment']
+        if not env_cfg.get('use_success_bonus', False):
+            return 0.0
+        return float(env_cfg.get('success_bonus', 100.0))
     
     def prepare_traces(self) -> Tuple[List[TraceEpisode], 
                                       List[TraceEpisode], 
@@ -166,7 +172,7 @@ class TraceTrainingOrchestrator:
         Returns:
             Tuple of (train_episodes, val_episodes, test_episodes)
         """
-        logger.info("🔄 Step 1: Preparing traces...")
+        logger.info("ğŸ”„ Step 1: Preparing traces...")
         
         trace_cfg = self.config_dict['data']
         loader = TraceLoader(trace_dir=trace_cfg.get('trace_dir', 'data/traces'))
@@ -177,11 +183,11 @@ class TraceTrainingOrchestrator:
 
         # Prefer previously materialized episode splits when available.
         if loader.has_saved_episode_splits():
-            logger.info("📦 Using saved trace episode splits from data/traces")
+            logger.info("ğŸ“¦ Using saved trace episode splits from data/traces")
             train_eps, val_eps, test_eps = loader.load_saved_episode_splits()
             processor.episodes = [*train_eps, *val_eps, *test_eps]
         else:
-            logger.info("📥 Loading raw trace inputs and generating episode splits")
+            logger.info("ğŸ“¥ Loading raw trace inputs and generating episode splits")
             traces = loader.load_trace_frames()
             if not traces:
                 traces = processor.load_traces()
@@ -207,14 +213,14 @@ class TraceTrainingOrchestrator:
         
         # Log statistics
         stats = processor.get_statistics()
-        logger.info(f"📊 Trace Statistics:")
+        logger.info(f"ğŸ“Š Trace Statistics:")
         logger.info(json.dumps(stats, indent=2))
         
         return train_eps, val_eps, test_eps
     
     def train_model(self, train_episodes: List[TraceEpisode]) -> Dict:
         """Train PPO_v3 model on trace episodes using SB3 directly."""
-        logger.info("🔄 Step 2: Training PPO_v3 model...")
+        logger.info("ğŸ”„ Step 2: Training PPO_v3 model...")
 
         # Minimal physical topology for datarate realism
         env_sim = simpy.Environment()
@@ -242,6 +248,7 @@ class TraceTrainingOrchestrator:
             disable_semantics=not self.config_dict['environment']['use_semantic_features'],
             disable_confidence_weighting=self.config_dict['environment']['use_confidence_weighting'] is False,
             disable_queue_awareness=self.config_dict['environment']['use_queue_awareness'] is False,
+            success_bonus=self._success_bonus(),
         )
 
         train_cfg = self.config_dict['training']
@@ -266,7 +273,7 @@ class TraceTrainingOrchestrator:
 
         checkpoint_path = self.checkpoint_dir / 'ppo_v3_trace_best.zip'
         model.save(checkpoint_path)
-        logger.info(f"✅ Saved checkpoint to {checkpoint_path}")
+        logger.info(f"âœ… Saved checkpoint to {checkpoint_path}")
 
         return callback.history
     
@@ -282,7 +289,7 @@ class TraceTrainingOrchestrator:
         Returns:
             Evaluation metrics
         """
-        logger.info("🔄 Step 3: Evaluating model on validation traces...")
+        logger.info("ğŸ”„ Step 3: Evaluating model on validation traces...")
         
         env_sim = simpy.Environment()
         channel = WirelessChannel()
@@ -298,7 +305,7 @@ class TraceTrainingOrchestrator:
             for i in range(num_devices)
         ]
 
-        env = TraceOffloadingEnv(episodes=val_episodes, devices=devices, edge_servers=edge_servers, cloud_server=cloud, channel=channel)
+        env = TraceOffloadingEnv(episodes=val_episodes, devices=devices, edge_servers=edge_servers, cloud_server=cloud, channel=channel, success_bonus=self._success_bonus())
         model = PPO.load(checkpoint_path, env=env)
         
         # Evaluate
@@ -344,8 +351,8 @@ class TraceTrainingOrchestrator:
         avg_delay = np.mean(eval_metrics.get('avg_delays', [0]))
         avg_energy = np.mean(eval_metrics.get('avg_energies', [0]))
 
-        logger.info(f"📊 Validation Results:")
-        logger.info(f"   Avg Success Rate: {avg_success:.2f}% (±{std_success:.2f}%)")
+        logger.info(f"ğŸ“Š Validation Results:")
+        logger.info(f"   Avg Success Rate: {avg_success:.2f}% (Â±{std_success:.2f}%)")
         logger.info(f"   Min: {np.min(eval_metrics['success_rates']):.2f}%")
         logger.info(f"   Max: {np.max(eval_metrics['success_rates']):.2f}%")
         logger.info(f"   Avg Delay: {avg_delay:.3f}s | Avg Energy: {avg_energy:.3e}")
@@ -361,7 +368,7 @@ class TraceTrainingOrchestrator:
         - Partial offloading importance
         - Component interactions
         """
-        logger.info("🔄 Step 4: Validating Phase 5 ablation findings on traces...")
+        logger.info("ğŸ”„ Step 4: Validating Phase 5 ablation findings on traces...")
         
         ablation_results = {}
         
@@ -387,7 +394,7 @@ class TraceTrainingOrchestrator:
                 for i in range(num_devices)
             ]
 
-            env = TraceOffloadingEnv(episodes=val_episodes, devices=devices, edge_servers=edge_servers, cloud_server=cloud, channel=channel)
+            env = TraceOffloadingEnv(episodes=val_episodes, devices=devices, edge_servers=edge_servers, cloud_server=cloud, channel=channel, success_bonus=self._success_bonus())
             env.ablation_flags["disable_reward_shaping"] = not flags['reward_shaping']
             env.ablation_flags["disable_partial_offloading"] = not flags['partial_offloading']
             
@@ -431,21 +438,21 @@ class TraceTrainingOrchestrator:
             eval_metrics: Validation metrics
             ablation_results: Ablation study results
         """
-        logger.info("🔄 Step 5: Generating Phase 6 report...")
+        logger.info("ğŸ”„ Step 5: Generating Phase 6 report...")
         
         report_path = self.report_path
         metrics_path = self.log_dir / 'trace_training_metrics.csv'
         checkpoint_path = self.checkpoint_dir / 'ppo_v3_trace_best.zip'
         
         with open(report_path, 'w', encoding='utf-8') as f:
-            f.write("# 📊 Faz 6 Report: Trace-driven Training\n\n")
+            f.write("# ğŸ“Š Faz 6 Report: Trace-driven Training\n\n")
             f.write(f"**Tarih:** {datetime.now().strftime('%d %B %Y')}\n")
-            f.write(f"**Durum:** ✅ TAMAMLANDI\n")
-            f.write(f"**Hedef Başarı:** 68-77% (Phase 5: 62.4%)\n\n")
+            f.write(f"**Durum:** âœ… TAMAMLANDI\n")
+            f.write(f"**Hedef BaÅŸarÄ±:** 68-77% (Phase 5: 62.4%)\n\n")
             
-            f.write("---\n\n## 🎯 Executive Summary\n\n")
-            f.write("Faz 6'ta gerçek/sentetik mobility trace verisi kullanarak PPO_v3 modelini eğittik.\n")
-            f.write("Hedef, Phase 5'teki %62.4 başarı oranını %68-77'ye çıkarmaktır.\n\n")
+            f.write("---\n\n## ğŸ¯ Executive Summary\n\n")
+            f.write("Faz 6'ta gerÃ§ek/sentetik mobility trace verisi kullanarak PPO_v3 modelini eÄŸittik.\n")
+            f.write("Hedef, Phase 5'teki %62.4 baÅŸarÄ± oranÄ±nÄ± %68-77'ye Ã§Ä±karmaktÄ±r.\n\n")
             
             # Training results
             if training_history.get('success_rate'):
@@ -453,7 +460,7 @@ class TraceTrainingOrchestrator:
                 f.write(f"**Final Success Rate:** {final_success:.2f}%\n")
                 f.write(f"**Improvement:** {final_success - 62.4:.2f}% (Phase 5 baseline)\n\n")
             
-            f.write("---\n\n## 📈 Training Metrics\n\n")
+            f.write("---\n\n## ğŸ“ˆ Training Metrics\n\n")
             
             if training_history['episode']:
                 f.write("| Episode | Success Rate | Avg Delay | Avg Energy |\n")
@@ -468,37 +475,37 @@ class TraceTrainingOrchestrator:
                     energy = energies[i] if i < len(energies) else 0.0
                     f.write(f"| {ep} | {success:.2f}% | {delay:.3f} | {energy:.3e} |\n")
             
-            f.write("\n---\n\n## 🧪 Validation Results\n\n")
+            f.write("\n---\n\n## ğŸ§ª Validation Results\n\n")
             
             if eval_metrics.get('success_rates'):
                 avg_success = np.mean(eval_metrics['success_rates'])
                 f.write(f"**Average Success Rate (Validation):** {avg_success:.2f}%\n\n")
             
-            f.write("\n---\n\n## 🔬 Phase 5 Ablation Validation on Traces\n\n")
+            f.write("\n---\n\n## ğŸ”¬ Phase 5 Ablation Validation on Traces\n\n")
             
-            f.write("Tracing verisi üzerinde Phase 5 bulgularını doğruladık:\n\n")
+            f.write("Tracing verisi Ã¼zerinde Phase 5 bulgularÄ±nÄ± doÄŸruladÄ±k:\n\n")
             
             for config, result in ablation_results.items():
                 f.write(f"- {config}: {result:.2f}%\n")
             
-            f.write("\n---\n\n## 📝 Teknik Detaylar\n\n")
+            f.write("\n---\n\n## ğŸ“ Teknik Detaylar\n\n")
             f.write("- **Environment:** OffloadingEnv_v2 (trace-based)\n")
             f.write("- **Data:** Synthetic Didi Gaia mobility traces\n")
             f.write("- **Agent:** PPO_v3 (from Phase 5, fine-tuned)\n")
             f.write(f"- **Metrics CSV:** `{metrics_path.as_posix()}`\n")
             f.write(f"- **Checkpoint:** `{checkpoint_path.as_posix()}`\n")
             f.write("- **Components Enabled:**\n")
-            f.write("  - ✅ Reward Shaping (CRITICAL from Phase 5)\n")
-            f.write("  - ✅ Partial Offloading (HIGH impact)\n")
-            f.write("  - ✅ Semantic Features (for explainability)\n")
+            f.write("  - âœ… Reward Shaping (CRITICAL from Phase 5)\n")
+            f.write("  - âœ… Partial Offloading (HIGH impact)\n")
+            f.write("  - âœ… Semantic Features (for explainability)\n")
             f.write("  - Tuned: Battery awareness, Mobility features\n")
         
-        logger.info(f"✅ Report saved to {report_path}")
+        logger.info(f"âœ… Report saved to {report_path}")
     
     def run(self) -> None:
         """Execute full Faz 6 training pipeline"""
         logger.info("=" * 60)
-        logger.info("🚀 FAZ 6: TRACE-DRIVEN TRAINING")
+        logger.info("ğŸš€ FAZ 6: TRACE-DRIVEN TRAINING")
         logger.info("=" * 60)
         
         # Step 1: Prepare traces
@@ -526,7 +533,7 @@ class TraceTrainingOrchestrator:
         self.generate_report(training_history, eval_metrics, ablation_results)
         
         logger.info("\n" + "=" * 60)
-        logger.info("✅ FAZ 6 TRAINING COMPLETE")
+        logger.info("âœ… FAZ 6 TRAINING COMPLETE")
         logger.info("=" * 60)
 
 
@@ -537,3 +544,4 @@ if __name__ == "__main__":
         seed=42
     )
     orchestrator.run()
+

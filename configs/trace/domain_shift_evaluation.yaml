@@ -1,0 +1,28 @@
+﻿evaluation:
+  seed: 42
+  num_episodes: 5
+
+synthetic_env:
+  max_steps: 50
+
+trace_env:
+  trace_dir: data/traces
+  episodes: 20
+  tasks_per_episode: 50
+  max_steps: 50
+  num_devices: 20
+  num_edge_servers: 3
+  success_bonus: 100.0
+
+data:
+  trace_dir: data/traces
+
+models:
+  synthetic_ppo: models/ppo/synthetic_rl_retraining/seed42.zip
+  trace_candidates:
+    - models/ppo/trace_training/ppo_v3_trace_best.zip
+    - models/ppo_v3_trace/ppo_v3_trace_best.zip
+
+output:
+  csv_path: results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv
+  report_path: results/tables/trace_domain_shift_report.md

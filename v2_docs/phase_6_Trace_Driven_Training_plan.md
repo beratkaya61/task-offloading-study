@@ -1,92 +1,68 @@
-# Faz 6: Trace-Driven Training Plan
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
-**Tarih:** 2 April 2026  
-**Durum:** Baslangic asamasi / belge-kod hizalamasi yapildi  
-**Hedef:** Sentetik Faz 5 bulgularini trace-driven ortamda yeniden sinamak ve dogrulamak
-
----
-
-## Ozet
-
-Faz 5 sonunda sentetik taraf donduruldu ve en kararlı bulgu olarak `mobility_features` etkisi öne çıktı. Buna rağmen sentetik dünyadaki sonuçların genellenebilirliği henüz doğrulanmış değil. Faz 6'nın amacı, aynı karar mekanizmasını trace tabanlı görev akışları üzerinde yeniden eğitmek ve sentetik bulguların trace ortamında korunup korunmadığını test etmektir.
-
-Bu dosya, Faz 6'ya "tamamlanmış bir paket" gibi değil, mevcut repo durumuna göre gerçek başlangıç planı olarak bakar.
+**Tarih:** 8 April 2026  
+**Durum:** aktif gelistirme asamasi  
+**Hedef:** Faz 5 sentetik bulgularini trace-driven ortamda yeniden sinamak ve gercek artefaktlarla dogrulamak
 
 ---
 
-## Mevcut Kod Durumu
+## Mevcut Durum
 
-Hazır olan parçalar:
-- `experiments/trace/train_ppo.py`
-- `configs/trace/ppo_training.yaml`
-- `src/core/trace_processor.py`
-- `data/traces/` altındaki episode JSON çıktıları
+Tamamlanan temel Faz 6 adimlari:
+- `src/core/trace_loader.py` implement edildi
+- `experiments/trace/train_ppo.py` loader -> processor akisini kullaniyor
+- `Success Bonus` trace reward akisina eklendi
+- dinamik `switching_overhead` modeli eklendi
 
-Henüz eksik veya yarım olan parçalar:
-- Gerçek trace kaynağını yükleyen ayrı loader yok
-- `Success Bonus` entegrasyonu yok
-- Partial offloading için switching overhead modeli yok
-- Synthetic vs trace domain-shift değerlendirme akışı yok
-- Faz 6 kapanışı için doğrulanmış checkpoint ve metrics CSV repo içinde yok
+Hala acik kalan ana maddeler:
+- domain-shift evaluation
+- final trace training kosusu
+- checkpoint + metrics CSV + rapor kapanisi
 
 ---
 
 ## Faz 5'ten Devreden Bulgular
 
-- Reward shaping katkısı tamamen kapanmış bir konu değil; trace tarafında yeniden test edilmeli.
-- Partial offloading sentetik tarafta önemli, ancak etkisi algoritmaya göre değişebiliyor.
-- Mobility, Faz 5'in en güçlü ve en stabil bileşeni olarak öne çıktı.
-- Edge enerji modeli yeni kalibre edildi; trace yüklerinde nasıl davrandığı henüz bilinmiyor.
+- `mobility_features` sentetik tarafta en guclu bilesendi
+- reward shaping etkisi tamamen kapanmadi, trace tarafinda yeniden test edilmeli
+- partial offloading degerli ama etkisi ortama gore degisebilir
+- edge enerji modeli trace yuklerinde yeniden sinanmali
 
 ---
 
-## Faz 6 Hedefleri
+## Siradaki Isler
 
-### 1. Gerçek trace yükleme akışını netleştirmek
-- `src/core/trace_loader.py` implement edildi.
-- Trace okuma ile trace-to-task dönüştürme sorumlulukları ayrılacak.
-- Mapping varsayımları belgeye bağlanacak.
+### 1. Trace mapping varsayimlarini netlestirmek
+- `size_bits`, `cpu_cycles`, `deadline`, `task_type` eslesmesini belgelemek
+- Gerekirse kisa bir assumptions dokumani eklemek
 
-### 2. Trace reward mantığını tamamlamak
-- `Success Bonus` eklenecek.
-- Partial offloading için switching overhead modeli tanımlanacak.
+### 2. Domain-shift analizi eklemek
+- synthetic train -> trace test
+- trace train -> synthetic test
+- Faz 5 sentetik ozeti ile Faz 6 trace ozeti arasinda karsilastirmali tablo cikarmak
 
-### 3. Trace eğitim ve değerlendirme akışını doğrulamak
-- PPO trace-driven ortamda yeniden eğitilecek.
-- Metrics CSV ve checkpoint track edilen dizinlerde üretilecek.
-- Validation tarafında sentetik Faz 5 bulgularının trace karşılığı ölçülecek.
+### 3. Trace PPO egitimini kosturmak
+- `results/raw/trace_training/trace_training_metrics.csv`
+- `models/ppo/trace_training/ppo_v3_trace_best.zip`
 
-### 4. Domain-shift analizini eklemek
-- Synthetic train -> trace test
-- Trace train -> synthetic test
-- Karşılaştırmalı tablo / kısa yorum
-
----
-
-## Beklenen Artefaktlar
-
-- Rapor: `phase_reports/Phase_6_Report.md`
-- Checkpoint: `models/ppo/trace_training/ppo_v3_trace_best.zip`
-- Metrics CSV: `results/raw/trace_training/trace_training_metrics.csv`
-- Domain-shift karşılaştırması: Faz 6 raporu içinde veya ek tablo olarak
+### 4. Faz 6 raporunu kapatmak
+- Gercek artefakt yollarini yazmak
+- Nicel sonuclari rapora tasimak
 
 ---
 
 ## Basari Kriteri
 
-- Trace eğitim akışı hata vermeden tamamlanmalı.
-- Validation metrics repo içinde tekrar üretilebilir olmalı.
-- Faz 5'ten gelen en az bir ana bulgu trace tarafında doğrulanmalı veya açıkça çürütülmeli.
-- Faz 6 raporu gerçek artefaktlarla güncellenmiş olmalı.
+- Trace training hata vermeden tamamlanmali
+- Artefaktlar repo icinde tekrar uretilebilir olmali
+- Faz 5'ten gelen en az bir ana bulgu trace tarafinda dogrulanmali veya acikca curutulmeli
+- Faz 6 raporu gercek sonuclarla kapanmali
 
----
 
-## Uygulama Sirasi
 
-1. `task.md` ve Faz 6 belgelerini mevcut gerçekliğe hizala
-2. Trace mapping varsayımlarını netleştir
-3. Reward içine `Success Bonus` ekle
-4. Partial offloading switching overhead modelini ekle
-5. Trace PPO eğitimini koştur
-6. Domain-shift değerlendirmesini ekle
-7. `phase_reports/Phase_6_Report.md` dosyasını gerçek sonuçlarla kapat
+
+## Yeni Not
+- Trace mapping varsayimlari artik v2_docs/trace_mapping_assumptions.md icinde merkezi olarak tutuluyor.
+- Domain-shift evaluation icin configs/trace/domain_shift_evaluation.yaml ve experiments/trace/evaluate_domain_shift.py eklendi.
+- Bu adim, Faz 6 kapatilmadan once synthetic-train -> trace-test ve trace-train -> synthetic-test tablosunu uretmek icin kullanilacak.
+

@@ -1,4 +1,4 @@
-# Faz 6: Trace-driven Training Configuration
+﻿# Faz 6: Trace-driven Training Configuration
 # Target: 68-77% success rate (improvement from Phase 5: 62.4%)
 
 training:
@@ -39,6 +39,8 @@ environment:
   use_battery_awareness: true     # Retuned heuristic
   use_mobility_features: true     # Retuned heuristic
   use_queue_awareness: false      # Optional (Phase 5: +1.0% low impact)
+  use_success_bonus: true         # Phase 6: sparse success signal to reduce semantic dependency
+  success_bonus: 100.0
   
   # Reward components (tuned for trace-driven scenario)
   reward_weights:
@@ -93,3 +95,4 @@ logging:
 device:
   cuda: true
   device_id: 0
+

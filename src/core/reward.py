@@ -1,4 +1,14 @@
-def calculate_reward(action, delay, energy, task, device, local_energy_pred, edge_energy_ratio=None, edge_energy_cost=0.0):
+﻿def calculate_reward(
+    action,
+    delay,
+    energy,
+    task,
+    device,
+    local_energy_pred,
+    edge_energy_ratio=None,
+    edge_energy_cost=0.0,
+    success_bonus=0.0,
+):
     """
     Calculates the reward (or penalty) for an offloading decision made by the RL Agent.
     Calibrated based on Phase 5 findings to reduce over-reliance on semantic shaping.
@@ -38,11 +48,13 @@ def calculate_reward(action, delay, energy, task, device, local_energy_pred, edg
     
     # 4. Deadline Miss Penalty (Normalized by priority)
     deadline = max(0.1, task.deadline)
-    if delay > deadline:
+    task_success = delay <= deadline
+    if not task_success:
         reward -= 75.0 * priority_score
     else:
         slack_ratio = max(0.0, (deadline - delay) / deadline)
         reward += 18.0 * slack_ratio * priority_score
+        reward += float(success_bonus)
         
     # 5. Battery Awareness (Exponential Penalty - Calibrated Phase 5)
     battery_pct = (device.battery / 10000.0) * 100.0 if hasattr(device, 'battery') else 100.0
@@ -71,4 +83,6 @@ def calculate_reward(action, delay, energy, task, device, local_energy_pred, edg
         reward += 4.0
         
     return reward
+
+
 

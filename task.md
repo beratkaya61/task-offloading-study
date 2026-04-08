@@ -1,4 +1,4 @@
-# AgentVNE-Inspired Task Offloading Upgrade Plan
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 
@@ -39,15 +39,17 @@ Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 ## Faz 6 - Gercek Veri / Trace-Driven Deney Paketi
 - [x] 6.1 `trace_loader.py` implemented and wired into the trace pipeline
 - [x] 6.2 Basic trace-to-task mapping via `src/core/trace_processor.py`
-- [ ] 6.3 Success Bonus (+100 sparse reward) Integration to reduce Semantic Dependency
-- [ ] 6.4 Adaptive/Dynamic Switching Overhead for Partial Offloading
-- [ ] 6.5 Domain shift analysis (Synthetic vs Trace results)
+- [x] 6.3 Success Bonus (+100 sparse reward) Integration to reduce Semantic Dependency
+- [x] 6.4 Adaptive/Dynamic Switching Overhead for Partial Offloading
+- [ ] 6.5 Domain shift analysis (Synthetic vs Trace results) [scaffold + config + report template eklendi; final kosu bekleniyor]
 - [ ] 6.6 Phase 6 final test/report
 
 Not:
 - `src/core/trace_loader.py` artik raw trace CSV ve kaydedilmis train/val/test episode split JSON dosyalarini yukleyebiliyor.
 - Mevcut Faz 6 orchestrator'u (`experiments/trace/train_ppo.py`) trace hazirlama icin artik once `TraceLoader`, sonra `TraceProcessor` kullaniyor.
 - `data/traces/` altindaki episode JSON dosyalari yeniden kullanilabiliyor; raw trace yoksa processor tarafindaki fallback akisiyla yeni splitler uretilebiliyor.
+- Trace config tarafinda `use_success_bonus: true` ve `success_bonus: 100.0` ile Faz 6 sparse success reward entegrasyonu acildi.
+- `rl_env.py` icinde task boyutu, link kalitesi ve onceki aksiyon degisimine bagli dinamik `switching_overhead` eklendi.
 
 ## Faz 7 - Two-Stage Training (AgentVNE Concept)
 - [ ] 7.1 Oracle / heuristic labels
@@ -71,3 +73,16 @@ Not:
 - [ ] 10.2 Explanation bank as RAG/few-shot memory
 - [ ] 10.3 Final technical documentation
 - [ ] 10.4 Final test and commit
+
+
+
+
+
+
+
+
+
+
+- Trace-to-task ceviri varsayimlari v2_docs/trace_mapping_assumptions.md icinde merkezi olarak belgelendi.
+- Domain-shift icin experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml iskeleti eklendi; final tablo trace checkpoint ile doldurulacak.
+
