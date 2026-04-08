@@ -52,8 +52,8 @@ Not:
 - `rl_env.py` icinde task boyutu, link kalitesi ve onceki aksiyon degisimine bagli dinamik `switching_overhead` eklendi.
 
 ## Faz 7 - Two-Stage Training (AgentVNE Concept)
-- [ ] 7.1 Oracle / heuristic labels
-- [ ] 7.2 Imitation / supervised pretraining
+- [x] 7.1 Oracle / heuristic labels [results/raw/synthetic/pretraining/oracle_label_dataset.csv uretildi; kalibrasyon notu Phase_7_Report.md icine dusuldu]
+- [x] 7.2 Imitation / supervised pretraining [models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip uretildi; best epoch 11, val acc 78.00%, test acc 80.22%, 30 epoch config early stopping ile 16 epochta durdu]
 - [ ] 7.3 Fine-tune PPO vs scratch comparison
 - [ ] 7.4 Phase 7 test and commit
 
@@ -85,6 +85,7 @@ Not:
 
 - Trace-to-task ceviri varsayimlari v2_docs/trace_mapping_assumptions.md icinde merkezi olarak belgelendi.
 - Domain-shift akisi experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml uzerinden calistirildi; guncel tablo results/tables/trace_domain_shift_report.md icinde tutuluyor.
+
 
 
 

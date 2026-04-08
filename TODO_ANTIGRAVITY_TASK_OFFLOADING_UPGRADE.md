@@ -1,6 +1,6 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
-# TODO â€” Antigravity Upgrade Plan for `task-offloading-study`
+# TODO — Antigravity Upgrade Plan for `task-offloading-study`
 
 > Guncel durum notu (2026-04-02):
 > Faz 1-5 tamamlandi ve Faz 5 sentetik taraf donduruldu.
@@ -8,98 +8,98 @@
 > `src/core/trace_loader.py` implement edildi ve `experiments/trace/train_ppo.py` akisina baglandi.
 > Faz 6'da acik kalan ana maddeler artik `Success Bonus`, switching overhead, domain-shift analizi ve final trace artefaktlaridir.
 
-Bu dosya, projeyi seminer seviyesinden **tez + makale + gÃ¼Ã§lÃ¼ demo** seviyesine Ã§Ä±karmak iÃ§in hazÄ±rlanmÄ±ÅŸ sÄ±ralÄ± geliÅŸtirme planÄ±dÄ±r.
+Bu dosya, projeyi seminer seviyesinden **tez + makale + güçlü demo** seviyesine çıkarmak için hazırlanmış sıralı geliştirme planıdır.
 
-AmaÃ§ sadece birkaÃ§ kÃ¼Ã§Ã¼k iyileÅŸtirme yapmak deÄŸil; mevcut sistemi ÅŸu Ã§izgiye taÅŸÄ±maktÄ±r:
+Amaç sadece birkaç küçük iyileştirme yapmak değil; mevcut sistemi şu çizgiye taşımaktır:
 
 > **LLM-guided, trace-driven, graph-aware, partial task offloading framework with rigorous evaluation, ablation studies, and publication-ready methodology**
 
 ---
 
-# 0. Kuzey YÄ±ldÄ±zÄ± (North Star)
+# 0. Kuzey Yıldızı (North Star)
 
 ## Nihai hedef
 
-AÅŸaÄŸÄ±daki baÅŸlÄ±ÄŸa yaklaÅŸan bir sistem Ã¼retmek:
+Aşağıdaki başlığa yaklaşan bir sistem üretmek:
 
 **LLM-Guided Graph Reinforcement Learning for Semantic-Aware Partial Task Offloading in Dynamic Mobile Edge Computing**
 
-## Nihai katkÄ± paketi
+## Nihai katkı paketi
 
-- LLM yalnÄ±zca aÃ§Ä±klama veren modÃ¼l deÄŸil, **action prior / semantic bias generator** olacak.
-- PPO yalnÄ±zca reward shaping ile Ã§alÄ±ÅŸan model deÄŸil, **gerÃ§ek simÃ¼lasyonla hizalanmÄ±ÅŸ** bir policy olacak.
-- EÄŸitim, doÄŸrudan random mock taskâ€™larla deÄŸil, **trace-driven ve staged training** ile yapÄ±lacak.
-- KÄ±yaslamalar sadece Random/Greedy ile deÄŸil, **heuristic + RL + semantic ablation** ailesiyle yapÄ±lacak.
-- Metrikler yalnÄ±zca ortalama latency deÄŸil; **deadline miss, p95 latency, energy per success, fairness, jitter, QoE, decision overhead** olacak.
-- Sistem mevcut vektÃ¶r stateâ€™ten ileride **graph-aware policy** seviyesine taÅŸÄ±nacak.
+- LLM yalnızca açıklama veren modül değil, **action prior / semantic bias generator** olacak.
+- PPO yalnızca reward shaping ile çalışan model değil, **gerçek simülasyonla hizalanmış** bir policy olacak.
+- Eğitim, doğrudan random mock task’larla değil, **trace-driven ve staged training** ile yapılacak.
+- Kıyaslamalar sadece Random/Greedy ile değil, **heuristic + RL + semantic ablation** ailesiyle yapılacak.
+- Metrikler yalnızca ortalama latency değil; **deadline miss, p95 latency, energy per success, fairness, jitter, QoE, decision overhead** olacak.
+- Sistem mevcut vektör state’ten ileride **graph-aware policy** seviyesine taşınacak.
 
 ---
 
-# 1. Mevcut Durum Ã–zeti
+# 1. Mevcut Durum Özeti
 
-## Kod tabanÄ±nda gÃ¶rÃ¼len ana bileÅŸenler
+## Kod tabanında görülen ana bileşenler
 
 - `src/rl_env.py`
-  - 6 aksiyonlu partial offloading yapÄ±sÄ± var.
-  - Durum vektÃ¶rÃ¼ 8 boyutlu.
-  - LLM Ã¶nerisi observationâ€™a one-hot ile giriyor.
-  - Reward iÃ§inde LLM alignment bonus/penalty var.
+  - 6 aksiyonlu partial offloading yapısı var.
+  - Durum vektörü 8 boyutlu.
+  - LLM önerisi observation’a one-hot ile giriyor.
+  - Reward içinde LLM alignment bonus/penalty var.
 - `src/llm_analyzer.py`
-  - Rule-based + LLM-based analiz desteÄŸi var.
-  - `recommended_target`, `priority_score`, `urgency`, `complexity`, `bandwidth_need`, `confidence` Ã¼retiyor.
+  - Rule-based + LLM-based analiz desteği var.
+  - `recommended_target`, `priority_score`, `urgency`, `complexity`, `bandwidth_need`, `confidence` üretiyor.
 - `src/simulation_env.py`
-  - SimPy tabanlÄ± akÄ±ÅŸ var.
-  - `NUM_DEVICES = 20`, `NUM_EDGE_SERVERS = 3` benzeri Ã§ok cihazlÄ± ortam var.
+  - SimPy tabanlı akış var.
+  - `NUM_DEVICES = 20`, `NUM_EDGE_SERVERS = 3` benzeri çok cihazlı ortam var.
   - Fairness, jitter, QoE takibi mevcut.
 - `src/train_agent.py`
-  - PPO eÄŸitimi var.
-  - Ancak eÄŸitim ortamÄ± sade/mock ve gerÃ§ek simÃ¼lasyonla tam hizalÄ± gÃ¶rÃ¼nmÃ¼yor.
+  - PPO eğitimi var.
+  - Ancak eğitim ortamı sade/mock ve gerçek simülasyonla tam hizalı görünmüyor.
 - `src/gui.py`
-  - GÃ¼Ã§lÃ¼ bir demo arayÃ¼zÃ¼ var.
+  - Güçlü bir demo arayüzü var.
 
-## Åu anki kritik eksikler
+## şuanki kritik eksikler
 
-- Train environment ile gerÃ§ek simulation environment arasÄ±nda boÅŸluk var.
-- LLM katkÄ±sÄ± reward shaping aÄŸÄ±rlÄ±klÄ±; **prior distribution** olarak kullanÄ±lmÄ±yor.
-- Baseline seti geniÅŸ deÄŸil.
-- Ablation yapÄ±sÄ± sistematik deÄŸil.
-- Trace-driven deney akÄ±ÅŸÄ± net deÄŸil.
-- Reproducibility zayÄ±f.
-- Evaluation pipeline ayrÄ± ve tekrarlanabilir deÄŸil.
-- Karar overheadâ€™i (LLM sÃ¼resi + PPO inference sÃ¼resi) net Ã¶lÃ§Ã¼lmÃ¼yor.
-- Graph-based policy henÃ¼z yok.
+- Train environment ile gerçek simulation environment arasında boşluk var.
+- LLM katkısı reward shaping ağırlıklı; **prior distribution** olarak kullanılmıyor.
+- Baseline seti geniş değil.
+- Ablation yapısı sistematik değil.
+- Trace-driven deney akışı net değil.
+- Reproducibility zayıf.
+- Evaluation pipeline ayrı ve tekrarlanabilir değil.
+- Karar overhead’i (LLM süresi + PPO inference süresi) net ölçülmüyor.
+- Graph-based policy henüz yok.
 
 ---
 
 # 2. Uygulama Stratejisi
 
-Bu planÄ± **9 fazda** yÃ¼rÃ¼teceÄŸiz.
+Bu planı **9 fazda** yürüteceğiz.
 
-Ã–nerilen sÄ±ra:
+Önerilen sıra:
 
-1. Stabilizasyon ve deney tekrarlanabilirliÄŸi
+1. Stabilizasyon ve deney tekrarlanabilirliği
 2. Ortam hizalama
-3. LLM entegrasyonunu gÃ¼Ã§lendirme
+3. LLM entegrasyonunu güçlendirme
 4. Baseline ve ablation paketi
-5. GerÃ§ek veri / trace entegrasyonu
-6. GeliÅŸmiÅŸ metrik ve analiz
+5. Gerçek veri / trace entegrasyonu
+6. Gelişmiş metrik ve analiz
 7. Two-stage training
-8. Graph-aware yÃ¼kseltme
-9. Tez / makale Ã¼retim paketi
+8. Graph-aware yükseltme
+9. Tez / makale üretim paketi
 
 ---
 
-# 3. Faz 1 â€” Reproducibility ve Kod TemizliÄŸi
+# 3. Faz 1 — Reproducibility ve Kod Temizliği
 
 ## Hedef
 
-Projeyi â€œÃ§alÄ±ÅŸÄ±yorâ€ seviyesinden â€œtekrarlanabilir araÅŸtÄ±rma prototipiâ€ seviyesine Ã§Ä±karmak.
+Projeyi “çalışıyor seviyesinden “tekrarlanabilir araştırma prototipi seviyesine çıkarmak.
 
-## YapÄ±lacaklar
+## Yapılacaklar
 
-### 3.1. Proje klasÃ¶r yapÄ±sÄ±nÄ± standardize et
+### 3.1. Proje klasör yapısını standardize et
 
-- [ ] `src/` iÃ§inde aÅŸaÄŸÄ±daki yeni modÃ¼lleri oluÅŸtur:
+- [ ] `src/` içinde aşağıdaki yeni modülleri oluştur:
   - [ ] `src/baselines.py`
   - [ ] `src/evaluation.py`
   - [ ] `src/metrics.py`
@@ -108,26 +108,26 @@ Projeyi â€œÃ§alÄ±ÅŸÄ±yorâ€ seviyesinden â€œtekrarlanabilir 
   - [ ] `src/semantic_prior.py`
   - [ ] `src/pretrain_policy.py`
   - [ ] `src/utils/reproducibility.py`
-- [ ] `configs/` klasÃ¶rÃ¼ oluÅŸtur:
+- [ ] `configs/` klasörü oluştur:
   - [ ] `configs/synthetic/rl_training.yaml`
   - [ ] `configs/synthetic/policy_evaluation.yaml`
   - [ ] `configs/synthetic/ablation.yaml`
   - [ ] `configs/trace/ppo_training.yaml`
-- [ ] `results/` klasÃ¶rÃ¼ oluÅŸtur:
+- [ ] `results/` klasörü oluştur:
   - [ ] `results/raw/`
   - [ ] `results/processed/`
   - [ ] `results/figures/`
   - [ ] `results/tables/`
 
-### 3.2. Seed ve determinism kontrolÃ¼
+### 3.2. Seed ve determinism kontrolü
 
-- [ ] `numpy`, `random`, `torch`, `gymnasium` iÃ§in tek seed fonksiyonu yaz.
-- [ ] Her deneyde seed loglansÄ±n.
-- [ ] `README.md` iÃ§ine â€œHow to reproduceâ€ bÃ¶lÃ¼mÃ¼ ekle.
+- [ ] `numpy`, `random`, `torch`, `gymnasium` için tek seed fonksiyonu yaz.
+- [ ] Her deneyde seed loglansın.
+- [ ] `README.md` içine “How to reproduce bölümü ekle.
 
-### 3.3. Experiment logging altyapÄ±sÄ±
+### 3.3. Experiment logging altyapısı
 
-- [ ] Her run sonunda JSON/CSV log Ã¼ret:
+- [ ] Her run sonunda JSON/CSV log üret:
   - [ ] run_id
   - [ ] timestamp
   - [ ] config hash
@@ -143,32 +143,32 @@ Projeyi â€œÃ§alÄ±ÅŸÄ±yorâ€ seviyesinden â€œtekrarlanabilir 
   - [ ] jitter
   - [ ] qoe
   - [ ] decision overhead
-- [ ] `evaluation.py` ile bu loglarÄ± tek tabloda birleÅŸtir.
+- [ ] `evaluation.py` ile bu logları tek tabloda birleştir.
 
 ## Done kriteri
 
-- [ ] AynÄ± config + seed ile aynÄ± sonuÃ§ aralÄ±ÄŸÄ±na yakÄ±n tekrar alÄ±nabiliyor.
-- [ ] TÃ¼m deneyler `results/` altÄ±nda standart biÃ§imde kaydediliyor.
+- [ ] Aynı config + seed ile aynı sonuç aralığına yakın tekrar alınabiliyor.
+- [ ] Tüm deneyler `results/` altında standart biçimde kaydediliyor.
 
 ---
 
-# 4. Faz 2 â€” Train Environment ve GerÃ§ek SimÃ¼lasyon HizalamasÄ±
+# 4. Faz 2 — Train Environment ve Gerçek Simülasyon Hizalaması
 
 ## Hedef
 
-`rl_env.py` ile `simulation_env.py` arasÄ±ndaki farkÄ± azaltmak.
+`rl_env.py` ile `simulation_env.py` arasındaki farkı azaltmak.
 
 ## Kritik sorun
 
-Åu an `rl_env.py` reset sÄ±rasÄ±nda mock task ve mock device Ã¼retiyor. Bu pratik ama tez aÃ§Ä±sÄ±ndan zayÄ±f. Ã–ÄŸrenilen politika gerÃ§ek ortam dinamiklerine tam maruz kalmÄ±yor.
+u an `rl_env.py` reset sırasında mock task ve mock device üretiyor. Bu pratik ama tez açısından zayıf. Öğrenilen politika gerçek ortam dinamiklerine tam maruz kalmıyor.
 
-## YapÄ±lacaklar
+## Yapılacaklar
 
 ### 4.1. Ortak state builder yaz
 
-- [ ] `src/state_builder.py` oluÅŸtur.
-- [ ] Hem `rl_env.py` hem `simulation_env.py` aynÄ± state Ã¼retim fonksiyonunu kullansÄ±n.
-- [ ] State iÃ§inde ÅŸu alanlar yer alsÄ±n:
+- [ ] `src/state_builder.py` oluştur.
+- [ ] Hem `rl_env.py` hem `simulation_env.py` aynı state üretim fonksiyonunu kullansın.
+- [ ] State içinde şu alanlar yer alsın:
   - [ ] normalized SNR
   - [ ] task size
   - [ ] cpu cycles
@@ -182,14 +182,14 @@ Projeyi â€œÃ§alÄ±ÅŸÄ±yorâ€ seviyesinden â€œtekrarlanabilir 
 
 ### 4.2. Mock yerine simulator-backed training
 
-- [ ] PPO training iÃ§in â€œlightweight simulator modeâ€ oluÅŸtur.
-- [ ] `OffloadingEnv.reset()` rastgele mock Ã¼retmek yerine simÃ¼latÃ¶rden Ã¶rnek alsÄ±n.
-- [ ] Task oluÅŸturma mantÄ±ÄŸÄ± `simulation_env.py` ile uyumlu hale gelsin.
+- [ ] PPO training için “lightweight simulator mode oluştur.
+- [ ] `OffloadingEnv.reset()` rastgele mock üretmek yerine simülatörden örnek alsın.
+- [ ] Task oluşturma mantığı `simulation_env.py` ile uyumlu hale gelsin.
 
 ### 4.3. Reward fonksiyonunu tek yerde topla
 
-- [ ] `src/reward.py` oluÅŸtur.
-- [ ] Reward bileÅŸenlerini fonksiyonlaÅŸtÄ±r:
+- [ ] `src/reward.py` oluştur.
+- [ ] Reward bileşenlerini fonksiyonlaştır:
   - [ ] latency term
   - [ ] energy term
   - [ ] deadline term
@@ -197,83 +197,83 @@ Projeyi â€œÃ§alÄ±ÅŸÄ±yorâ€ seviyesinden â€œtekrarlanabilir 
   - [ ] battery preservation term
   - [ ] cloud cost term
   - [ ] partial offloading utility term
-- [ ] Reward weights config dosyasÄ±ndan gelsin.
+- [ ] Reward weights config dosyasından gelsin.
 
-### 4.4. Episode tanÄ±mÄ±nÄ± iyileÅŸtir
+### 4.4. Episode tanımını iyileştir
 
-- [ ] Åu an step sonunda `done = True`; bunu geliÅŸtir.
-- [ ] Ã‡ok adÄ±mlÄ± episode tasarla:
-  - [ ] tek episode = birden fazla gÃ¶rev
+- [ ] u an step sonunda `done = True`; bunu geliştir.
+- [ ] Çok adımlı episode tasarla:
+  - [ ] tek episode = birden fazla görev
   - [ ] veya sliding window task sequence
-- [ ] PPOâ€™nun uzun ufuklu davranÄ±ÅŸ Ã¶ÄŸrenmesi saÄŸlansÄ±n.
+- [ ] PPO’nun uzun ufuklu davranış öğrenmesi sağlansın.
 
 ## Done kriteri
 
-- [ ] EÄŸitim ve deÄŸerlendirme aynÄ± fiziksel mantÄ±ÄŸÄ± paylaÅŸÄ±yor.
-- [ ] Tek adÄ±mlÄ±k aÅŸÄ±rÄ± sade RL ortamÄ±ndan Ã§Ä±kÄ±lmÄ±ÅŸ oluyor.
+- [ ] Eğitim ve değerlendirme aynı fiziksel mantığı paylaşıyor.
+- [ ] Tek adımlık aşırı sade RL ortamından çıkılmış oluyor.
 
 ---
 
-# 5. Faz 3 â€” LLM Entegrasyonunu GerÃ§ek KatkÄ±ya DÃ¶nÃ¼ÅŸtÃ¼r
+# 5. Faz 3 — LLM Entegrasyonunu Gerçek Katkıya Dönüştür
 
 ## Hedef
 
-LLMâ€™i sadece reward shaping yapan yardÄ±mcÄ± modÃ¼l olmaktan Ã§Ä±karÄ±p, karar mekanizmasÄ±na **structured prior** saÄŸlayan bileÅŸen haline getirmek.
+LLM’i sadece reward shaping yapan yardımcı modül olmaktan çıkarıp, karar mekanizmasına **structured prior** sağlayan bileşen haline getirmek.
 
-## YapÄ±lacaklar
+## Yapılacaklar
 
-### 5.1. `recommended_target` yerine action prior Ã¼ret
+### 5.1. `recommended_target` yerine action prior üret
 
-- [ ] `src/semantic_prior.py` oluÅŸtur.
-- [ ] LLM / rule-based analyzer aÅŸaÄŸÄ±daki daÄŸÄ±lÄ±mÄ± Ã¼retsin:
+- [ ] `src/semantic_prior.py` oluştur.
+- [ ] LLM / rule-based analyzer aşağıdaki dağılımı üretsin:
   - [ ] `P(local)`
   - [ ] `P(edge_25)`
   - [ ] `P(edge_50)`
   - [ ] `P(edge_75)`
   - [ ] `P(edge_100)`
   - [ ] `P(cloud)`
-- [ ] Observation iÃ§ine tek one-hot yerine bu 6 boyutlu prior vektÃ¶rÃ¼ girsin.
+- [ ] Observation içine tek one-hot yerine bu 6 boyutlu prior vektörü girsin.
 
-### 5.2. Confidence kullanÄ±mÄ±nÄ± gÃ¼Ã§lendir
+### 5.2. Confidence kullanımını güçlendir
 
-- [ ] Semantic confidence yalnÄ±zca reward scalingâ€™de deÄŸil, aÅŸaÄŸÄ±daki yerlerde kullanÄ±lsÄ±n:
+- [ ] Semantic confidence yalnızca reward scaling’de değil, aşağıdaki yerlerde kullanılsın:
   - [ ] policy prior blending
   - [ ] action masking veya action bias
   - [ ] explanation confidence
-- [ ] `confidence calibration` iÃ§in ayrÄ± analiz yap.
+- [ ] `confidence calibration` için ayrı analiz yap.
 
-### 5.3. LLM Ã§Ä±ktÄ±sÄ±nÄ± parse edilebilir JSON haline getir
+### 5.3. LLM çıktısını parse edilebilir JSON haline getir
 
-- [ ] `llm_analyzer.py` iÃ§inde structured output zorunlu hale getir.
-- [ ] Parse baÅŸarÄ±sÄ±zsa fallback mekanizmasÄ± loglansÄ±n.
-- [ ] `analysis_method` ile birlikte `parse_success`, `fallback_reason` tutulmalÄ±.
+- [ ] `llm_analyzer.py` içinde structured output zorunlu hale getir.
+- [ ] Parse başarısızsa fallback mekanizması loglansın.
+- [ ] `analysis_method` ile birlikte `parse_success`, `fallback_reason` tutulmalı.
 
 ### 5.4. Semantic explanation bank
 
-- [ ] Her karar iÃ§in explanation log Ã¼ret:
+- [ ] Her karar için explanation log üret:
   - [ ] raw semantic input
   - [ ] analyzer output
   - [ ] selected action
   - [ ] reward decomposition
   - [ ] final outcome
-- [ ] Bu log ileride tezde case study olarak kullanÄ±lacak.
+- [ ] Bu log ileride tezde case study olarak kullanılacak.
 
 ## Done kriteri
 
-- [ ] LLM katkÄ±sÄ± yalnÄ±zca â€œbonus/penaltyâ€ deÄŸil, aÃ§Ä±kÃ§a state/action prior Ã¼reten modÃ¼l oluyor.
-- [ ] Semantic prior ve confidence grafiklerle gÃ¶sterilebiliyor.
+- [ ] LLM katkısı yalnızca “bonus/penalty değil, açıkça state/action prior üreten modül oluyor.
+- [ ] Semantic prior ve confidence grafiklerle gösterilebiliyor.
 
 ---
 
-# 6. Faz 4 â€” Baseline Ailesini GeniÅŸlet
+# 6. Faz 4 — Baseline Ailesini Genişlet
 
 ## Hedef
 
-KÄ±yaslamayÄ± ciddi hale getirmek.
+Kıyaslamayı ciddi hale getirmek.
 
 ## Minimum baseline seti
 
-### Zorunlu baselineâ€™lar
+### Zorunlu baseline’lar
 
 - [ ] `LocalOnly`
 - [ ] `EdgeOnly`
@@ -286,39 +286,39 @@ KÄ±yaslamayÄ± ciddi hale getirmek.
 - [ ] `A2C` (Classical RL / Eksik 2)
 - [ ] `PPO_NoSemantics`
 - [ ] `PPO_WithOneHotLLM`
-- [ ] `PPO_WithSemanticPrior`  â† hedef ana model
+- [ ] `PPO_WithSemanticPrior` hedef ana model
 
-### Orta seviye ek baselineâ€™lar
+### Orta seviye ek baseline’lar
 
 - [ ] `DQN` veya `DoubleDQN`
-- [ ] `SAC/DDPG` tarzÄ± continuous ratio policy (opsiyonel ama Ã§ok deÄŸerli)
+- [ ] `SAC/DDPG` tarzı continuous ratio policy (opsiyonel ama çok değerli)
 
-## Kod gÃ¶revleri
+## Kod görevleri
 
-- [ ] `src/baselines.py` iÃ§ine bÃ¼tÃ¼n baselineâ€™larÄ± tek arayÃ¼z altÄ±nda topla.
-- [ ] Hepsi aynÄ± task stream ve aynÄ± seed ile deÄŸerlendirilsin.
-- [ ] SonuÃ§lar ortak evaluator ile Ã¶lÃ§Ã¼lsÃ¼n.
+- [ ] `src/baselines.py` içine bütün baseline’ları tek arayüz altında topla.
+- [ ] Hepsi aynı task stream ve aynı seed ile değerlendirilsin.
+- [ ] Sonuçlar ortak evaluator ile ölçülsün.
 
 ## Done kriteri
 
-- [ ] â€œBizim model iyiâ€ cÃ¼mlesi en az 8â€“10 baselineâ€™a karÅŸÄ± desteklenebiliyor.
+- [ ] “Bizim model iyi cümlesi en az 8–10 baseline’a karşı desteklenebiliyor.
 
 ---
 
-# 7. Faz 5 â€” Sistematik Ablation Study
+# 7. Faz 5 — Sistematik Ablation Study
 
 ## Hedef
 
-KatkÄ±nÄ±n nereden geldiÄŸini gÃ¶stermek.
+Katkının nereden geldiğini göstermek.
 
-## YapÄ±lacak ablationâ€™lar
+## Yapılacak ablation’lar
 
 - [ ] `Full Model`
 - [ ] `w/o Semantics`
 - [ ] `w/o Reward Shaping`
 - [ ] `w/o Semantic Prior`
 - [ ] `w/o Confidence`
-- [ ] `w/o Partial Offloading` (yalnÄ±zca Local/Edge/Cloud)
+- [ ] `w/o Partial Offloading` (yalnızca Local/Edge/Cloud)
 - [ ] `w/o Battery Awareness`
 - [ ] `w/o Queue Awareness`
 - [ ] `w/o Mobility Features`
@@ -336,62 +336,62 @@ KatkÄ±nÄ±n nereden geldiÄŸini gÃ¶stermek.
 
 ## Done kriteri
 
-- [ ] Her ana tasarÄ±m kararÄ±nÄ±n katkÄ±sÄ± tablo ve grafikle ayrÄ±ÅŸtÄ±rÄ±labiliyor.
+- [ ] Her ana tasarım kararının katkısı tablo ve grafikle ayrıştırılabiliyor.
 
 ---
 
-# 8. Faz 6 â€” GerÃ§ek Veri / Trace-Driven Deney Paketi
+# 8. Faz 6 — Gerçek Veri / Trace-Driven Deney Paketi
 
 ## Hedef
 
-Synthetic-only gÃ¶rÃ¼nÃ¼mden Ã§Ä±kmak.
+Synthetic-only görünümden çıkmak.
 
-## YapÄ±lacaklar
+## Yapılacaklar
 
 ### 8.1. Trace loader
 
 - [ ] `src/trace_loader.py` yaz.
-- [ ] Google Cluster Trace iÃ§in:
+- [ ] Google Cluster Trace için:
   - [ ] task arrival pattern
   - [ ] cpu demand
   - [ ] duration / runtime approximation
-- [ ] Didi Gaia iÃ§in:
+- [ ] Didi Gaia için:
   - [ ] mobility trajectory
   - [ ] distance-to-edge profile
   - [ ] handover benzeri hareketlilik etkileri
 
 ### 8.2. Trace-to-task mapping
 
-- [ ] Task fields ile trace fieldâ€™larÄ± net eÅŸleÅŸtir:
+- [ ] Task fields ile trace field’ları net eşleştir:
   - [ ] `size_bits`
   - [ ] `cpu_cycles`
   - [ ] `deadline`
   - [ ] `task_type`
-- [ ] Eksik alanlar iÃ§in aÃ§Ä±k mapping assumptions dosyasÄ± yaz:
+- [ ] Eksik alanlar için açık mapping assumptions dosyası yaz:
   - [ ] `doc/trace_mapping_assumptions.md`
 
-### 8.3. Ä°ki deney modu oluÅŸtur
+### 8.3. İki deney modu oluştur
 
 - [ ] `synthetic mode`
 - [ ] `trace-driven mode`
 
 ### 8.4. Domain shift testi
 
-- [ ] Syntheticâ€™te eÄŸit, traceâ€™de test et.
-- [ ] Traceâ€™de eÄŸit, syntheticâ€™te test et.
-- [ ] Generalization tablosu oluÅŸtur.
+- [ ] Synthetic’te eğit, trace’de test et.
+- [ ] Trace’de eğit, synthetic’te test et.
+- [ ] Generalization tablosu oluştur.
 
 ## Done kriteri
 
-- [ ] Proje artÄ±k sadece â€œgÃ¼zel simÃ¼lasyonâ€ deÄŸil, trace-driven Ã§alÄ±ÅŸma haline geliyor.
+- [ ] Proje artık sadece “güzel simülasyon değil, trace-driven çalışma haline geliyor.
 
 ---
 
-# 9. Faz 7 â€” GeliÅŸmiÅŸ Metrik ve Ä°statistiksel Analiz
+# 9. Faz 7 — Gelişmiş Metrik ve İstatistiksel Analiz
 
 ## Hedef
 
-Makale seviyesinde Ã¶lÃ§Ã¼m disiplini kurmak.
+Makale seviyesinde ölçüm disiplini kurmak.
 
 ## Zorunlu metrikler
 
@@ -412,15 +412,15 @@ Makale seviyesinde Ã¶lÃ§Ã¼m disiplini kurmak.
   - [ ] PPO inference time
   - [ ] end-to-end controller latency
 
-## Ä°statistiksel analiz
+## İstatistiksel analiz
 
-- [ ] Her deney en az 5 seed ile koÅŸsun.
-- [ ] Ortalama Â± std ver.
-- [ ] 95% gÃ¼ven aralÄ±ÄŸÄ± ver.
+- [ ] Her deney en az 5 seed ile koşsun.
+- [ ] Ortalama ± std ver.
+- [ ] 95% güven aralığı ver.
 - [ ] Wilcoxon signed-rank testi uygula.
 - [ ] Gerekirse Friedman + Nemenyi ekle.
 
-## GÃ¶rseller
+## Görseller
 
 - [ ] latency boxplot
 - [ ] p95 latency bar chart
@@ -431,33 +431,33 @@ Makale seviyesinde Ã¶lÃ§Ã¼m disiplini kurmak.
 
 ## Done kriteri
 
-- [ ] SonuÃ§ kÄ±smÄ± artÄ±k yalnÄ±zca tek sayÄ±dan oluÅŸmuyor; istatistiksel olarak savunulabilir hale geliyor.
+- [ ] Sonuç kısmı artık yalnızca tek sayıdan oluşmuyor; istatistiksel olarak savunulabilir hale geliyor.
 
 ---
 
-# 10. Faz 8 â€” Two-Stage Training (En GÃ¼Ã§lÃ¼ Orta Vadeli KatkÄ±)
+# 10. Faz 8 — Two-Stage Training (En Güçlü Orta Vadeli Katkı)
 
 ## Hedef
 
-AgentVNEâ€™deki staged training disiplinini offloading problemine uyarlamak.
+AgentVNE’deki staged training disiplinini offloading problemine uyarlamak.
 
-## YapÄ±lacaklar
+## Yapılacaklar
 
-### 10.1. Oracle / heuristic label Ã¼retimi
+### 10.1. Oracle / heuristic label üretimi
 
-- [ ] Basit maliyet fonksiyonu ile yarÄ±-optimal karar etiketi Ã¼ret:
+- [ ] Basit maliyet fonksiyonu ile yarı-optimal karar etiketi üret:
   - [ ] latency-aware oracle
   - [ ] energy-aware oracle
   - [ ] weighted objective oracle
-- [ ] Bu etiketleri supervised pretraining iÃ§in dataset haline getir.
+- [ ] Bu etiketleri supervised pretraining için dataset haline getir.
 
 ### 10.2. Policy pretraining
 
-- [ ] `src/pretrain_policy.py` oluÅŸtur.
-- [ ] PPO policy aÄŸÄ±nÄ± Ã¶nce imitation / supervised ÅŸekilde Ä±sÄ±t.
+- [ ] `src/pretrain_policy.py` oluştur.
+- [ ] PPO policy ağını önce imitation / supervised şekilde ısıt.
 - [ ] Sonra PPO ile fine-tune et.
 
-### 10.3. KarÅŸÄ±laÅŸtÄ±rma
+### 10.3. Karşılaştırma
 
 - [ ] `PPO from scratch`
 - [ ] `Pretrained + PPO`
@@ -467,48 +467,48 @@ AgentVNEâ€™deki staged training disiplinini offloading problemine uyarlamak
 
 ## Done kriteri
 
-- [ ] EÄŸitim daha stabil hale geliyor.
-- [ ] Tezde â€œneden staged training?â€ sorusuna net cevap var.
+- [ ] Eğitim daha stabil hale geliyor.
+- [ ] Tezde "neden staged training?" sorusuna net cevap var.
 
 ---
 
-# 11. Faz 9 â€” Graph-Aware Policy Upgrade (Efsane Seviye KatkÄ±)
+# 11. Faz 9 — Graph-Aware Policy Upgrade (Efsane Seviye Katkı)
 
 ## Hedef
 
-Projeyi gerÃ§ekten sÄ±ra dÄ±ÅŸÄ± hale getirecek ana sÄ±Ã§rama.
+Projeyi gerçekten sıra dışı hale getirecek ana sıçrama.
 
 ## Neden gerekli?
 
-Åu an state bÃ¼yÃ¼k Ã¶lÃ§Ã¼de vektÃ¶r tabanlÄ±. Oysa sistem doÄŸal olarak graf yapÄ±sÄ±nda:
+u an state büyük ölçüde vektör tabanlı. Oysa sistem doğal olarak graf yapısında:
 
 - cihazlar
 - edge sunucular
 - bulut
-- aralarÄ±ndaki mesafe / link quality
-- queue iliÅŸkileri
+- aralarındaki mesafe / link quality
+- queue ilişkileri
 - shared congestion
 - mobility
 
-Bu yÃ¼zden GNN tabanlÄ± policy Ã§ok gÃ¼Ã§lÃ¼ bir upgrade olur.
+Bu yüzden GNN tabanlı policy çok güçlü bir upgrade olur.
 
-## YapÄ±lacaklar
+## Yapılacaklar
 
-### 11.1. Graph state tanÄ±mÄ±
+### 11.1. Graph state tanımı
 
 - [ ] Node tipleri:
   - [ ] IoT device
   - [ ] Edge server
   - [ ] Cloud node
   - [ ] Current task node (opsiyonel)
-- [ ] Node featureâ€™larÄ±:
+- [ ] Node feature’ları:
   - [ ] battery
   - [ ] cpu capacity
   - [ ] queue load
   - [ ] mobility state
   - [ ] semantic priority
   - [ ] deadline pressure
-- [ ] Edge featureâ€™larÄ±:
+- [ ] Edge feature’ları:
   - [ ] distance
   - [ ] predicted rate
   - [ ] transmission latency
@@ -516,16 +516,16 @@ Bu yÃ¼zden GNN tabanlÄ± policy Ã§ok gÃ¼Ã§lÃ¼ bir upgrade olur.
 
 ### 11.2. Graph encoder
 
-- [ ] `src/graph_policy.py` oluÅŸtur.
+- [ ] `src/graph_policy.py` oluştur.
 - [ ] PyTorch Geometric veya DGL ile GNN encoder kur.
-- [ ] Ã‡Ä±kÄ±ÅŸta action logits Ã¼ret.
+- [ ] Çıkışta action logits üret.
 
 ### 11.3. Semantic prior fusion
 
-- [ ] LLM priorâ€™Ä± graph node feature veya policy prior olarak birleÅŸtir.
-- [ ] Erken fusion ve geÃ§ fusion olmak Ã¼zere iki strateji test et.
+- [ ] LLM prior’ı graph node feature veya policy prior olarak birleştir.
+- [ ] Erken fusion ve geç fusion olmak üzere iki strateji test et.
 
-### 11.4. KarÅŸÄ±laÅŸtÄ±rma
+### 11.4. Karşılaştırma
 
 - [ ] `MLP-PPO`
 - [ ] `GNN-PPO`
@@ -533,28 +533,28 @@ Bu yÃ¼zden GNN tabanlÄ± policy Ã§ok gÃ¼Ã§lÃ¼ bir upgrade olur.
 
 ## Done kriteri
 
-- [ ] Yeni bir makale katkÄ±sÄ± doÄŸuyor.
-- [ ] â€œNeden graph?â€ sorusuna deneysel cevap verilebiliyor.
+- [ ] Yeni bir makale katkısı doğuyor.
+- [ ] "Neden graph?" sorusuna deneysel cevap verilebiliyor.
 
 ---
 
-# 12. Demo ve GUI YÃ¼kseltmeleri
+# 12. Demo ve GUI Yükseltmeleri
 
 ## Hedef
 
-Seminerde â€œwow effectâ€ yaratmak.
+Seminerde “wow effect yaratmak.
 
-## YapÄ±lacaklar
+## Yapılacaklar
 
-- [ ] GUIâ€™ye â€œExperiment Modeâ€ ekle:
-  - [ ] model seÃ§imi
-  - [ ] baseline seÃ§imi
-  - [ ] semantic mode aÃ§/kapat
-  - [ ] trace mode aÃ§/kapat
-- [ ] GUIâ€™de â€œAblation comparison panelâ€ ekle.
-- [ ] GUIâ€™ye latency CDF mini-chart ekle.
-- [ ] GUIâ€™ye decision overhead paneli ekle.
-- [ ] Semantic prior daÄŸÄ±lÄ±mÄ±nÄ± bar chart olarak gÃ¶ster.
+- [ ] GUI’ye “Experiment Mode ekle:
+  - [ ] model seçimi
+  - [ ] baseline seçimi
+  - [ ] semantic mode aç/kapat
+  - [ ] trace mode aç/kapat
+- [ ] GUI’de “Ablation comparison panel ekle.
+- [ ] GUI’ye latency CDF mini-chart ekle.
+- [ ] GUI’ye decision overhead paneli ekle.
+- [ ] Semantic prior dağılımını bar chart olarak göster.
 - [ ] Reward decomposition paneli ekle:
   - [ ] latency contribution
   - [ ] energy contribution
@@ -563,13 +563,13 @@ Seminerde â€œwow effectâ€ yaratmak.
 
 ## Done kriteri
 
-- [ ] Sunum sÄ±rasÄ±nda modelin neden ve nasÄ±l karar verdiÄŸi gÃ¶rsel olarak anlatÄ±labiliyor.
+- [ ] Sunum sırasında modelin neden ve nasıl karar verdiği görsel olarak anlatılabiliyor.
 
 ---
 
-# 13. Tez ve Makale Ãœretim Paketi
+# 13. Tez ve Makale Üretim Paketi
 
-## YazÄ±lacak yeni dokÃ¼manlar
+## Yazılacak yeni dokümanlar
 
 - [ ] `doc/methodology_v2.md`
 - [ ] `doc/ablation_plan.md`
@@ -578,7 +578,7 @@ Seminerde â€œwow effectâ€ yaratmak.
 - [ ] `doc/threats_to_validity.md`
 - [ ] `doc/future_work_graph_rl.md`
 
-## Makale tablolarÄ±
+## Makale tabloları
 
 - [ ] Baseline comparison table
 - [ ] Ablation table
@@ -586,7 +586,7 @@ Seminerde â€œwow effectâ€ yaratmak.
 - [ ] Computational overhead table
 - [ ] Dataset / trace mapping table
 
-## Makale ÅŸekilleri
+## Makale şekilleri
 
 - [ ] overall architecture figure
 - [ ] state-action-reward flowchart
@@ -597,95 +597,95 @@ Seminerde â€œwow effectâ€ yaratmak.
 
 ## Done kriteri
 
-- [ ] Kod + deney + yazÄ±m aynÄ± omurgada birleÅŸiyor.
+- [ ] Kod + deney + yazım aynı omurgada birleşiyor.
 
 ---
 
-# 14. HaftalÄ±k SÄ±ralÄ± Sprint PlanÄ±
+# 14. Haftalık Sıralı Sprint Planı
 
-## Sprint 1 â€” Temizlik ve deney omurgasÄ±
+## Sprint 1 — Temizlik ve deney omurgası
 
-- [ ] klasÃ¶r yapÄ±sÄ±
+- [ ] klasör yapısı
 - [ ] config sistemi
 - [ ] logging
 - [ ] seed / reproducibility
 - [ ] evaluator iskeleti
 
-## Sprint 2 â€” Ortam hizalama
+## Sprint 2 — Ortam hizalama
 
 - [ ] ortak state builder
 - [ ] ortak reward module
 - [ ] episode redesign
 - [ ] simulator-backed RL env
 
-## Sprint 3 â€” Semantic prior
+## Sprint 3 — Semantic prior
 
-- [ ] action prior Ã¼retimi
+- [ ] action prior üretimi
 - [ ] confidence entegrasyonu
 - [ ] structured output
 - [ ] explanation logs
 
-## Sprint 4 â€” Baseline ve ablation
+## Sprint 4 — Baseline ve ablation
 
 - [ ] baseline engine
 - [ ] ablation configs
-- [ ] ilk kÄ±yas tablolarÄ±
+- [ ] ilk kıyas tabloları
 
-## Sprint 5 â€” Trace-driven pipeline
+## Sprint 5 — Trace-driven pipeline
 
 - [ ] trace loader
 - [ ] synthetic vs trace
 - [ ] generalization testleri
 
-## Sprint 6 â€” Two-stage training
+## Sprint 6 — Two-stage training
 
-- [ ] oracle label Ã¼retimi
+- [ ] oracle label üretimi
 - [ ] pretraining
 - [ ] PPO fine-tuning
 
-## Sprint 7 â€” GeliÅŸmiÅŸ metrik ve istatistik
+## Sprint 7 — Gelişmiş metrik ve istatistik
 
 - [ ] p95/p99
 - [ ] DMR
 - [ ] CI ve significance test
 
-## Sprint 8 â€” Graph RL upgrade
+## Sprint 8 — Graph RL upgrade
 
 - [ ] graph state
 - [ ] GNN encoder
 - [ ] MLP vs GNN vs GNN+Semantic
 
-## Sprint 9 â€” Demo + yazÄ±m
+## Sprint 9 — Demo + yazım
 
-- [ ] GUI gÃ¼Ã§lendirme
-- [ ] seminer slaytlarÄ±
-- [ ] makale figÃ¼rleri
+- [ ] GUI güçlendirme
+- [ ] seminer slaytları
+- [ ] makale figürleri
 
 ---
 
-# 15. Ã‡ok Net Ã–ncelik Listesi (Ã–nce BunlarÄ± Yap)
+# 15. Çok Net Öncelik Listesi (Önce Bunları Yap)
 
-## P0 â€” Hemen
+## P0 — Hemen
 
 - [ ] `evaluation.py` yaz
 - [ ] `baselines.py` yaz
-- [ ] `reward.py` oluÅŸtur
-- [ ] `state_builder.py` oluÅŸtur
+- [ ] `reward.py` oluştur
+- [ ] `state_builder.py` oluştur
 - [ ] experiment logging ekle
 
-## P1 â€” Ä°lk bÃ¼yÃ¼k kazanÃ§
+## P1 — İlk büyük kazanç
 
-- [ ] LLM one-hot yerine action prior vektÃ¶rÃ¼ Ã¼ret
-- [ ] `PPO_NoSemantics` ve `PPO_WithSemanticPrior` kÄ±yasÄ±nÄ± Ã§Ä±kar
+- [ ] LLM one-hot yerine action prior vektörü üret
+- [ ] `PPO_NoSemantics` ve `PPO_WithSemanticPrior` kıyasını çıkar
 - [ ] deadline miss + p95 latency ekle
 
-## P2 â€” Tez kalitesini sÄ±Ã§ratacak iÅŸ
+## P2 — Tez kalitesini sıçratacak iş
 
 - [ ] trace-driven mode
 - [ ] staged training
 - [ ] ablation study
 
-## P3 â€” Makale seviyesini sÄ±Ã§ratacak iÅŸ
+## P3 — Makale seviyesini sıçratacak iş
 
 - [ ] graph-aware policy
 - [ ] statistical testing
@@ -695,49 +695,49 @@ Seminerde â€œwow effectâ€ yaratmak.
 
 # 16. Riskler ve Dikkat Edilecek Noktalar
 
-- [ ] LLMâ€™yi fazla baskÄ±n yapÄ±p PPOâ€™yu gereksiz hale getirme.
+- [ ] LLM’yi fazla baskın yapıp PPO’yu gereksiz hale getirme.
 - [ ] Reward shaping ile leakage yaratma.
-- [ ] Baselineâ€™larÄ± zayÄ±f bÄ±rakÄ±p kÄ±yasÄ± yapay ÅŸekilde kolaylaÅŸtÄ±rma.
-- [ ] Trace mapping varsayÄ±mlarÄ±nÄ± gizleme.
-- [ ] GUI Ã§alÄ±ÅŸÄ±yor diye deney disiplinini ikinci plana atma.
-- [ ] Mock eÄŸitim ortamÄ±nÄ± gerÃ§ek sistem gibi sunma.
+- [ ] Baseline’ları zayıf bırakıp kıyası yapay şekilde kolaylaştırma.
+- [ ] Trace mapping varsayımlarını gizleme.
+- [ ] GUI çalışıyor diye deney disiplinini ikinci plana atma.
+- [ ] Mock eğitim ortamını gerçek sistem gibi sunma.
 
 ---
 
-# 17. Definition of Done â€” â€œProje Efsane Olduâ€ Kontrol Listesi
+# 17. Definition of Done — “Proje Efsane Oldu Kontrol Listesi
 
-AÅŸaÄŸÄ±dakilerin Ã§oÄŸu tamamlandÄ±ysa proje gerÃ§ekten gÃ¼Ã§lÃ¼ hale gelmiÅŸ demektir:
+Aşağıdakilerin çoğu tamamlandıysa proje gerçekten güçlü hale gelmiş demektir:
 
-- [ ] AynÄ± deneyler tekrarlanabilir.
-- [ ] EÄŸitim ve deÄŸerlendirme ortamÄ± hizalÄ±.
-- [ ] LLM semantic prior Ã¼retiyor.
+- [ ] Aynı deneyler tekrarlanabilir.
+- [ ] Eğitim ve değerlendirme ortamı hizalı.
+- [ ] LLM semantic prior üretiyor.
 - [ ] En az 8 baseline var.
 - [ ] En az 6 ablation var.
 - [ ] Synthetic + trace-driven deney var.
-- [ ] p95/p99 latency, DMR, fairness, jitter, QoE raporlanÄ±yor.
-- [ ] 5 farklÄ± seed ile CI veriliyor.
-- [ ] staged training karÅŸÄ±laÅŸtÄ±rmasÄ± var.
-- [ ] decision overhead Ã¶lÃ§Ã¼lÃ¼yor.
-- [ ] GUIâ€™de explanation ve comparison paneli var.
-- [ ] Seminer iÃ§in net mimari ÅŸekli hazÄ±r.
-- [ ] Tez iÃ§in methodology ve evaluation protocol yazÄ±lmÄ±ÅŸ.
-- [ ] MLP-PPO ile GNN-PPO karÅŸÄ±laÅŸtÄ±rmasÄ± baÅŸlamÄ±ÅŸ veya tamamlanmÄ±ÅŸ.
+- [ ] p95/p99 latency, DMR, fairness, jitter, QoE raporlanıyor.
+- [ ] 5 farklı seed ile CI veriliyor.
+- [ ] staged training karşılaştırması var.
+- [ ] decision overhead ölçülüyor.
+- [ ] GUI’de explanation ve comparison paneli var.
+- [ ] Seminer için net mimari şekli hazır.
+- [ ] Tez için methodology ve evaluation protocol yazılmış.
+- [ ] MLP-PPO ile GNN-PPO karşılaştırması başlamış veya tamamlanmış.
 
 ---
 
-# 18. En Kritik Dosya BazlÄ± MÃ¼dahale PlanÄ±
+# 18. En Kritik Dosya Bazlı Müdahale Planı
 
 ## `src/rl_env.py`
 
-- [ ] tek-adÄ±mlÄ± episode yapÄ±sÄ±nÄ± kaldÄ±r
-- [ ] observationâ€™Ä± semantic prior ile geniÅŸlet
-- [ ] reward hesaplamasÄ±nÄ± dÄ±ÅŸ modÃ¼le taÅŸÄ±
-- [ ] mock reset akÄ±ÅŸÄ±nÄ± simulator-backed hale getir
+- [ ] tek-adımlı episode yapısını kaldır
+- [ ] observation’ı semantic prior ile genişlet
+- [ ] reward hesaplamasını dış modüle taşı
+- [ ] mock reset akışını simulator-backed hale getir
 
 ## `src/llm_analyzer.py`
 
 - [ ] structured JSON output
-- [ ] action prior Ã¼retimi
+- [ ] action prior üretimi
 - [ ] confidence calibration
 - [ ] fallback loglama
 
@@ -745,13 +745,13 @@ AÅŸaÄŸÄ±dakilerin Ã§oÄŸu tamamlandÄ±ysa proje gerÃ§ekten gÃ¼Ã§
 
 - [ ] ortak state/reward entegrasyonu
 - [ ] trace-driven task generation
-- [ ] karar overhead Ã¶lÃ§Ã¼mÃ¼
-- [ ] yeni metriklerin toplanmasÄ±
+- [ ] karar overhead ölçümü
+- [ ] yeni metriklerin toplanması
 
 ## `src/train_agent.py`
 
-- [ ] config-based eÄŸitim
-- [ ] seed yÃ¶netimi
+- [ ] config-based eğitim
+- [ ] seed yönetimi
 - [ ] pretraining + PPO pipeline
 - [ ] model versioning
 
@@ -767,25 +767,26 @@ AÅŸaÄŸÄ±dakilerin Ã§oÄŸu tamamlandÄ±ysa proje gerÃ§ekten gÃ¼Ã§
 
 # 19. Son Not
 
-Bu planÄ±n mantÄ±ÄŸÄ± ÅŸu:
+Bu planın mantığı şu:
 
-Ã–nce sistemi **bilimsel olarak savunulabilir** hale getir,
-sonra **deneysel olarak gÃ¼Ã§lÃ¼** hale getir,
-sonra **mimari olarak farklÄ±laÅŸtÄ±r**,
-en sonda **sunum ve makale etkisini bÃ¼yÃ¼t**.
+Önce sistemi **bilimsel olarak savunulabilir** hale getir,
+sonra **deneysel olarak güçlü** hale getir,
+sonra **mimari olarak farklılaştır**,
+en sonda **sunum ve makale etkisini büyüt**.
 
-Yani sÄ±ra:
+Yani sıra:
 
-**stabilite â†’ kÄ±yas â†’ ablation â†’ trace â†’ staged training â†’ graph RL â†’ demo/makale**
+**stabilite → kıyas → ablation → trace → staged training → graph RL → demo/makale**
 
-Bu sÄ±rayÄ± bozma.
-
-
-
+Bu sırayı bozma.
 
 > Trace mapping assumptions dokumani olusturuldu: v2_docs/trace_mapping_assumptions.md
 > Domain-shift evaluation config + scripti calistirildi: configs/trace/domain_shift_evaluation.yaml, experiments/trace/evaluate_domain_shift.py
-> Guncel domain-shift tablosu: results/tables/trace_domain_shift_report.md`r`n> Guncel hold-out test raporu: results/tables/trace_holdout_test_report.md
+> Guncel domain-shift tablosu: results/tables/trace_domain_shift_report.md `r`n> Guncel hold-out test raporu: results/tables/trace_holdout_test_report.md
 
+> Faz 7 icin ilk oracle label dataset'i uretildi: results/raw/synthetic/pretraining/oracle_label_dataset.csv
+> Ilk bulgu: scoring kalibrasyonu sonrasinda `weighted_objective_oracle` daha dengeli hale getirildi ve supervised pretraining icin kullanilabilir duruma yaklasti.
 
-
+> Faz 7 guncellemesi: supervised pretraining tamamlandi.
+> Uretilen checkpoint: models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip
+> Sonuc: best val acc 78.00%, test acc 80.22%. 30 epoch + early stopping denemesinde egitim 16. epochta durdu; en iyi nokta yine epoch 11 civarinda kaldi.

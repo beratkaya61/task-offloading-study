@@ -299,6 +299,26 @@ Onceden ogrenilmis bir modeli yeni veri veya yeni objective ile tekrar ayarlama 
 Bir modelin daha az deneyimle ne kadar iyi ogrenebildigini anlatan kavramdir.
 Staged training bu acidan iyilestirme saglayabilir.
 
+### Behavior Cloning
+Oracle veya ogretmen etiketi kullanarak observation -> action eslesmesini dogrudan ogrenme yaklasimidir.
+Faz 7'de supervised pretraining asamasinin pratik formu olarak dusunulebilir.
+
+### Teacher Policy
+Supervised pretraining sirasinda ajan icin referans aksiyonu ureten ogretmen mekanizmadir.
+Bu projede teacher policy, oracle / heuristic label ureticisi seklinde kurgulanacaktir.
+
+### Oracle Dataset
+Observation, label ve gerekiyorsa maliyet/decomposition bilgisini birlikte tutan pretraining veri kumesidir.
+Faz 7'nin ilk somut artefakti bu veri kumesi olacaktir.
+
+### Convergence Speed
+Modelin hedef performans bandina ne kadar hizli ulastigini anlatir.
+Faz 7'de `scratch PPO` ile `Pretrained + PPO` arasindaki ana karsilastirma eksenlerinden biridir.
+
+### Scratch Training
+Modelin on-isitma veya pretraining olmadan dogrudan RL ile egitilmesidir.
+Faz 7 karsilastirmalarinda referans hat olarak kullanilacaktir.
+
 ---
 
 ## 9. Faz 8: Graph-Aware Policy Kavramlari
@@ -404,4 +424,5 @@ Belirli bir script veya deney turunun urettigi toplu kayit dosyasidir.
 - Yeni bir kavram ortaya cikarsa bu dosyaya ekleyelim.
 - Faz raporlarinda uzun aciklama yerine burada tanim verip raporlari daha okunur tutabiliriz.
 - Bu sozluk, proje ilerledikce yasayan bir dokuman gibi buyutulmelidir.
+
 
