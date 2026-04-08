@@ -86,3 +86,10 @@ Faz 7 tamamlandi denebilmesi icin asgari olarak su kosullar aranacak:
 ## Sonraki Dogru Adim
 
 Bir sonraki dogru uygulama adimi, pretrained checkpoint'i RL fine-tuning akisina baglamak ve ayni sentetik protokolde `scratch PPO` ile yan yana kosmaktir.
+
+
+## Yol Haritasi Notu
+
+- `Gelismis Metrik ve Istatistiksel Analiz` paketi bu fazda unutulmus veya atlanmis degildir.
+- Eski master-roadmap numaralandirmasinda Faz 7 olarak gecse de, guncel `task.md` akisi icinde Faz 9 olarak takip edilmektedir.
+- Detayli kapsama notu `task.md` ve `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` icinde tutuluyor.

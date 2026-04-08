@@ -103,6 +103,7 @@ Yorum:
 - pretrained PPO icin RL fine-tuning hatti kurulmadi
 - `scratch PPO` ile ayni protokolde karsilastirma henuz uretilmedi
 - convergence / sample efficiency tablosu henuz yazilmadi
+- gelismis metrik ve istatistiksel analiz paketi atlanmadi; guncel uygulama sirasinda Faz 9 olarak takip ediliyor ve yol haritasi notu `task.md` ile `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` icinde tutuluyor.
 
 ---
 

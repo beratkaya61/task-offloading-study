@@ -2,6 +2,12 @@
 
 Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 
+## Yol Haritasi Esleme Notu
+- `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` ana master-roadmap olarak korunuyor.
+- `task.md` ise fiili uygulama sirasina gore guncellenmis calisma listesidir.
+- Bu nedenle TODO icindeki `Gelismis Metrik ve Istatistiksel Analiz` paketi eski numaralandirmada Faz 7 iken, guncel `task.md` akisi icinde Faz 9 olarak takip edilmektedir.
+- Ayrintili esleme ve zorunlu metrik kapsami, `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` icindeki ilgili bolumde tutulmaktadir.
+
 ## Faz 1 - Reproducibility ve Kod Temizligi
 - [x] 1.1 `src/baselines.py`, `src/evaluation.py`, `src/metrics.py`, `src/config.py`, `src/trace_loader.py`, `src/semantic_prior.py`, `src/pretrain_policy.py`, `src/utils/reproducibility.py`
 - [x] 1.2 `configs/` and `results/` structure
@@ -63,10 +69,17 @@ Not:
 - [ ] 8.3 Semantic prior fusion
 - [ ] 8.4 Phase 8 test and commit
 
-## Faz 9 - Advanced Metrics and GUI
-- [ ] 9.1 Jitter/Fairness/p95 in GUI
-- [ ] 9.2 Result/Ablation/Reward Decomposition panels
-- [ ] 9.3 Phase 9 test and commit
+## Faz 9 - Advanced Metrics, Statistical Analysis and GUI
+Not:
+- Bu faz, eski master-roadmap icindeki "Gelismis Metrik ve Istatistiksel Analiz" paketinin guncel task.md karsiligidir.
+- Faz 7.3 ve 7.4 tamamlandiktan sonra, Faz 7'den kalan zorunlu metrik genisletmeleri burada uygulanacaktir.
+- Ozellikle staged-training karsilastirmasi (`PPO from scratch` vs `Pretrained + PPO`) bu fazdaki gelismis metrik ve istatistiksel analiz paketiyle yeniden raporlanacaktir.
+- [ ] 9.1 Kanonik evaluator genisletmesi (`p99`, `deadline miss ratio`, `energy per success`, `battery depletion`, `queue waiting`, `decision overhead`)
+- [ ] 9.2 Fairness/Jitter/QoE/Reward decomposition panelleri ve GUI entegrasyonu
+- [ ] 9.3 5-seed protokolu, mean +- std, 95% CI ve uygun istatistiksel testler
+- [ ] 9.4 Sonuc tablolarinin sentetik, trace ve staged-training karsilastirmalarina uygulanmasi
+- [ ] 9.5 Faz 7'den devralinan staged-training metrik eksiklerinin kapatilmasi
+- [ ] 9.6 Phase 9 test and commit
 
 ## Faz 10 - LLM Self-Reflection & Experience Replay
 - [ ] 10.1 Post-hoc analysis for bad decisions

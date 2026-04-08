@@ -7,6 +7,8 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 > Faz 6 aktif asamadadir.
 > `src/core/trace_loader.py` implement edildi ve `experiments/trace/train_ppo.py` akisina baglandi.
 > Faz 6'da acik kalan ana maddeler artik `Success Bonus`, switching overhead, domain-shift analizi ve final trace artefaktlaridir.
+> Faz numaralari konusunda not: bu dosya ana master-roadmap gibi korunmustur; fiili uygulama sirasi `task.md` icinde izlenmektedir.
+> Bu nedenle bu dosyadaki `Gelismis Metrik ve Istatistiksel Analiz` bolumu eski numaralandirmada Faz 7, `task.md` icinde ise Faz 9 olarak takip edilmektedir. Ayrintili kapsam notu bu dosyanin ilgili bolumune eklenmistir.
 
 Bu dosya, projeyi seminer seviyesinden **tez + makale + güçlü demo** seviyesine çıkarmak için hazırlanmış sıralı geliştirme planıdır.
 
@@ -57,7 +59,13 @@ Aşağıdaki başlığa yaklaşan bir sistem üretmek:
 - `src/gui.py`
   - Güçlü bir demo arayüzü var.
 
-## şuanki kritik eksikler
+## şu
+
+```
+
+```
+
+anki kritik eksikler
 
 - Train environment ile gerçek simulation environment arasında boşluk var.
 - LLM katkısı reward shaping ağırlıklı; **prior distribution** olarak kullanılmıyor.
@@ -286,7 +294,7 @@ Kıyaslamayı ciddi hale getirmek.
 - [ ] `A2C` (Classical RL / Eksik 2)
 - [ ] `PPO_NoSemantics`
 - [ ] `PPO_WithOneHotLLM`
-- [ ] `PPO_WithSemanticPrior` hedef ana model
+- [ ] `PPO_WithSemanticPrior`   hedef ana model
 
 ### Orta seviye ek baseline’lar
 
@@ -393,6 +401,37 @@ Synthetic-only görünümden çıkmak.
 
 Makale seviyesinde ölçüm disiplini kurmak.
 
+## Guncel esleme ve kapsam notu
+
+Bu bolum master-roadmap uzerinde eski numaralandirmayla `Faz 7` olarak korunmustur.
+Guncel fiili uygulama sirasinda ayni paket `task.md` icinde `Faz 9 - Advanced Metrics, Statistical Analysis and GUI` olarak izlenmektedir.
+Bu bir adim atlama degil, uygulama sirasinin pratik olarak yeniden duzenlenmis halidir.
+
+### Bu paket hangi model gruplarina uygulanacak
+
+1. Sentetik heuristik / baseline policy grubu
+   - `LocalOnly`, `EdgeOnly`, `CloudOnly`, `Random`, `GreedyLatency`, `GeneticAlgorithm`
+2. Sentetik RL algoritma grubu
+   - `PPO`, `DQN`, `A2C`
+3. Sentetik ablation grubu
+   - `full_model` ve ablation varyantlari
+4. Trace RL grubu
+   - trace-tabanli `PPO`
+5. Faz 7 staged training grubu
+   - `PPO from scratch`
+   - `Pretrained + PPO`
+
+### Guncel kapsama ozeti
+
+- Kanonik olarak bizde olanlar: `success rate`, `p95 latency`, `avg energy`, `QoE`, `mean +- std`, action dagilimi
+- Kismi / legacy tarafta izi olanlar: `fairness`, `jitter`
+- Henuz eksik olan zorunlu paket: `p99 latency`, `deadline miss ratio`, `energy per successful task`, `battery depletion`, `queue waiting`, `decision overhead`, `95% CI`, `Wilcoxon`, `Friedman + Nemenyi`, `en az 5 seed`
+
+### Kritik karar
+
+Bu adim atlanmis sayilmayacaktir.
+Faz 7.3 ve 7.4 tamamlandiktan sonra bu zorunlu metrik paketi, guncel planda `task.md` icindeki Faz 9 altinda ele alinacak ve sentetik, trace ve staged-training karsilastirmalarina uygulanacaktir.
+
 ## Zorunlu metrikler
 
 - [ ] `Average Latency`
@@ -468,7 +507,7 @@ AgentVNE’deki staged training disiplinini offloading problemine uyarlamak.
 ## Done kriteri
 
 - [ ] Eğitim daha stabil hale geliyor.
-- [ ] Tezde "neden staged training?" sorusuna net cevap var.
+- [ ] Tezde "neden staged training?" sorusuna net cevap verilebiliyor.
 
 ---
 
@@ -480,7 +519,7 @@ Projeyi gerçekten sıra dışı hale getirecek ana sıçrama.
 
 ## Neden gerekli?
 
-u an state büyük ölçüde vektör tabanlı. Oysa sistem doğal olarak graf yapısında:
+Su an state buyuk olcude vektor tabanlidir. Oysa sistem dogal olarak graf yapisinda:
 
 - cihazlar
 - edge sunucular
@@ -542,7 +581,7 @@ Bu yüzden GNN tabanlı policy çok güçlü bir upgrade olur.
 
 ## Hedef
 
-Seminerde “wow effect yaratmak.
+Seminerde "wow effect" yaratmak.
 
 ## Yapılacaklar
 
