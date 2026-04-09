@@ -1,8 +1,8 @@
-# Ablation Study Configuration (Faz 5) - Ablation Çalışması Yapılandırması
-# Semantic components' contribution - Semantic bileşenlerin kontribüsyon analizi
+﻿# Ablation Study Configuration (Faz 5) - Ablation Ã‡alÄ±ÅŸmasÄ± YapÄ±landÄ±rmasÄ±
+# Semantic components' contribution - Semantic bileÅŸenlerin kontribÃ¼syon analizi
 
 ablation_studies:
-  # Full Model (Baseline - tüm bileşenler etkinleştirildi)
+  # Full Model (Baseline - tÃ¼m bileÅŸenler etkinleÅŸtirildi)
   full_model:
     name: "Full Model (with all semantic features)"
     enabled_features:
@@ -32,7 +32,7 @@ ablation_studies:
     description: "PPO_v2 without LLM semantic input, prior, or confidence"
     expected_drop: "~5-15% (LLM contribution)"
 
-  # Without Reward Shaping - Reward şekillendirmesi olmadan
+  # Without Reward Shaping - Reward ÅŸekillendirmesi olmadan
   w_o_reward_shaping:
     name: "Without Semantic Reward Shaping"
     enabled_features:
@@ -62,7 +62,7 @@ ablation_studies:
     description: "No LLM action probability prior biasing"
     expected_drop: "~2-5% (prior contribution)"
 
-  # Without Confidence Weighting - Güven ağırlıklandırması olmadan
+  # Without Confidence Weighting - GÃ¼ven aÄŸÄ±rlÄ±klandÄ±rmasÄ± olmadan
   w_o_confidence:
     name: "Without LLM Confidence Weighting"
     enabled_features:
@@ -77,7 +77,7 @@ ablation_studies:
     description: "Uniform confidence weight (all 1.0) regardless of semantic confidence"
     expected_drop: "~1-3% (confidence calibration)"
 
-  # Without Partial Offloading - Kısmi offloading olmadan
+  # Without Partial Offloading - KÄ±smi offloading olmadan
   w_o_partial_offloading:
     name: "Without Partial Offloading (Local/Edge/Cloud only)"
     enabled_features:
@@ -92,7 +92,7 @@ ablation_studies:
     description: "Discrete targets only (Local, Edge, Cloud) - no split offloading"
     expected_drop: "~10-20% (partial offloading utility)"
 
-  # Without Battery Awareness - Pil farkındalığı olmadan
+  # Without Battery Awareness - Pil farkÄ±ndalÄ±ÄŸÄ± olmadan
   w_o_battery_awareness:
     name: "Without Battery Awareness"
     enabled_features:
@@ -107,7 +107,7 @@ ablation_studies:
     description: "State doesn't include battery level; reward ignores battery drain"
     expected_drop: "~5-10% (battery impact on mobile devices)"
 
-  # Without Queue Awareness - Kuyruk farkındalığı olmadan
+  # Without Queue Awareness - Kuyruk farkÄ±ndalÄ±ÄŸÄ± olmadan
   w_o_queue_awareness:
     name: "Without Server Queue Awareness"
     enabled_features:
@@ -122,7 +122,7 @@ ablation_studies:
     description: "State doesn't reflect edge/cloud server queue lengths"
     expected_drop: "~3-8% (queue congestion avoidance)"
 
-  # Without Mobility Features - Mobilite özellikleri olmadan
+  # Without Mobility Features - Mobilite Ã¶zellikleri olmadan
   w_o_mobility_features:
     name: "Without Mobility & Distance Features"
     enabled_features:
@@ -160,7 +160,7 @@ retraining:
 # Output configuration
 output:
   results_dir: "results/ablation"
-  table_path: "results/tables/offloading_experiment_report.md"
+  table_path: "v2_docs/phase_5/offloading_experiment_report.md"
   plot_path_template: "results/figures/synthetic/ablation/synthetic_ablation_{algorithm}_{scope}_success_rate.png"
   csv_path_template: "results/raw/synthetic/ablation/synthetic_ablation_{algorithm}_{scope}.csv"
 
@@ -193,3 +193,4 @@ analysis_format:
     - bar_chart_reward
     - line_chart_latency
     - heatmap_metric_comparison
+

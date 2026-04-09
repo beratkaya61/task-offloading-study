@@ -266,7 +266,7 @@ def _evaluate_model_no_log(env, model, num_episodes=5):
 
 
 class PeriodicEvaluationCallback(BaseCallback):
-    def __init__(self, eval_env, eval_interval_steps, eval_episodes, progress_csv_path, run_name, init_mode, seed, extra_fields=None, verbose=0):
+    def __init__(self, eval_env, eval_interval_steps, eval_episodes, progress_csv_path, run_name, init_mode, seed, extra_fields=None, progress_step_offset=0, verbose=0):
         super().__init__(verbose)
         self.eval_env = eval_env
         self.eval_interval_steps = eval_interval_steps
@@ -276,6 +276,7 @@ class PeriodicEvaluationCallback(BaseCallback):
         self.init_mode = init_mode
         self.seed = seed
         self.extra_fields = extra_fields or {}
+        self.progress_step_offset = int(progress_step_offset)
 
     def _on_step(self) -> bool:
         if self.eval_interval_steps <= 0:
@@ -286,7 +287,8 @@ class PeriodicEvaluationCallback(BaseCallback):
         metrics = _evaluate_model_no_log(self.eval_env, self.model, num_episodes=self.eval_episodes)
         row = {
             "timestamp": datetime.now().isoformat(),
-            "training_step": self.num_timesteps,
+            "training_step": self.num_timesteps + self.progress_step_offset,
+            "phase_step": self.num_timesteps,
             "run_name": self.run_name,
             "init_mode": self.init_mode,
             "seed": self.seed,
@@ -328,6 +330,9 @@ def train_single_agent(
     progress_eval_episodes=5,
     progress_extra_fields=None,
     anchor_config=None,
+    skip_final_evaluation=False,
+    progress_step_offset=0,
+    progress_init_mode=None,
 ):
     algorithm = algorithm.lower()
     if algorithm not in ALGORITHM_DEFAULTS:
@@ -407,9 +412,10 @@ def train_single_agent(
                 eval_episodes=progress_eval_episodes,
                 progress_csv_path=progress_csv_path,
                 run_name=resolved_run_name,
-                init_mode=init_mode,
+                init_mode=progress_init_mode or init_mode,
                 seed=seed,
                 extra_fields=progress_extra_fields,
+                progress_step_offset=progress_step_offset,
             )
         )
 
@@ -425,6 +431,17 @@ def train_single_agent(
         os.makedirs(save_dir, exist_ok=True)
     model.save(resolved_save_path)
     print(f"[TRAIN] Model saved to {resolved_save_path}.zip")
+
+    if skip_final_evaluation:
+        print("[TRAIN] Final evaluation skipped for this stage.")
+        return {
+            "algorithm": algorithm,
+            "seed": seed,
+            "init_mode": init_mode,
+            "save_path": f"{resolved_save_path}.zip",
+            "training_time_sec": training_time,
+            "evaluation": None,
+        }
 
     print("[TRAIN] Running final evaluation for the new model...")
     eval_result = evaluate_policy(

@@ -1,4 +1,4 @@
-Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Trace Hold-Out Test Report
 
@@ -23,3 +23,4 @@ Amac, validation sonucunun test splitini ne kadar temsil ettigini ve belirgin bi
 
 Validation ve test sonuclari birbirine cok yakin. Bu, Faz 6 kapanisinda belirgin bir split-mismatch veya validation yanilgisi olmadigini destekler.
 Train ve test arasindaki fark da sinirli; belirgin bir overfitting izi gorulmuyor.
+

@@ -1,4 +1,4 @@
-training:
+﻿training:
   base_config: "configs/synthetic/rl_training.yaml"
   algorithms: ["ppo", "dqn", "a2c"]
   seeds: [42, 43, 44]
@@ -8,4 +8,5 @@ training:
 output:
   model_root: "models"
   csv_path: "results/raw/synthetic/rl_retraining/synthetic_rl_retraining.csv"
-  report_path: "results/tables/offloading_experiment_report.md"
+  report_path: "v2_docs/phase_5/offloading_experiment_report.md"
+

@@ -1,4 +1,4 @@
-Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 
@@ -47,8 +47,8 @@ Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 - [x] 6.2 Basic trace-to-task mapping via `src/core/trace_processor.py`
 - [x] 6.3 Success Bonus (+100 sparse reward) Integration to reduce Semantic Dependency
 - [x] 6.4 Adaptive/Dynamic Switching Overhead for Partial Offloading
-- [x] 6.5 Domain shift analysis (Synthetic vs Trace results) [results/tables/trace_domain_shift_report.md ile tamamlandi]
-- [x] 6.6 Phase 6 final test/report [results/tables/trace_holdout_test_report.md ve phase_reports/Phase_6_Report.md ile tamamlandi]
+- [x] 6.5 Domain shift analysis (Synthetic vs Trace results) [v2_docs/phase_6/trace_domain_shift_report.md ile tamamlandi]
+- [x] 6.6 Phase 6 final test/report [v2_docs/phase_6/trace_holdout_test_report.md ve phase_reports/Phase_6_Report.md ile tamamlandi]
 
 Not:
 - `src/core/trace_loader.py` artik raw trace CSV ve kaydedilmis train/val/test episode split JSON dosyalarini yukleyebiliyor.
@@ -60,7 +60,7 @@ Not:
 ## Faz 7 - Two-Stage Training (AgentVNE Concept)
 - [x] 7.1 Oracle / heuristic labels [results/raw/synthetic/pretraining/oracle_label_dataset.csv uretildi; kalibrasyon notu Phase_7_Report.md icine dusuldu]
 - [x] 7.2 Imitation / supervised pretraining [models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip uretildi; best epoch 11, val acc 78.00%, test acc 80.22%, 30 epoch config early stopping ile 16 epochta durdu]
-- [x] 7.3 Fine-tune PPO vs scratch comparison [results/tables/staged_training_comparison_report.md ile tamamlandi; pretrained hizli isinirken; reward-aligned teacher ve hafif policy anchoring ile final parity korundu, step-to-75% success 10000 step seviyesine cekildi ve sample-efficiency sinyali guclendirildi]
+- [x] 7.3 Fine-tune PPO vs scratch comparison [v2_docs/phase_7/staged_training_comparison_report.md ile tamamlandi; reward-aligned teacher ve `retention -> refinement` schedule ile `Pretrained + PPO` final success tarafinda `Scratch PPO` uzerine cikti (`84.60%` vs `83.67%`), ayni anda `%75` success esigine daha az adimda ulasilabildigi gosterildi]
 - [ ] 7.4 Phase 7 test and commit
 
 ## Faz 8 - Graph-Aware Policy Upgrade
@@ -97,7 +97,9 @@ Not:
 
 
 - Trace-to-task ceviri varsayimlari v2_docs/trace_mapping_assumptions.md icinde merkezi olarak belgelendi.
-- Domain-shift akisi experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml uzerinden calistirildi; guncel tablo results/tables/trace_domain_shift_report.md icinde tutuluyor.
+- Domain-shift akisi experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml uzerinden calistirildi; guncel tablo v2_docs/phase_6/trace_domain_shift_report.md icinde tutuluyor.
+
+
 
 
 

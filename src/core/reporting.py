@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 import os
 
 import numpy as np
@@ -213,7 +213,7 @@ def _display_eval_group(eval_group):
 
 def _build_batch_overview(df):
     if df.empty:
-        return "Henüz batch verisi yok.\n"
+        return "HenÃ¼z batch verisi yok.\n"
 
     batch_df = (
         df[df["config_batch_id"].astype(str).str.len() > 0]
@@ -230,7 +230,7 @@ def _build_batch_overview(df):
     )
 
     if batch_df.empty:
-        return "Henüz batch verisi yok.\n"
+        return "HenÃ¼z batch verisi yok.\n"
 
     lines = [
         "| Batch ID | Eval Group | Last Update | Runs | Models | Total Tasks |",
@@ -300,7 +300,7 @@ def _build_multiseed_explanation():
         "- Faz 5 bulgularini Faz 6'ya tasimadan once daha savunulabilir hale getirmek",
         "- sonraki trace-driven asamaya daha saglam bir sentetik temel ile gecmek",
         "",
-        "Kisaca: multi-seed evaluation, mevcut modelin test-dayanikliligini; multi-seed retraining ise egitim surecinin kendisinin ne kadar kararlı oldugunu gosterir.",
+        "Kisaca: multi-seed evaluation, mevcut modelin test-dayanikliligini; multi-seed retraining ise egitim surecinin kendisinin ne kadar kararlÄ± oldugunu gosterir.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -333,7 +333,7 @@ def _build_workflow_map():
         "- Sentetik ablation scripti: `experiments/synthetic/run_ablation_study.py`",
         "- Trace PPO egitim configi: `configs/trace/ppo_training.yaml`",
         "- Trace PPO egitim scripti: `experiments/trace/train_ppo.py`",
-        "- Kanonik rapor: `results/tables/offloading_experiment_report.md`",
+        "- Kanonik rapor: `v2_docs/phase_5/offloading_experiment_report.md`",
         "",
         "Model ciktilari agent bazli klasorlerde tutulur:",
         "- PPO single-run sentetik checkpointleri: `models/ppo/single_run_synthetic/`",
@@ -612,7 +612,7 @@ def _build_ablation_retraining_section(df):
 
 def write_experiment_report(
     csv_path="results/raw",
-    output_path="results/tables/offloading_experiment_report.md",
+    output_path="v2_docs/phase_5/offloading_experiment_report.md",
     figure_path="results/figures/ablation_impact.png",
 ):
     df = _load_experiment_df(csv_path)
@@ -649,7 +649,7 @@ def write_experiment_report(
             "- `models/`: egitilmis ajanlar\n"
             "- `experiments/`: deneyleri kosan script'ler\n"
             "- `results/raw/`: kaynaga en yakin deney loglari\n"
-            "- `results/tables/offloading_experiment_report.md`: insanlar icin tek ozet rapor\n"
+            "- `v2_docs/phase_5/offloading_experiment_report.md`: insanlar icin tek ozet rapor\n"
             "- `results/figures/`: gorseller\n\n"
         )
         handle.write(
@@ -683,3 +683,4 @@ def write_experiment_report(
         handle.write(_build_ablation_figure_gallery())
         handle.write("\n---\n")
         handle.write(f"*Updated: {datetime.now().isoformat()}*\n")
+

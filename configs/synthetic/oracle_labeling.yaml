@@ -1,4 +1,4 @@
-seed: 42
+﻿seed: 42
 
 objectives:
   - "latency_oracle"
@@ -34,4 +34,5 @@ scoring:
 
 output:
   csv_path: "results/raw/synthetic/pretraining/oracle_label_dataset.csv"
-  report_path: "results/tables/synthetic_oracle_label_summary.md"
+  report_path: "v2_docs/phase_7/synthetic_oracle_label_summary.md"
+

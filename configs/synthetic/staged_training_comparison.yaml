@@ -1,30 +1,45 @@
-training:
-  base_config: "configs/synthetic/rl_training.yaml"
-  seeds: [42, 43, 44]
+﻿training:
+  base_config: configs/synthetic/rl_training.yaml
+  seeds:
+  - 42
+  - 43
+  - 44
   total_timesteps: 30000
   eval_episodes: 10
   eval_interval_steps: 5000
   progress_eval_episodes: 5
   scratch_overrides: {}
-  pretrained_overrides:
-    learning_rate: 0.0001
-
+  pretrained_overrides: {}
+  pretrained_schedule:
+    enabled: true
+    phases:
+    - name: retention
+      timesteps: 10000
+      hyperparam_overrides:
+        learning_rate: 5.0e-05
+      anchor_config:
+        enabled: true
+        dataset_path: results/raw/synthetic/pretraining/oracle_label_dataset.csv
+        objective: reward_aligned_oracle
+        min_margin: 10.0
+        batch_size: 128
+        interval_steps: 2500
+        until_step: 10000
+        batches_per_round: 2
+        loss_weight: 0.15
+    - name: refinement
+      timesteps: 20000
+      hyperparam_overrides:
+        learning_rate: 0.00015
+      anchor_config:
+        enabled: false
 pretraining:
-  checkpoint_path: "models/ppo/pretrained/ppo_reward_aligned_pretrained.zip"
-
+  checkpoint_path: models/ppo/pretrained/ppo_reward_aligned_pretrained.zip
 anchoring:
-  enabled: true
-  dataset_path: "results/raw/synthetic/pretraining/oracle_label_dataset.csv"
-  objective: "reward_aligned_oracle"
-  min_margin: 10.0
-  batch_size: 128
-  interval_steps: 2500
-  until_step: 5000
-  batches_per_round: 2
-  loss_weight: 0.2
-
+  enabled: false
 output:
-  model_root: "models/ppo/staged_training"
-  final_csv: "results/raw/synthetic/staged_training/staged_training_comparison.csv"
-  progress_csv: "results/raw/synthetic/staged_training/staged_training_progress.csv"
-  report_path: "results/tables/staged_training_comparison_report.md"
+  model_root: models/ppo/staged_training
+  final_csv: results/raw/synthetic/staged_training/staged_training_comparison.csv
+  progress_csv: results/raw/synthetic/staged_training/staged_training_progress.csv
+  report_path: v2_docs/phase_7/staged_training_comparison_report.md
+

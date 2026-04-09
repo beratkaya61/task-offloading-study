@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 import argparse
 import os
 import sys
@@ -348,12 +348,20 @@ def run_staged_training_comparison(config_path='configs/synthetic/staged_trainin
     progress_eval_episodes = training_cfg.get('progress_eval_episodes', 5)
     scratch_overrides = training_cfg.get('scratch_overrides', {}) or {}
     pretrained_overrides = training_cfg.get('pretrained_overrides', {}) or {}
+    pretrained_schedule = training_cfg.get('pretrained_schedule', {}) or {}
     base_config = training_cfg.get('base_config', 'configs/synthetic/rl_training.yaml')
     pretrained_checkpoint = pretraining_cfg.get('checkpoint_path', 'models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip')
     model_root = output_cfg.get('model_root', 'models/ppo/staged_training')
     final_csv = output_cfg.get('final_csv', 'results/raw/synthetic/staged_training/staged_training_comparison.csv')
     progress_csv = output_cfg.get('progress_csv', 'results/raw/synthetic/staged_training/staged_training_progress.csv')
-    report_path = output_cfg.get('report_path', 'results/tables/staged_training_comparison_report.md')
+    report_path = output_cfg.get('report_path', 'v2_docs/phase_7/staged_training_comparison_report.md')
+
+    use_pretrained_schedule = bool(pretrained_schedule.get('enabled', False))
+    pretrained_phases = pretrained_schedule.get('phases', []) if use_pretrained_schedule else []
+    if use_pretrained_schedule:
+        scheduled_total = sum(int(phase.get('timesteps', 0)) for phase in pretrained_phases)
+        if scheduled_total != int(total_timesteps):
+            raise ValueError(f'Pretrained schedule timesteps ({scheduled_total}) must match total_timesteps ({total_timesteps})')
 
     os.makedirs(model_root, exist_ok=True)
     os.makedirs(os.path.dirname(final_csv), exist_ok=True)
@@ -391,34 +399,82 @@ def run_staged_training_comparison(config_path='configs/synthetic/staged_trainin
                 progress_extra_fields={
                     'batch_id': current_batch_id,
                     'eval_group': 'synthetic_staged_training',
+                    'phase_name': 'scratch',
                 },
             )
 
-            train_single_agent(
-                algorithm='ppo',
-                total_timesteps=total_timesteps,
-                seed=seed,
-                save_path=pretrained_save,
-                run_name='PPO_pretrained_finetuned',
-                config_path=base_config,
-                eval_episodes=eval_episodes,
-                eval_csv_path=final_csv,
-                init_model_path=pretrained_checkpoint,
-                init_mode='pretrained',
-                progress_csv_path=progress_csv,
-                eval_interval_steps=eval_interval_steps,
-                progress_eval_episodes=progress_eval_episodes,
-                hyperparam_overrides=pretrained_overrides,
-                anchor_config=anchoring_cfg,
-                extra_eval_fields={
-                    'config_batch_id': current_batch_id,
-                    'config_eval_group': 'synthetic_staged_training',
-                },
-                progress_extra_fields={
-                    'batch_id': current_batch_id,
-                    'eval_group': 'synthetic_staged_training',
-                },
-            )
+            if use_pretrained_schedule:
+                current_init_path = pretrained_checkpoint
+                current_offset = 0
+                phase_base_dir = os.path.join(model_root, 'pretrained', f'seed{seed}')
+                os.makedirs(phase_base_dir, exist_ok=True)
+                for phase_index, phase in enumerate(pretrained_phases, start=1):
+                    phase_name = phase.get('name', f'phase{phase_index}')
+                    phase_timesteps = int(phase.get('timesteps', 0))
+                    phase_save_path = os.path.join(phase_base_dir, phase_name)
+                    is_last_phase = phase_index == len(pretrained_phases)
+                    phase_anchor = phase.get('anchor_config', None)
+                    if phase_anchor is not None and not phase_anchor.get('enabled', False):
+                        phase_anchor = None
+                    result = train_single_agent(
+                        algorithm='ppo',
+                        total_timesteps=phase_timesteps,
+                        seed=seed,
+                        save_path=phase_save_path,
+                        run_name='PPO_pretrained_finetuned',
+                        config_path=base_config,
+                        eval_episodes=eval_episodes,
+                        eval_csv_path=final_csv,
+                        init_model_path=current_init_path,
+                        init_mode='pretrained',
+                        progress_init_mode='pretrained',
+                        progress_step_offset=current_offset,
+                        progress_csv_path=progress_csv,
+                        eval_interval_steps=eval_interval_steps,
+                        progress_eval_episodes=progress_eval_episodes,
+                        hyperparam_overrides=phase.get('hyperparam_overrides', {}) or {},
+                        anchor_config=phase_anchor,
+                        skip_final_evaluation=not is_last_phase,
+                        extra_eval_fields={
+                            'config_batch_id': current_batch_id,
+                            'config_eval_group': 'synthetic_staged_training',
+                        },
+                        progress_extra_fields={
+                            'batch_id': current_batch_id,
+                            'eval_group': 'synthetic_staged_training',
+                            'phase_name': phase_name,
+                        },
+                    )
+                    current_init_path = result['save_path']
+                    current_offset += phase_timesteps
+            else:
+                train_single_agent(
+                    algorithm='ppo',
+                    total_timesteps=total_timesteps,
+                    seed=seed,
+                    save_path=pretrained_save,
+                    run_name='PPO_pretrained_finetuned',
+                    config_path=base_config,
+                    eval_episodes=eval_episodes,
+                    eval_csv_path=final_csv,
+                    init_model_path=pretrained_checkpoint,
+                    init_mode='pretrained',
+                    progress_init_mode='pretrained',
+                    progress_csv_path=progress_csv,
+                    eval_interval_steps=eval_interval_steps,
+                    progress_eval_episodes=progress_eval_episodes,
+                    hyperparam_overrides=pretrained_overrides,
+                    anchor_config=anchoring_cfg,
+                    extra_eval_fields={
+                        'config_batch_id': current_batch_id,
+                        'config_eval_group': 'synthetic_staged_training',
+                    },
+                    progress_extra_fields={
+                        'batch_id': current_batch_id,
+                        'eval_group': 'synthetic_staged_training',
+                        'phase_name': 'single_stage',
+                    },
+                )
 
     _persist_enriched_final_csv(final_csv)
     if current_batch_id is None:
@@ -453,5 +509,6 @@ if __name__ == '__main__':
     parser.add_argument('--batch-id', default=None)
     args = parser.parse_args()
     run_staged_training_comparison(config_path=args.config_path, report_only=args.report_only, batch_id=args.batch_id)
+
 
 

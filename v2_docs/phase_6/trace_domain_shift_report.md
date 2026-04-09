@@ -1,4 +1,4 @@
-Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Trace Domain-Shift Report
 
@@ -13,3 +13,4 @@ Domain shift, bir veri dagiliminda egitilen modelin farkli bir veri dagiliminda 
 |---|---|---|---:|---:|---:|---:|---|
 | synthetic | trace | PPO | 99.60% | 0.5618 | 0.0255 | 3 | completed |
 | trace | synthetic | PPO | 53.20% | 4.6883 | 0.0101 | 4 | completed |
+

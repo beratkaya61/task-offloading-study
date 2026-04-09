@@ -1,4 +1,4 @@
-seed: 42
+﻿seed: 42
 
 env:
   max_steps: 50
@@ -28,4 +28,5 @@ training:
 output:
   checkpoint_path: "models/ppo/pretrained/ppo_reward_aligned_pretrained"
   metrics_csv: "results/raw/synthetic/pretraining/supervised_pretraining_metrics.csv"
-  report_path: "results/tables/supervised_pretraining_report.md"
+  report_path: "v2_docs/phase_7/supervised_pretraining_report.md"
+

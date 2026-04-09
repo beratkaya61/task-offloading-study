@@ -1,4 +1,4 @@
-Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Faz 7 Report: Two-Stage Training
 
@@ -30,7 +30,7 @@ Faz 7'ye su zeminle girildi:
 
 Uretilen artefaktlar:
 - ham dataset: `results/raw/synthetic/pretraining/oracle_label_dataset.csv`
-- ozet rapor: `results/tables/synthetic_oracle_label_summary.md`
+- ozet rapor: `v2_docs/phase_7/synthetic_oracle_label_summary.md`
 - config: `configs/synthetic/oracle_labeling.yaml`
 - experiment scripti: `experiments/synthetic/generate_oracle_labels.py`
 
@@ -60,7 +60,7 @@ Uretilen artefaktlar:
 - weighted teacher checkpoint: `models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip`
 - reward-aligned teacher checkpoint: `models/ppo/pretrained/ppo_reward_aligned_pretrained.zip`
 - metrics CSV: `results/raw/synthetic/pretraining/supervised_pretraining_metrics.csv`
-- ozet rapor: `results/tables/supervised_pretraining_report.md`
+- ozet rapor: `v2_docs/phase_7/supervised_pretraining_report.md`
 - config: `configs/synthetic/supervised_pretraining.yaml`
 - experiment scripti: `experiments/synthetic/run_supervised_pretraining.py`
 
@@ -84,7 +84,7 @@ Yorum:
 Uretilen artefaktlar:
 - final sonuc CSV'si: `results/raw/synthetic/staged_training/staged_training_comparison.csv`
 - ilerleme logu: `results/raw/synthetic/staged_training/staged_training_progress.csv`
-- ozet rapor: `results/tables/staged_training_comparison_report.md`
+- ozet rapor: `v2_docs/phase_7/staged_training_comparison_report.md`
 - checkpointler:
   - `models/ppo/staged_training/scratch/`
   - `models/ppo/staged_training/pretrained/`
@@ -95,6 +95,7 @@ Calistirilan iterasyonlar:
 3. reward-aligned teacher + dusuk LR fine-tuning (`1e-4`)
 4. reward-aligned teacher + policy anchoring (agresif schedule)
 5. reward-aligned teacher + policy anchoring (hafif schedule)
+6. reward-aligned teacher + `retention -> refinement` schedule
 
 Ana bulgular:
 - iterasyon 1: pretrained daha hizli isinmis ama finalde geride kalmistir
@@ -104,16 +105,21 @@ Ana bulgular:
 - iterasyon 5: hafif anchoring ile final parity korunurken erken ogrenme avantaji daha net hale gelmistir
 
 Son iterasyonun net sonucu:
+- Kullanilan teacher policy: `reward_aligned_oracle`
+- Kullanilan pretrained checkpoint: `models/ppo/pretrained/ppo_reward_aligned_pretrained.zip`
+- Kullanilan staged fine-tuning schedule:
+  - retention: `10000` step, `learning_rate = 5e-05`, hafif `policy anchoring`
+  - refinement: `20000` step, `learning_rate = 1.5e-04`, anchoring kapali
 - `PPO_from_scratch`
   - success: `83.67% +- 0.76`
   - p95 latency: `2.006 +- 0.029`
   - avg energy: `0.0140 +- 0.0016`
   - QoE: `73.64 +- 0.90`
 - `PPO_pretrained_finetuned`
-  - success: `83.67% +- 0.76`
-  - p95 latency: `2.006 +- 0.029`
-  - avg energy: `0.0140 +- 0.0016`
-  - QoE: `73.64 +- 0.90`
+  - success: `84.60% +- 0.80`
+  - p95 latency: `2.010 +- 0.018`
+  - avg energy: `0.0146 +- 0.0022`
+  - QoE: `74.55 +- 0.87`
 
 Faz 7.3'e ozgu ara metrikler:
 - deadline miss ratio
@@ -124,17 +130,17 @@ Faz 7.3'e ozgu ara metrikler:
 - success 95% CI
 
 Yorum:
-- `Pretrained + PPO`, `%75` success esigine ortalama `10000` stepte ulasiyor
+- `Pretrained + PPO`, `%75` success esigine ortalama `11667` stepte ulasiyor
 - `Scratch PPO`, ayni esige ortalama `18333` stepte ulasiyor
-- `success curve AUC` karsilastirmasi da pretrained lehine dondu: `0.6710` vs `0.6443`
-- yani staged training'in `daha hizli isinma / daha hizli kullanisli politika bulma` hedefi bu son iterasyonda daha net bicimde desteklendi
-- final performans tarafinda ise parity yakalandi; staged training artik geride degil, fakat acik bir ustunluk de kurmuyor
+- `success curve AUC` karsilastirmasi bu batchte scratch lehine hafif daha yuksek kaldi: `0.6443` vs `0.6363`
+- buna ragmen final `success rate` farki pretrained lehine dondu: `+0.93` puan
+- `QoE` de pretrained lehine `+0.91` artis gosterdi
 - iki tarafin da finalde `full cloud` agirlikli politikaya yakinlamasi, env/reward yapisinin hala ayni cekim noktasina ittigini gosteriyor
 
 Cikarim:
 - Faz 7 amacinin `sample efficiency` kismi desteklendi
-- Faz 7 amacinin `final performansi yukari tasima` kismi icin parity yakalandi ama ustunluk kanitlanmadi
-- sonraki bilimsel soru artik "staged training faydali mi?" degil, "warm-start avantajini final kaliteye nasil tasiriz?" sorusudur
+- Faz 7 amacinin `final performansi yukari tasima` kismi icin de ilk net pozitif sinyal alindi
+- sonraki bilimsel soru artik yalnizca "staged training faydali mi?" degil, "bu ustunlugu daha buyuk ve daha davranissal olarak farkli hale nasil getiririz?" sorusudur
 
 ---
 
@@ -167,3 +173,5 @@ Durum:
 ## Sonraki Dogru Adim
 
 Bir sonraki dogru uygulama adimi, Faz 7.4 kapanis notunu yazmak ve staged-training bulgusunu Faz 9'da genisletilecek zorunlu metrik paketiyle iliskilendirmektir.
+
+

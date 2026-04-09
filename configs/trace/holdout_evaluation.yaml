@@ -10,4 +10,5 @@ evaluation:
 
 output:
   csv_path: "results/raw/trace/holdout/trace_holdout_evaluation.csv"
-  report_path: "results/tables/trace_holdout_test_report.md"
+  report_path: "v2_docs/phase_6/trace_holdout_test_report.md"
+

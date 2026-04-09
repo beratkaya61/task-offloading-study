@@ -53,7 +53,7 @@ Evaluation-only sonuclarda uc algoritma hala birbirine cok benzer davranis goste
 
 Yorum:
 - Evaluation-only tablo hala agirlikli olarak tek policy ailesinin test-dayanikliligini gosteriyor.
-- En kararlÄ± sinyal burada da `partial_offloading` ve `mobility_features`.
+- En kararli sinyal burada da `partial_offloading` ve `mobility_features`.
 
 ### 3. Retraining Bazli Ablation Ozet
 
@@ -66,7 +66,7 @@ Asil Faz 5 yorumu bu tablodan yapilmalidir.
 | A2C | -0.27 puan | -7.40 puan | -2.70 puan | +0.53 puan |
 
 Toplam okuma:
-- `mobility_features` en kararlÄ± ve en guclu bilesen. Uc algoritmada da sistematik olarak en buyuk dusus burada.
+- `mobility_features` en kararli ve en guclu bilesen. Uc algoritmada da sistematik olarak en buyuk dusus burada.
 - `semantics` katkisi `PPO` ve `A2C` icin gorunur hale geldi; `DQN` tarafinda ayrisma zayif.
 - `partial_offloading` evaluation-only tabloda sert dusus verirken retraining tablosunda daha karisik davraniyor. Bu, ajanlarin yeni karar uzayina adapte olabildigini, dolayisiyla bu bilesenin etkisinin algoritmaya ve yeniden egitime bagli oldugunu gosteriyor.
 - `reward_shaping` katkisi hala en belirsiz alan. Bazi kosullarda etkisiz, bazi kosullarda hafif ters etki veriyor. Bu bilesen Faz 6'da tekrar sinanmalidir.
@@ -131,7 +131,7 @@ Faz 5 sealed olsa da tamamen kapanmis ve tum aciklari temizlenmis bir sentetik d
 6. Faz 5 raporundaki bulgular sentetik dunya icin gecerlidir.
    Bunlarin gercek genellenebilirligi Faz 6 trace-driven egitim ve degerlendirme ile sinanmadikca kesin kabul edilmemelidir.
 
-Bu nedenle Faz 5'in kapanis cÃ¼mlesi su sekilde okunmalidir:
+Bu nedenle Faz 5'in kapanis cumlesi su sekilde okunmalidir:
 `synthetic tarafta yeterli metodolojik zemin kuruldu; fakat nihai dogrulama Faz 6 trace-driven asamada yapilacaktir.`
 
 ---
@@ -139,7 +139,7 @@ Bu nedenle Faz 5'in kapanis cÃ¼mlesi su sekilde okunmalidir:
 ## Artefaktlar
 
 Kanonik synthetic rapor:
-- [offloading_experiment_report.md](C:/Users/BERAT/Desktop/task-offloading-study/results/tables/offloading_experiment_report.md)
+- [offloading_experiment_report.md](C:/Users/BERAT/Desktop/task-offloading-study/v2_docs/phase_5/offloading_experiment_report.md)
 
 Temel figure'lar:
 - [synthetic_ablation_ppo_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/figures/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining_success_rate.png)
@@ -158,9 +158,11 @@ Ham CSV'ler:
 Faz 5 sealed kabul edildi.
 
 Bu karar, sentetik tarafta her sorunun tamamen cozuldugu anlamina gelmiyor. Anlami su:
-- Faz 5'in cevapladiÄŸi soru artik yeterince net,
+- Faz 5'in cevapladigi soru artik yeterince net,
 - Faz 6'ya gecmek icin gereken sentetik taban yeterince olgun,
 - geri kalan belirsizliklerin dogru adresi artik trace-driven asama.
+
+
 
 
 

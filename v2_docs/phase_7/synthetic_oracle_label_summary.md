@@ -1,4 +1,4 @@
-Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Synthetic Oracle Label Summary
 
@@ -60,3 +60,4 @@ Dataset, supervised pretraining oncesi observation -> action etiketi ureten ogre
 | edge_50 | 21 | 0.70% |
 | edge_75 | 1905 | 63.50% |
 | local | 54 | 1.80% |
+

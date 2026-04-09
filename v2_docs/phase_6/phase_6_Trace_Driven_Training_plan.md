@@ -17,9 +17,9 @@ Tamamlanan temel Faz 6 adimlari:
 - `results/raw/trace/training/trace_training_metrics.csv` uretildi
 - `models/ppo/trace_training/ppo_v3_trace_best.zip` checkpoint'i uretildi
 - `experiments/trace/evaluate_domain_shift.py` domain-shift tablosunu uretildi
-- `results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv` ve `results/tables/trace_domain_shift_report.md` olusturuldu
+- `results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv` ve `v2_docs/phase_6/trace_domain_shift_report.md` olusturuldu
 - `experiments/trace/evaluate_holdout_test.py` ile `test_episodes.json` uzerinde final hold-out evaluation kosturuldu
-- `results/raw/trace/holdout/trace_holdout_evaluation.csv` ve `results/tables/trace_holdout_test_report.md` olusturuldu
+- `results/raw/trace/holdout/trace_holdout_evaluation.csv` ve `v2_docs/phase_6/trace_holdout_test_report.md` olusturuldu
 
 Faz 6 kapanis yorumu:
 - validation sonucu (`99.20%`) ile hold-out test sonucu (`99.60%`) birbirine yakin kaldi
@@ -74,3 +74,4 @@ Bir sonraki dogru adim Faz 7'de two-stage training hattina gecmektir:
 - Domain-shift evaluation icin configs/trace/domain_shift_evaluation.yaml ve experiments/trace/evaluate_domain_shift.py eklendi.
 - Hold-out test icin configs/trace/holdout_evaluation.yaml ve experiments/trace/evaluate_holdout_test.py eklendi.
 - Guncel Faz 6 kapanis artefaktlari phase_reports/Phase_6_Report.md icinde bir araya getirildi.
+

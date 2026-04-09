@@ -1,4 +1,4 @@
-# Task Offloading Experiment Report
+﻿# Task Offloading Experiment Report
 
 Bu dosya `results/tables` altindaki tek kanonik okuma noktasi olarak uretilir. Ham veri workflow bazli CSV dosyalari halinde `results/raw/` altinda tutulur.
 
@@ -7,7 +7,7 @@ Bu dosya `results/tables` altindaki tek kanonik okuma noktasi olarak uretilir. H
 - `models/`: egitilmis ajanlar
 - `experiments/`: deneyleri kosan script'ler
 - `results/raw/`: kaynaga en yakin deney loglari
-- `results/tables/offloading_experiment_report.md`: insanlar icin tek ozet rapor
+- `v2_docs/phase_5/offloading_experiment_report.md`: insanlar icin tek ozet rapor
 - `results/figures/`: gorseller
 
 `results/` klasoru raporlar, metrikler ve gorseller icindir. `models/` klasoru ise sonraki deneylerde tekrar kullanilan checkpointleri tutar; bu nedenle model dosyalari da uretilmis artefakt olsa bile `results/` altina degil `models/` altina konur.
@@ -69,7 +69,7 @@ Bu islemi yapmamizin temel nedenleri sunlardir:
 - Faz 5 bulgularini Faz 6'ya tasimadan once daha savunulabilir hale getirmek
 - sonraki trace-driven asamaya daha saglam bir sentetik temel ile gecmek
 
-Kisaca: multi-seed evaluation, mevcut modelin test-dayanikliligini; multi-seed retraining ise egitim surecinin kendisinin ne kadar kararlı oldugunu gosterir.
+Kisaca: multi-seed evaluation, mevcut modelin test-dayanikliligini; multi-seed retraining ise egitim surecinin kendisinin ne kadar kararlÄ± oldugunu gosterir.
 
 ## Metodoloji Notlari
 
@@ -92,7 +92,7 @@ Bu repo icinde Faz 5 icin sade akisin hangi dosyalardan gectigi burada ozetlenir
 - Sentetik ablation scripti: `experiments/synthetic/run_ablation_study.py`
 - Trace PPO egitim configi: `configs/trace/ppo_training.yaml`
 - Trace PPO egitim scripti: `experiments/trace/train_ppo.py`
-- Kanonik rapor: `results/tables/offloading_experiment_report.md`
+- Kanonik rapor: `v2_docs/phase_5/offloading_experiment_report.md`
 
 Model ciktilari agent bazli klasorlerde tutulur:
 - PPO single-run sentetik checkpointleri: `models/ppo/single_run_synthetic/`
@@ -230,3 +230,4 @@ Bu bolum, algoritma ve kapsam bazli uretilmis tum sentetik ablation success-rate
 
 ---
 *Updated: 2026-04-02T18:24:42.212220*
+

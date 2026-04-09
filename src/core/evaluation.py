@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import os
 import uuid
 from datetime import datetime
@@ -179,7 +179,7 @@ def evaluate_policy(
 
 def summarize_logs(
     results_dir="results/raw",
-    output_table="results/tables/offloading_experiment_report.md",
+    output_table="v2_docs/phase_5/offloading_experiment_report.md",
     figure_path="results/figures/ablation_impact.png",
 ):
     if not os.path.exists(results_dir):
@@ -200,3 +200,4 @@ def summarize_logs(
 
 if __name__ == "__main__":
     summarize_logs()
+

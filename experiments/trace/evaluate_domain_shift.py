@@ -191,7 +191,7 @@ def write_report(rows, report_path: Path):
 def main(config_path: Path = DEFAULT_CONFIG):
     config = load_config(config_path)
     csv_path = REPO_ROOT / config.get("output", {}).get("csv_path", "results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv")
-    report_path = REPO_ROOT / config.get("output", {}).get("report_path", "results/tables/trace_domain_shift_report.md")
+    report_path = REPO_ROOT / config.get("output", {}).get("report_path", "v2_docs/phase_6/trace_domain_shift_report.md")
     seed = int(config.get("evaluation", {}).get("seed", 42))
     num_episodes = int(config.get("evaluation", {}).get("num_episodes", 5))
     batch_id = datetime.now().strftime("trace_domain_shift_%Y%m%d_%H%M%S")
@@ -256,3 +256,4 @@ def main(config_path: Path = DEFAULT_CONFIG):
 
 if __name__ == "__main__":
     main()
+

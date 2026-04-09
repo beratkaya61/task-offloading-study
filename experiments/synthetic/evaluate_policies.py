@@ -1,4 +1,4 @@
-import os
+﻿import os
 import random
 import sys
 from datetime import datetime
@@ -149,8 +149,9 @@ def run_policy_evaluation():
 
     summarize_logs()
     print("\n[FINISH] Tum synthetic policies multi-seed olarak degerlendirildi.")
-    print("[INFO] Ana rapor: results/tables/offloading_experiment_report.md")
+    print("[INFO] Ana rapor: v2_docs/phase_5/offloading_experiment_report.md")
 
 
 if __name__ == "__main__":
     run_policy_evaluation()
+

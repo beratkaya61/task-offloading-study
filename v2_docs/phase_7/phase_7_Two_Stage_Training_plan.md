@@ -1,7 +1,7 @@
-Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 **Tarih:** 9 April 2026  
-**Durum:** 7.1, 7.2 ve 7.3 tamamlandi  
+**Durum:** 7.1, 7.2 ve 7.3 tamamlandi, 7.4 kapanis yorumu acik  
 **Hedef:** oracle label -> supervised pretraining -> PPO fine-tuning zincirini calisir ve olculebilir hale getirmek
 
 ---
@@ -22,7 +22,7 @@ Tamamlananlar:
 - `weighted_objective_oracle` teacher policy kalibre edildi
 - `reward_aligned_oracle` eklendi
 - `results/raw/synthetic/pretraining/oracle_label_dataset.csv` uretildi
-- `results/tables/synthetic_oracle_label_summary.md` ile dagilim raporlandi
+- `v2_docs/phase_7/synthetic_oracle_label_summary.md` ile dagilim raporlandi
 
 Kritik bulgu:
 - Faz 7 icindeki anlamli teknik eksiklerden biri teacher objective ile RL reward hizasiydi
@@ -35,7 +35,7 @@ Tamamlananlar:
 - `configs/synthetic/supervised_pretraining.yaml` ile tekrar uretilebilir config tanimlandi
 - weighted ve reward-aligned teacher checkpointleri uretildi
 - `results/raw/synthetic/pretraining/supervised_pretraining_metrics.csv` kaydedildi
-- `results/tables/supervised_pretraining_report.md` yazildi
+- `v2_docs/phase_7/supervised_pretraining_report.md` yazildi
 
 Kritik bulgu:
 - weighted teacher daha yuksek supervised accuracy verdi
@@ -46,7 +46,7 @@ Kritik bulgu:
 Tamamlananlar:
 - `results/raw/synthetic/staged_training/staged_training_comparison.csv` kaydedildi
 - `results/raw/synthetic/staged_training/staged_training_progress.csv` ile ara adim performansi loglandi
-- `results/tables/staged_training_comparison_report.md` ile final rapor yazildi
+- `v2_docs/phase_7/staged_training_comparison_report.md` ile final rapor yazildi
 - action mapping ve action profili rapora eklendi
 - staged-training'e ozgu ara metrikler eklendi:
   - deadline miss ratio
@@ -61,12 +61,13 @@ Kritik bulgular:
 - weighted teacher + varsayilan fine-tuning: pretrained daha hizli ama finalde geride
 - weighted teacher + dusuk LR: fark daraldi
 - reward-aligned teacher + dusuk LR: final performans scratch ile esitlenebildi
-- reward-aligned teacher + hafif anchoring: final parity korundu ve erken ogrenme avantajini daha net gosteren en iyi Faz 7 batch'i uretildi
+- reward-aligned teacher + hafif anchoring: final parity korundu ve erken ogrenme avantaji netlestirildi
+- reward-aligned teacher + `retention -> refinement` schedule: 3-seed protokolde final `success rate` ustunlugu gosterildi
 
 Son yorum:
 - staged training warm-start etkisi acisindan dogrulandi
-- final kalite ustunlugu tam kanitlanmadi
-- buna ragmen onceki negatif fark kapatilarak scratch ile parity yakalandi ve convergence sinyali guclendi
+- uygun schedule ile final `success rate` ustunlugu de gosterildi
+- davranissal ayrisma tarafinda `full cloud` attractor etkisi hala surmektedir
 
 Karsilastirma eksenleri:
 - convergence hizi
@@ -119,3 +120,5 @@ Bir sonraki dogru uygulama adimi, Faz 7.4 kapanis notunu yazmak ve staged-traini
 - `Gelismis Metrik ve Istatistiksel Analiz` paketi bu fazda unutulmus veya atlanmis degildir.
 - Eski master-roadmap numaralandirmasinda Faz 7 olarak gecse de, guncel `task.md` akisi icinde Faz 9 olarak takip edilmektedir.
 - Detayli kapsama notu `task.md` ve `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` icinde tutuluyor.
+
+

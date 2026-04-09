@@ -133,7 +133,7 @@ def main(config_path: Path = DEFAULT_CONFIG) -> None:
     training_config = REPO_ROOT / config.get("training_config", "configs/trace/ppo_training.yaml")
     checkpoint_path = REPO_ROOT / config.get("checkpoint_path", "models/ppo/trace_training/ppo_v3_trace_best.zip")
     csv_path = REPO_ROOT / config.get("output", {}).get("csv_path", "results/raw/trace/holdout/trace_holdout_evaluation.csv")
-    report_path = REPO_ROOT / config.get("output", {}).get("report_path", "results/tables/trace_holdout_test_report.md")
+    report_path = REPO_ROOT / config.get("output", {}).get("report_path", "v2_docs/phase_6/trace_holdout_test_report.md")
     seed = int(config.get("evaluation", {}).get("seed", 42))
     splits = config.get("evaluation", {}).get("splits", ["test"])
 
@@ -174,3 +174,4 @@ def main(config_path: Path = DEFAULT_CONFIG) -> None:
 
 if __name__ == "__main__":
     main()
+

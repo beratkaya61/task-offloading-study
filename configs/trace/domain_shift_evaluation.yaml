@@ -23,4 +23,5 @@ models:
 
 output:
   csv_path: results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv
-  report_path: results/tables/trace_domain_shift_report.md
+  report_path: v2_docs/phase_6/trace_domain_shift_report.md
+

@@ -401,7 +401,7 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
                 step_idx += 1
 
     csv_path = Path(config.get("output", {}).get("csv_path", "results/raw/synthetic/pretraining/oracle_label_dataset.csv"))
-    report_path = Path(config.get("output", {}).get("report_path", "results/tables/synthetic_oracle_label_summary.md"))
+    report_path = Path(config.get("output", {}).get("report_path", "v2_docs/phase_7/synthetic_oracle_label_summary.md"))
     _write_dataset(csv_path, all_rows)
     _write_summary(report_path, all_rows, config)
 
@@ -591,7 +591,7 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
         writer.writeheader()
         writer.writerows(metrics_rows)
 
-    summary_path = Path(config.get("output", {}).get("report_path", "results/tables/supervised_pretraining_report.md"))
+    summary_path = Path(config.get("output", {}).get("report_path", "v2_docs/phase_7/supervised_pretraining_report.md"))
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_lines = [
         "Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md",
@@ -626,5 +626,6 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
         "executed_epochs": str(len(metrics_rows)),
         "early_stopping_triggered": "yes" if stopped_early else "no",
     }
+
 
 

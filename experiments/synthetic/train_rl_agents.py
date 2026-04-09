@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Synthetic-environment RL retraining.
 
@@ -42,7 +42,7 @@ def run_synthetic_rl_retraining(config_path="configs/synthetic/rl_retraining.yam
     train_config_path = training_cfg.get("base_config", "configs/synthetic/rl_training.yaml")
     model_root = output_cfg.get("model_root", "models")
     csv_path = output_cfg.get("csv_path", "results/raw/synthetic_rl_retraining.csv")
-    report_path = output_cfg.get("report_path", "results/tables/offloading_experiment_report.md")
+    report_path = output_cfg.get("report_path", "v2_docs/phase_5/offloading_experiment_report.md")
     batch_id = datetime.now().strftime("synthetic_retrain_%Y%m%d_%H%M%S")
 
     print("=" * 80)
@@ -86,3 +86,4 @@ def run_synthetic_rl_retraining(config_path="configs/synthetic/rl_retraining.yam
 
 if __name__ == "__main__":
     run_synthetic_rl_retraining()
+

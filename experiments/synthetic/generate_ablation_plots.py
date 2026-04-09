@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 import argparse
 import os
 import sys
@@ -231,10 +231,10 @@ def generate_ablation_visuals(config_path="configs/synthetic/ablation.yaml", csv
     print(f"[INFO] Plot generated at {plot_path}")
     summarize_logs(
         results_dir="results/raw",
-        output_table="results/tables/offloading_experiment_report.md",
+        output_table="v2_docs/phase_5/offloading_experiment_report.md",
         figure_path=plot_path,
     )
-    print("[INFO] Canonical report refreshed: results/tables/offloading_experiment_report.md")
+    print("[INFO] Canonical report refreshed: v2_docs/phase_5/offloading_experiment_report.md")
     return plot_path
 
 
@@ -287,3 +287,4 @@ if __name__ == "__main__":
             algorithm=args.algorithm,
             scope=args.scope,
         )
+

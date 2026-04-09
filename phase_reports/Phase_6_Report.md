@@ -61,7 +61,7 @@ Bu sayilar, trace ortaminda PPO'nun hizli sekilde istikrarli bir policy ogrendig
 
 Kaynak artefaktlar:
 - CSV: `results/raw/trace/holdout/trace_holdout_evaluation.csv`
-- rapor: `results/tables/trace_holdout_test_report.md`
+- rapor: `v2_docs/phase_6/trace_holdout_test_report.md`
 
 Ayni trace checkpoint icin `train`, `val` ve `test` splitleri birlikte olculdu:
 
@@ -102,7 +102,7 @@ Ilk okuma:
 
 Kaynak artefaktlar:
 - CSV: `results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv`
-- rapor: `results/tables/trace_domain_shift_report.md`
+- rapor: `v2_docs/phase_6/trace_domain_shift_report.md`
 
 | Train Domain | Test Domain | Model | Success Rate | P95 Latency | Avg Energy | Dominant Action |
 |---|---|---|---:|---:|---:|---:|
@@ -176,8 +176,8 @@ Bu rapor temizlenmis son surumdur; ileride script raporu tekrar overwrite edecek
 - [trace_training_metrics.csv](D:/task-offloading-study/results/raw/trace/training/trace_training_metrics.csv)
 - [trace_holdout_evaluation.csv](D:/task-offloading-study/results/raw/trace/holdout/trace_holdout_evaluation.csv)
 - [trace_domain_shift_evaluation.csv](D:/task-offloading-study/results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv)
-- [trace_holdout_test_report.md](D:/task-offloading-study/results/tables/trace_holdout_test_report.md)
-- [trace_domain_shift_report.md](D:/task-offloading-study/results/tables/trace_domain_shift_report.md)
+- [trace_holdout_test_report.md](D:/task-offloading-study/v2_docs/phase_6/trace_holdout_test_report.md)
+- [trace_domain_shift_report.md](D:/task-offloading-study/v2_docs/phase_6/trace_domain_shift_report.md)
 - [ppo_v3_trace_best.zip](D:/task-offloading-study/models/ppo/trace_training/ppo_v3_trace_best.zip)
 - [Phase_5_Report.md](D:/task-offloading-study/phase_reports/Phase_5_Report.md)
 
@@ -189,4 +189,5 @@ Faz 6 tamamlandi.
 
 Trace training, domain-shift evaluation ve final hold-out test birlikte okundugunda, proje artik trace-driven dogrulama asamasini gecmis durumdadir.
 Bir sonraki dogru adim Faz 7'de two-stage training / oracle-label hattina gecmektir.
+
 
