@@ -251,7 +251,7 @@ Guncel teacher policy adlari:
 - `teacher_latency_greedy`
 - `teacher_energy_greedy`
 - `teacher_balanced_semantic`
-- `teacher_reward_aligned`
+- `teacher_contextual_reward_aligned`
 
 Guncel sayilar:
 
@@ -280,14 +280,15 @@ Bu nedenle `teacher policy`, PPO'ya "dogru cevap" vermekten cok, "iyi bir baslan
 ### `teacher_latency_greedy`
 
 Bu teacher daha dusuk delay'e odaklanir.
-Gozlemledigimiz sey, bunun `cloud` agirlikli bir teacher haline gelmesidir.
-Bu nedenle tek basina yeterli degildir.
+Teacher-policy sensitivity sonucunda final success artisi en yuksek teacher bu oldu.
+Ancak staged PPO sonunda final politika agirlikli olarak `Full Cloud` tarafina kaydi.
+Bu nedenle saf success acisindan guclu, davranissal olarak ise riskli bir teacher olarak okundu.
 
 ### `teacher_energy_greedy`
 
 Bu teacher daha dusuk energy cost'a odaklanir.
-Bu da benzer sekilde `cloud` agirlikli kalmistir.
-Bu nedenle dengeli bir `teacher policy` uretmemistir.
+Pretraining ve fine-tuning sonrasi `Scratch PPO` uzerine ciksa da final karar yapisi yine `Full Cloud` eksenine yaklasti.
+Bu nedenle enerji odakli yarar gosterse de Faz 7'nin context-sensitive behavior hedefi icin yeterli gorulmedi.
 
 ### `teacher_balanced_semantic`
 
@@ -302,18 +303,22 @@ Bu teacher birden fazla unsuru birlikte degerlendirir:
 - semantic alignment
 - partial offloading bonuses
 
-Bu teacher ilk anlamli dengeli varyant oldu.
-Ozellikle `edge_75` agirlikli bir profile sahip oldu.
+Bu teacher dengeli bir ara varyant sagladi.
+Ancak final staged PPO sonucu yine `Full Cloud` agirligini tam kiramadi.
+Bu nedenle kanonik secim olarak alinmadi.
 
-### `teacher_reward_aligned`
+### `teacher_contextual_reward_aligned`
 
-Bu teacher, secim mantigini downstream RL reward'a daha yakin kurar.
-Bu nedenle objective alignment acisindan degerlidir.
-Ancak supervised olarak taklit edilmesi daha zordur.
+Bu teacher, secim mantigini downstream RL reward'una daha yakin kurar; buna ek olarak dataset coverage'i action-aware sekilde dengelenmis ve train splitte tum action'lar gorunur hale getirilmis varyanttir.
+Faz 7'nin kanonik teacher secimi budur.
 
-Faz 7'nin onemli bulgularindan biri tam burada ortaya cikti:
+Bu teacher'in secilme nedeni su iki kosulu birlikte saglamasidir:
+- `Pretrained + PPO > Scratch PPO`
+- final politika `Full Cloud`a cokmeden `Edge %75` agirlikli ama daha savunulabilir bir karar yapisinda kalir
 
-> RL objective'e daha yakin olan bir teacher, supervised imitation acisindan her zaman daha kolay olmayabilir.
+Faz 7'nin ana bulgularindan biri burada netlesmistir:
+
+> En iyi teacher her zaman en yuksek supervised accuracy veren ya da en yuksek final success artisini veren teacher degildir. Teacher secimi, final decision structure ile birlikte okunmalidir.
 
 ---
 
@@ -323,7 +328,7 @@ Zaman icinde su anlasildi:
 
 Her teacher sample ayni kalitede degil.
 
-Baz? state'lerde teacher'in secimi cok nettir.
+Bazi state'lerde teacher'in secimi cok nettir.
 Bazilarinda ise birden fazla action birbirine yakindir.
 
 Bu nedenle `min_margin` filtresi eklendi.
@@ -331,7 +336,7 @@ Bu filtre ile daha kararsiz label'lar ayiklanabilir.
 
 Ama Faz 7'de burada ince bir bulgu daha elde edildi:
 
-- `teacher_reward_aligned` icin margin buyudukce dataset daha dar ve daha tek-aksiyonlu hale gelebiliyor
+- tarihsel olarak reward-aligned teacher varyantlarinda margin buyudukce dataset daha dar ve daha tek-aksiyonlu hale gelebiliyordu; bu bulgu daha sonra contextual reward-aligned teacher tasarimina geciste dikkate alindi
 
 Bu da bize sunu ogretti:
 
@@ -404,32 +409,37 @@ Bu checkpoint, teacher labels ile isitilmis PPO policy agirliklarini tasir ve bi
 
 ## 10. `Supervised Pretraining` Asamasinda Neler Gorduk
 
-Iki ana rejim dikkat cekti.
+Faz 7 boyunca pretraining tarafinda birden fazla teacher varyanti denendi.
+Bu nedenle burada tek bir accuracy sayisi degil, iki farkli seviyeyi ayirmak gerekir:
 
-### Weighted teacher ile pretraining
+1. `supervised accuracy`
+   - teacher etiketlerinin ne kadar iyi taklit edildigi
+2. `downstream RL utility`
+   - bu teacher ile isitilan checkpointin daha sonra PPO fine-tuning sirasinda ne kadar iyi bir baslangic verdigi
 
-En iyi gozlenen sonuc:
+Teacher-policy sensitivity sonucunda guncel teacher'lar icin supervised test accuracy tablosu su sekilde oldu:
 
-- validation accuracy: `78.00%`
-- test accuracy: `80.22%`
+- `teacher_latency_greedy`: `77.56%`
+- `teacher_contextual_reward_aligned`: `83.11%`
+- `teacher_balanced_semantic`: `83.56%`
+- `teacher_energy_greedy`: `79.33%`
 
-Bu bize weighted teacher'in taklit edilmesi daha kolay oldugunu gosterdi.
+Buradan cikan ana ders su oldu:
 
-### Reward-aligned teacher ile pretraining
+- en yuksek supervised accuracy tek basina en iyi kanonik teacher secimi anlamina gelmedi
+- pretraining asamasinda iyi taklit edilen bir teacher, fine-tuning sonunda davranissal olarak istenmeyen bir attractor'a da goturebilir
+- bu nedenle Faz 7'de `imitability` ile `objective alignment` birlikte degerlendirildi
 
-Guncel raporlanan sonuc (`min_margin = 10.0` ile):
+Kanonik teacher olan `teacher_contextual_reward_aligned` bu noktada kritik bir denge kurdu:
+- supervised pretraining accuracy yuksek kaldi (`83.11%` test)
+- fine-tuning sonrasi `Scratch PPO`yu gecti
+- final karar yapisi `Full Cloud` yerine `Edge %75` agirlikli kaldi
 
-- best validation accuracy: `59.51%`
-- test accuracy: `61.03%`
+Yani Faz 7 icin dogru soru sunun gibi okunmadi:
+- hangi teacher en yuksek accuracy verdi?
 
-Bu da reward-aligned teacher'in daha dogru objective'e yakin oldugunu, ama imitation acisindan daha zor oldugunu gosterdi.
-
-Bu nedenle Faz 7'de su fark cok net goruldu:
-
-- `objective alignment`
-- `imitability`
-
-Bu ikisi ayni sey degildir.
+Bunun yerine su soru soruldu:
+- hangi teacher, pretraining + fine-tuning zincirinin sonunda hem performans hem de decision structure acisindan daha savunulabilir bir sonuc verdi?
 
 ---
 
@@ -512,84 +522,90 @@ Yani `faster heating up` = `better early learning`, ama `guaranteed better final
 
 ---
 
-## 14. Faz 7'nin Son Durumu: Artik Parity'nin de Uzerine Gectik mi
+## 14. Faz 7'nin Son Durumu: Kanonik Sonuc Nedir
 
-Evet. Son `retention -> refinement` schedule ile, Faz 7 ilk kez final `success rate` acisindan da `scratch PPO` uzerine cikti.
+Evet. Faz 7 sonunda teacher-policy sensitivity tamamlandi ve kanonik kol su sekilde sabitlendi:
+
+- kanonik teacher: `teacher_contextual_reward_aligned`
+- kanonik pretrained checkpoint: `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip`
+- kanonik staged comparison: `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
 
 Guncel 3-seed sonuc:
 
 - `PPO_from_scratch`
-
   - success: `63.00% +- 2.46`
   - p95 latency: `3.664 +- 0.057`
   - avg energy: `0.1380 +- 0.0077`
   - QoE: `44.68 +- 2.67`
 - `PPO_pretrained_finetuned`
-
-  - success: `65.53% +- 2.14`
-  - p95 latency: `3.673 +- 0.032`
-  - avg energy: `0.1369 +- 0.0024`
-  - QoE: `47.17 +- 2.30`
+  - success: `75.20% +- 2.50`
+  - p95 latency: `2.968 +- 0.025`
+  - avg energy: `0.0749 +- 0.0043`
+  - QoE: `60.36 +- 1.72`
 
 Bunun anlami su:
 
 - staged training artik sadece parity saglamiyor
-- final `success rate` tarafinda da olumlu bir fark gostermeye basladi
-- yani Faz 7'nin koydugu yuksek hedefe ilk kez daha dogrudan yaklasmis olduk
+- final `success rate` tarafinda da anlamli bir fark uretiyor
+- kanonik kolda final davranis `Full Cloud`a degil, `Edge %75` agirlikli bir profile gidiyor
 
 ---
 
 ## 14.1 Bu Sonucu Ureten Kanonik Branch Hangisiydi
 
-Bu noktadaki `65.53%` sonuc, herhangi bir teacher ile elde edilmedi.
-Kullandigimiz tam kanonik branch su oldu:
+Bu noktadaki kanonik branch su oldu:
 
-- selected teacher policy: `teacher_reward_aligned`
+- selected teacher policy: `teacher_contextual_reward_aligned`
 - pretrained checkpoint: `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip`
 - retention stage: `10000` step, `learning_rate = 5e-05`, hafif `policy anchoring`
-- refinement stage: `20000` step, `learning_rate = 1.5e-04`, anchoring kapali
+- refinement stage: `20000` step, `learning_rate = 1.5e-04`, dusuk agirlikli anchoring devam ettirilerek
 
-Yani final ustunluk veren branch, `weighted teacher` degil, `reward-aligned teacher + staged fine-tuning schedule` olmustur.
+Yani final kanonik sonuc, Faz 7'nin son teacher-policy sensitivity ve staged fine-tuning schedule iterasyonundan geldi.
 
 ---
 
 ## 14.2 Bu Sonuc Gereksinimi Tam Olarak Karsiliyor mu
 
-Kismen evet, tamamen degil.
+Buyuk olcude evet.
 
 Faz 7'nin cekirdek gereksinimi suydu:
 - `Pretrained + PPO`, `Scratch PPO`'dan daha hizli ogrenebilmeli
-- ve mumkunse final `success rate`te de onu gecebilmeli
+- ve final `success rate`te de onu gecebilmeliydi
 
-Su an bu iki hedef de temel seviyede karsilanmis durumda:
-- daha hizli ogrenme gosterildi
-- final `success rate`te `65.53% > 63.00%` farki gosterildi
+Su an bu iki hedef de karsilanmis durumda:
+- daha hizli ogrenme sinyali goruldu
+- final `success rate`te `75.20% > 63.00%` farki gosterildi
 
 Ama hala tam cozulmemis bir davranissal sinir var:
-- hem scratch hem pretrained tarafi finalde buyuk oranda `edge_75` attractor'a yakinliyor
-- yani `partial offloading` davranisi tamamen kaybolmuyor, fakat davranissal cesitlilik hala yeterince zengin degil
+- final politika `Full Cloud`a cokmuyor, bu iyi
+- fakat karar yapisi hala agirlikli olarak `Edge %75` ekseninde toplaniyor
+- yani davranissal cesitlilik artmis olsa da tam `context-sensitive action diversity` seviyesine ulasilmis degil
 
 Bu ne anlama gelir:
-- Faz 7'nin `staged training works` kismini destekliyoruz
-- ama `staged training bizi belirgin bicimde daha zengin bir offloading davranisina goturdu` demek icin erken
+- Faz 7'nin `staged training works` kismini guclu sekilde destekliyoruz
+- ama `staged training bizi tamamen zengin ve baglama duyarli offloading davranisina goturdu` demek icin henuz erken
 
-Dolayisiyla Faz 7 su an gereksinimi minimum basari cizgisinin uzerinde karsiliyor, fakat davranissal ayrisma ve `partial offloading retention` hala acik bir iyilestirme alani olarak duruyor.
+Dolayisiyla Faz 7, performans hedefini karsiliyor; asik kalan ana teknik konu ise davranissal cesitlilik olarak Faz 8'e devrediliyor.
+
+---
+
 ## 15. Bu Son Sonuc Nasil Yorumlanmali
 
 Dogru yorum sunun kombinasyonudur:
 
 1. `Pretrained + PPO`, erken ogrenmede daha hizli ilerliyor.
-2. Son `retention -> refinement` schedule ile final `success rate`te de `scratch PPO`yu geciyor.
-3. Ancak butun metriklerde mutlak ustunluk yok.
-4. `full cloud` attractor kirildi, ancak yerini bu kez `edge_75` agirlikli tek-aksiyon attractor aldi.
+2. Kanonik teacher ile final `success rate`te de `scratch PPO`yu geciyor.
+3. Fine-tuning teacher bilgisini bozup basariyi dusurmuyor; tersine kucuk ama pozitif bir RL katkisi veriyor.
+4. `full cloud` attractor kirildi, ancak politika hala agirlikli olarak `edge_75` etrafinda toplaniyor.
 
 Yani Faz 7 artik su noktaya geldi:
 
 - `sample efficiency advantage` gosterildi
-- final success ustunlugu de ilk kez gosterildi
+- final success ustunlugu gosterildi
+- fine-tuningin teacher bilgisini bozmadigi gosterildi
 - fakat policy behavior tarafinda hala tam yapisal ayrisma yok
 
-Bu cok daha guclu bir sonuctur.
+Bu, Faz 7'nin artik deneysel olarak savunulabilir ve Faz 8'e tasinabilir bir asamaya geldigini gosterir.
 
 ---
 
@@ -599,19 +615,22 @@ Faz 7 tek deney olmadi; iteratif bir `research loop` haline geldi.
 
 Denenen ana rafinmanlar:
 
-1. `weighted teacher + default fine-tuning`
-2. `weighted teacher + lower fine-tuning learning rate`
-3. `reward-aligned teacher + lower learning rate`
-4. `reward-aligned teacher + aggressive policy anchoring`
-5. `reward-aligned teacher + light policy anchoring`
-6. `retention -> refinement` two-stage fine-tuning schedule
+1. eski `weighted / reward-aligned` teacher varyantlari ile ilk pretraining denemeleri
+2. daha dusuk fine-tuning learning rate denemeleri
+3. hafif ve agirlikli `policy anchoring` denemeleri
+4. action coverage-aware dataset rebalance adimi
+5. tum teacher policyler icin `teacher-policy sensitivity` karsilastirmasi
+6. kanonik kol icin `retention -> refinement` two-stage fine-tuning schedule
+7. `pretrained-only evaluation` ile fine-tuning katkisini ayiran ek kontrol
 
-En son guclu adim su oldu:
+En son guclu adimlar su oldu:
 
-- once kisa bir `retention stage`
-- sonra ana `refinement stage`
+- coverage-aware teacher dataset kurulmasi
+- `teacher_contextual_reward_aligned` secimi
+- `retention -> refinement` schedule ile staged PPO fine-tuning
+- `pretrained-only` ve `fine-tuned` environment success tablosunun birlikte okunmasi
 
-Bu schedule sayesinde, tek seed pilotta gordugumuz final avantaj 3 seed protokolde de desteklenmeye basladi.
+Bu zincir sayesinde Faz 7'nin son kanonik sonucu, hem performance hem de yorumlanabilirlik acisindan daha savunulabilir hale geldi.
 
 ---
 
@@ -626,13 +645,13 @@ Faz 7 artik su bulgulari guvenle soyleyebilecek noktada:
 5. Uygun schedule ile final `success rate` avantajina da ulasilabiliyor.
 6. Hala dikkat edilmesi gereken ana sinir `action collapse` ve `edge_75` attractor etkisi.
 
-Bu nedenle Faz 7, artik yalnizca ?guzel fikir? seviyesinde degil; deneysel olarak savunulabilir bir asamaya gelmis durumda.
+Bu nedenle Faz 7, artik yalnizca "guzel fikir" seviyesinde degil; deneysel olarak savunulabilir bir asamaya gelmis durumda.
 
 ---
 
 ## 18. Faz 7'yi En Sade Dille Ozetlersek
 
-Projeyi ilk kez goren biri icin Faz 7'nin ozet c?mlesi sunlar olur:
+Projeyi ilk kez goren biri icin Faz 7'nin ozet cumlesi sunlar olur:
 
 - Once problem icin `teacher labels` urettik.
 - Sonra PPO'yu bu etiketlerle isitacak sekilde egittik.
@@ -656,7 +675,7 @@ Faz 7'yi en temiz sirada okumak icin su akisi kullan:
 3. `phase_reports/Phase_7_Report.md`
 4. `v2_docs/phase_7/synthetic_oracle_label_summary.md`
 5. `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
-6. `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
+6. `v2_docs/phase_7/pretrained_checkpoint_evaluation_report.md`
 
 Bu siralama seni su cizgide tasir:
 
@@ -672,7 +691,22 @@ Bu siralama seni su cizgide tasir:
 
 ---
 
-## 15. Faz 7'nin Nihai Sonucu
+## 20. Neden Pretrained-Only Evaluation Yapildi
+
+Faz 7 sonunda su soru dogal olarak ortaya cikti:
+- supervised pretraining test accuracy neden yuksekken, fine-tuning sonrasi gordugumuz success rate daha dusuk bir yuzde gibi okunuyor?
+
+Bu sorunun cevabi, ayni sayilari karsilastirmiyor olmamizdir.
+- `supervised accuracy` = teacher etiket taklidi
+- `pretrained-only success` = supervised-pretrained checkpointin environment basarisi
+- `fine-tuned success` = PPO ile RL guncellemesi sonrasi environment basarisi
+
+Bu nedenle ek olarak `pretrained-only evaluation` yapildi ve teacher policy bazinda tablo cikarildi.
+Ayrintili rapor:
+- `v2_docs/phase_7/pretrained_checkpoint_evaluation_report.md`
+- `results/raw/synthetic/teacher_policy_sensitivity/pretrained_checkpoint_evaluation.csv`
+
+## 21. Faz 7'nin Nihai Sonucu
 
 Faz 7, teacher-policy sensitivity tamamlanip kanonik teacher secimi sabitlenerek kapatilmistir.
 

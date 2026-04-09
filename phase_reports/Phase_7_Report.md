@@ -67,6 +67,24 @@ Teacher secim yorumu:
 
 ---
 
+## Pretrained Checkpoint Kontrolu
+
+Faz 7 sonunda, supervised pretraining ile olculen yuksek accuracy degerlerinin RL fine-tuning sonrasi gercekten kaybolup kaybolmadigini anlamak icin ek bir kontrol yapildi.
+Bu kontrolde her teacher policy icin `pretrained-only success` olculdu ve `fine-tuned success` ile yan yana kondu.
+
+Kanonik teacher (`teacher_contextual_reward_aligned`) sonucu:
+- supervised test accuracy: `83.11%`
+- pretrained-only env success: `74.47%`
+- fine-tuned env success: `75.20%`
+- fark: `+0.73` puan
+
+Yorum:
+- burada karsilastirilan iki sayi ayni metrik degildir; `supervised accuracy` teacher etiket taklidini, `env success` ise gercek task basarisini olcer
+- kanonik teacher kolunda fine-tuning sonrasi bir dusus degil, sinirli ama pozitif bir RL katkisi goruldu
+- bu nedenle Faz 7 sonundaki ana risk, performance dususu degil; action diversity ve decision structure siniridir
+
+Ayrintili tablo: `v2_docs/phase_7/teacher_policy_sensitivity_report.md` ve `v2_docs/phase_7/pretrained_checkpoint_evaluation_report.md`.
+
 ## Faz 7 Cikarimi
 
 - staged training bu problemde gercek bir warm-start avantaji veriyor

@@ -60,6 +60,20 @@ Teacher sensitivity yorumu:
 
 ---
 
+## Pretrained Checkpoint Kontrolu
+
+Faz 7 sonrasinda ek bir dogrulama daha yapildi: supervised pretraining checkpoint'i fine-tuning oncesi dogrudan environment uzerinde test edildi.
+Amac, `supervised accuracy` ile `fine-tuned RL success` arasindaki farkin retention problemi mi yoksa farkli metriklerden gelen dogal bir ayrim mi oldugunu ayirmakti.
+
+Kanonik teacher sonucu:
+- pretrained-only success: `74.47%`
+- fine-tuned success: `75.20%`
+- fark: `+0.73` puan
+
+Sonuc:
+- kanonik teacher kolunda fine-tuning teacher bilgisini dusurmemis, kucuk bir RL katkisi uretmistir
+- Faz 8 oncesi asil teknik odak, success kaybi degil davranissal cesitlilik olmaya devam etmektedir
+
 ## 7.4 Kapanis Karari
 
 - Faz 7 kanonik teacher olarak `teacher_contextual_reward_aligned` ile kapatildi

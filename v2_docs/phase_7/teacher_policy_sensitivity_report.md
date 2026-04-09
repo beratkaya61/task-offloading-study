@@ -24,6 +24,36 @@ Secim gerekcesi sadece en yuksek success degil, ayni zamanda daha savunulabilir 
 Coverage (train) sirasi: `local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`.
 Delta kolonlari `Pretrained + PPO - Scratch PPO` olarak hesaplanmistir.
 
+## Pretrained Checkpoint vs Fine-Tuned RL Kontrolu
+
+Bu kontrol, Faz 7 sonunda sayisal olarak gorulen bir supheyi kapatmak icin yapildi.
+Suphe suydu: supervised pretraining sirasinda yuksek `test accuracy` gorulurken, fine-tuning sonrasi gordugumuz `success rate` daha dusuk bir yuzde gibi okuyordu.
+Bu farkin gercekten bir performans dususu mu, yoksa farkli metriklerin karsilastirilmasi mi oldugunu ayirmak icin her teacher policy icin uc ayri asama yan yana olculdu:
+
+- `supervised test accuracy`: teacher etiketlerini ne kadar iyi taklit ettigi
+- `pretrained-only success`: supervised pretraining sonrasi checkpointin RL fine-tuning olmadan environment icindeki gercek basarisi
+- `fine-tuned success`: ayni checkpointin PPO fine-tuning sonrasi environment basarisi
+
+Bu tabloyu okurken ana kural su sekildedir:
+- `fine-tuned success > pretrained-only success` ise RL fine-tuning faydali okunur
+- `fine-tuned success ~= pretrained-only success` ise RL fine-tuning sinirli ama zararli olmayan katkili okunur
+- `fine-tuned success < pretrained-only success` ise teacher retention problemi kuvvetli okunur
+
+| Teacher Policy | Supervised Test Acc | Pretrained-Only Success | Fine-Tuned Success | Scratch Success | Delta (Fine-Tuned - Pretrained-Only) | Pretrained-Only Dominant Action |
+|---|---:|---:|---:|---:|---:|---|
+| teacher_latency_greedy | 77.56% | 76.93% | 77.33% | 63.00% | +0.40 puan | Full Cloud (53.1%) |
+| teacher_contextual_reward_aligned | 83.11% | 74.47% | 75.20% | 63.00% | +0.73 puan | Edge %75 (58.7%) |
+| teacher_balanced_semantic | 83.56% | 67.87% | 73.27% | 63.00% | +5.40 puan | Full Cloud (38.0%) |
+| teacher_energy_greedy | 79.33% | 68.40% | 72.13% | 63.00% | +3.73 puan | Full Cloud (35.4%) |
+
+Kanonik teacher icin yorum:
+- `teacher_contextual_reward_aligned` icin supervised test accuracy `83.11%`, pretrained-only success `74.47%` ve fine-tuned success `75.20%` bulundu.
+- Fine-tuning sonrasi fark `+0.73` puan olarak olculdu.
+- Bu nedenle kanonik teacher kolunda fine-tuningin teacher bilgisini bozdugu degil, kucuk ama pozitif bir RL katkisi sagladigi yorumu daha dogrudur.
+- Buradan sonra Faz 8'de izlenecek ana mesele success dususu degil, action diversity ve decision structure'in ne kadar gelisecegidir.
+
+Ayrintili artefaktlar: `D:/task-offloading-study/results/raw/synthetic/teacher_policy_sensitivity/pretrained_checkpoint_evaluation.csv` ve `v2_docs/phase_7/pretrained_checkpoint_evaluation_report.md`.
+
 ## Teacher Bazli Ozetler
 
 ### Latency Greedy
