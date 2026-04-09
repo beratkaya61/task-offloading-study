@@ -1,4 +1,4 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Faz 7 Aciklamasi: Two-Stage Training Calismasinin Uctan Uca Anlatimi
 
@@ -51,7 +51,7 @@ Faz 5 ve Faz 6 sonunda su tablo ortaya cikti:
 - sentetik ortamda anlamli sonuclar uretiyor
 - trace-driven ortamda da genelleme gosterebiliyor
 - fakat egitim hala pahali
-- policy bazen cok basit bir davranisa, ozellikle `full cloud` secimine, fazla kolay yakinlayabiliyor
+- policy bazen cok basit bir davranisa, ozellikle tek bir baskin aksiyona, once `full cloud` daha sonra `edge_75` secimine, fazla kolay yakinlayabiliyor
 
 Bu nedenle Faz 7'de su fikir test edildi:
 
@@ -119,7 +119,7 @@ flowchart TD
 
     H --> I["staged_training_comparison.csv"]
     H --> J["staged_training_progress.csv"]
-    H --> K["staged_training_comparison_report.md"]
+    H --> K["teacher_policy_sensitivity_report.md"]
 ```
 
 ### Diyagramin Okunusu
@@ -189,9 +189,9 @@ Pipeline su sekilde calisir:
    - `edge_energy_cost`
    - `edge_energy_ratio`
    - `switching_overhead`
-5. Sonra secilen `teacher objective` bu adaylari skorliyor.
-6. En iyi action `oracle_action` olarak seciliyor.
-7. En iyi action ile ikinci en iyi action arasindaki fark `oracle_margin` olarak kaydediliyor.
+5. Sonra secilen `teacher policy` bu adaylari skorliyor.
+6. En iyi action `selected_action_id` olarak seciliyor.
+7. En iyi action ile ikinci en iyi action arasindaki fark `teacher_margin` olarak kaydediliyor.
 
 Bu margin degeri kritik onemdedir.
 Cunku teacher'in kararinin ne kadar net oldugunu anlatir.
@@ -200,32 +200,58 @@ Cunku teacher'in kararinin ne kadar net oldugunu anlatir.
 
 ## 6. Dataset'in Icindeki Alanlar Nelerdir
 
-Dataset su teacher varyantlarini icerir:
+Dataset artik yalnizca isimize yarayan ve adindan ne oldugu anlasilan kolonlari tutar.
 
-- `latency_oracle`
-- `energy_oracle`
-- `weighted_objective_oracle`
-- `reward_aligned_oracle`
+Teacher policy kolonlari:
 
-Her sample su alanlari tutar:
+- `teacher_policy`
+- `selected_action_id`
+- `selected_action_name`
+- `teacher_score`
+- `teacher_margin`
 
-- `obs_0 ... obs_11`
-- `oracle_action`
-- `oracle_action_name`
-- `oracle_score`
-- `oracle_margin`
+Prediction / semantic kolonlari:
+
 - `predicted_delay`
 - `predicted_energy`
 - `predicted_reward`
 - `deadline_met`
 - `semantic_target`
 - `semantic_match`
-- `switching_overhead`
-- `edge_energy_cost`
-- `edge_energy_ratio`
-- task metadata
-- device battery level
-- split bilgisi (`train`, `val`, `test`)
+- `priority_score`
+- `semantic_confidence`
+
+Split ve ornek kimligi:
+
+- `split`
+- `episode_id`
+- `step_id`
+
+State kolonlari:
+
+- `state_snr_norm`
+- `state_task_size_norm`
+- `state_cpu_cycles_norm`
+- `state_battery_norm`
+- `state_edge_load_norm`
+- `state_edge_energy_norm`
+- `prior_local`
+- `prior_edge_25`
+- `prior_edge_50`
+- `prior_edge_75`
+- `prior_edge_full`
+- `prior_cloud`
+
+Bu isimlendirme su problemi cozer:
+- `obs_0`, `obs_1` gibi kolonlarda neyin ne oldugu anlasilmiyordu
+- `objective` ve `oracle_action` gibi isimler de teacher policy mantigini yeterince acik gostermiyordu
+
+Guncel teacher policy adlari:
+
+- `teacher_latency_greedy`
+- `teacher_energy_greedy`
+- `teacher_balanced_semantic`
+- `teacher_reward_aligned`
 
 Guncel sayilar:
 
@@ -246,24 +272,24 @@ Yani pratikte su isi yapar:
 - mevcut observation'i alir
 - butun valid action'lari dener veya skorlar
 - her action icin delay, energy, reward, deadline ve semantic etkileri tahmin eder
-- secilen objective'e gore en iyi action'i `oracle_action` olarak etiketler
+- secilen teacher policy scoring mantigina gore en iyi action'i `selected_action_id` olarak etiketler
 
 Bu nedenle `teacher policy`, PPO'ya "dogru cevap" vermekten cok, "iyi bir baslangic davranisi" gosteren ogretmen rolundedir.
 ## 7. Teacher Variants Neleri Temsil Ediyor
 
-### `latency_oracle`
+### `teacher_latency_greedy`
 
 Bu teacher daha dusuk delay'e odaklanir.
 Gozlemledigimiz sey, bunun `cloud` agirlikli bir teacher haline gelmesidir.
 Bu nedenle tek basina yeterli degildir.
 
-### `energy_oracle`
+### `teacher_energy_greedy`
 
 Bu teacher daha dusuk energy cost'a odaklanir.
 Bu da benzer sekilde `cloud` agirlikli kalmistir.
 Bu nedenle dengeli bir `teacher policy` uretmemistir.
 
-### `weighted_objective_oracle`
+### `teacher_balanced_semantic`
 
 Bu teacher birden fazla unsuru birlikte degerlendirir:
 
@@ -279,7 +305,7 @@ Bu teacher birden fazla unsuru birlikte degerlendirir:
 Bu teacher ilk anlamli dengeli varyant oldu.
 Ozellikle `edge_75` agirlikli bir profile sahip oldu.
 
-### `reward_aligned_oracle`
+### `teacher_reward_aligned`
 
 Bu teacher, secim mantigini downstream RL reward'a daha yakin kurar.
 Bu nedenle objective alignment acisindan degerlidir.
@@ -305,7 +331,7 @@ Bu filtre ile daha kararsiz label'lar ayiklanabilir.
 
 Ama Faz 7'de burada ince bir bulgu daha elde edildi:
 
-- `reward_aligned_oracle` icin margin buyudukce teacher tekrar `cloud` agirlikli hale donebiliyor
+- `teacher_reward_aligned` icin margin buyudukce dataset daha dar ve daha tek-aksiyonlu hale gelebiliyor
 
 Bu da bize sunu ogretti:
 
@@ -314,6 +340,24 @@ Bu da bize sunu ogretti:
 Yani margin filtresi objective'e gore yorumlanmalidir.
 
 ---
+
+## 8.1 `PPO Policy` Tam Olarak Nedir
+
+Bu kavram cok kritik oldugu icin acik yazmak gerekir.
+
+`policy`, agent'in mevcut state'i gorup hangi action'i sececegine karar veren neural network yapisidir.
+Bizim projede bu network, observation vector'u alir ve su action'lardan biri icin skor / olasilik uretir:
+
+- `local`
+- `edge_25`
+- `edge_50`
+- `edge_75`
+- `edge_100`
+- `cloud`
+
+Dolayisiyla `supervised pretraining ile isitilmis PPO policy` dedigimiz sey, PPO ajaninin karar veren network agirliklarinin teacher labels ile onceden egitilmis halidir.
+
+Bu asama sonunda elimizde final policy yoktur. Elimizde sadece RL oncesinde daha iyi bir baslangic davranisi olan PPO karar agi vardir.
 
 ## 9. `Supervised Pretraining` Bu Projede Nasil Calisiyor
 
@@ -337,7 +381,7 @@ Girdi:
 
 Hedef:
 
-- `oracle_action`
+- `selected_action_id`
 
 Loss:
 
@@ -354,7 +398,7 @@ Kontrol edilen hyperparameter'lar:
 - `min_margin`
 
 Bu asama sonunda normal PPO biciminde bir checkpoint kaydedilir.
-Bu checkpoint daha sonra `fine-tuning` icin kullanilir.
+Bu checkpoint, teacher labels ile isitilmis PPO policy agirliklarini tasir ve bir sonraki RL `fine-tuning` asamasinin girisi olur.
 
 ---
 
@@ -422,9 +466,9 @@ Model isimleriyle soyle gorunur:
 
 Kullanilan ana artifacts:
 
-- `results/raw/synthetic/staged_training/staged_training_comparison.csv`
-- `results/raw/synthetic/staged_training/staged_training_progress.csv`
-- `v2_docs/phase_7/staged_training_comparison_report.md`
+- `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
+- `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv`
+- `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
 
 Olculen baslica metrikler:
 
@@ -476,16 +520,16 @@ Guncel 3-seed sonuc:
 
 - `PPO_from_scratch`
 
-  - success: `83.67% +- 0.76`
-  - p95 latency: `2.006 +- 0.029`
-  - avg energy: `0.0140 +- 0.0016`
-  - QoE: `73.64 +- 0.90`
+  - success: `63.00% +- 2.46`
+  - p95 latency: `3.664 +- 0.057`
+  - avg energy: `0.1380 +- 0.0077`
+  - QoE: `44.68 +- 2.67`
 - `PPO_pretrained_finetuned`
 
-  - success: `84.60% +- 0.80`
-  - p95 latency: `2.010 +- 0.018`
-  - avg energy: `0.0146 +- 0.0022`
-  - QoE: `74.55 +- 0.87`
+  - success: `65.53% +- 2.14`
+  - p95 latency: `3.673 +- 0.032`
+  - avg energy: `0.1369 +- 0.0024`
+  - QoE: `47.17 +- 2.30`
 
 Bunun anlami su:
 
@@ -497,11 +541,11 @@ Bunun anlami su:
 
 ## 14.1 Bu Sonucu Ureten Kanonik Branch Hangisiydi
 
-Bu noktadaki `84.60%` sonuc, herhangi bir teacher ile elde edilmedi.
+Bu noktadaki `65.53%` sonuc, herhangi bir teacher ile elde edilmedi.
 Kullandigimiz tam kanonik branch su oldu:
 
-- selected teacher policy: `reward_aligned_oracle`
-- pretrained checkpoint: `models/ppo/pretrained/ppo_reward_aligned_pretrained.zip`
+- selected teacher policy: `teacher_reward_aligned`
+- pretrained checkpoint: `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip`
 - retention stage: `10000` step, `learning_rate = 5e-05`, hafif `policy anchoring`
 - refinement stage: `20000` step, `learning_rate = 1.5e-04`, anchoring kapali
 
@@ -519,11 +563,11 @@ Faz 7'nin cekirdek gereksinimi suydu:
 
 Su an bu iki hedef de temel seviyede karsilanmis durumda:
 - daha hizli ogrenme gosterildi
-- final `success rate`te `84.60% > 83.67%` farki gosterildi
+- final `success rate`te `65.53% > 63.00%` farki gosterildi
 
 Ama hala tam cozulmemis bir davranissal sinir var:
-- hem scratch hem pretrained tarafi finalde buyuk oranda `full cloud` attractor'a yakinliyor
-- yani `partial offloading` davranisi final policy'nin baskin ozelligi haline gelmis degil
+- hem scratch hem pretrained tarafi finalde buyuk oranda `edge_75` attractor'a yakinliyor
+- yani `partial offloading` davranisi tamamen kaybolmuyor, fakat davranissal cesitlilik hala yeterince zengin degil
 
 Bu ne anlama gelir:
 - Faz 7'nin `staged training works` kismini destekliyoruz
@@ -537,7 +581,7 @@ Dogru yorum sunun kombinasyonudur:
 1. `Pretrained + PPO`, erken ogrenmede daha hizli ilerliyor.
 2. Son `retention -> refinement` schedule ile final `success rate`te de `scratch PPO`yu geciyor.
 3. Ancak butun metriklerde mutlak ustunluk yok.
-4. Hala `full cloud` attractor tamamen kirilmis degil.
+4. `full cloud` attractor kirildi, ancak yerini bu kez `edge_75` agirlikli tek-aksiyon attractor aldi.
 
 Yani Faz 7 artik su noktaya geldi:
 
@@ -580,7 +624,7 @@ Faz 7 artik su bulgulari guvenle soyleyebilecek noktada:
 3. `objective alignment` ve `imitability` farkli kavramlar.
 4. Two-stage training olculebilir bir `warm-start` etkisi sagliyor.
 5. Uygun schedule ile final `success rate` avantajina da ulasilabiliyor.
-6. Hala dikkat edilmesi gereken ana sinir `action collapse` ve `cloud attractor` etkisi.
+6. Hala dikkat edilmesi gereken ana sinir `action collapse` ve `edge_75` attractor etkisi.
 
 Bu nedenle Faz 7, artik yalnizca ?guzel fikir? seviyesinde degil; deneysel olarak savunulabilir bir asamaya gelmis durumda.
 
@@ -611,8 +655,8 @@ Faz 7'yi en temiz sirada okumak icin su akisi kullan:
 2. `v2_docs/phase_7/phase_7_Two_Stage_Training_plan.md`
 3. `phase_reports/Phase_7_Report.md`
 4. `v2_docs/phase_7/synthetic_oracle_label_summary.md`
-5. `v2_docs/phase_7/supervised_pretraining_report.md`
-6. `v2_docs/phase_7/staged_training_comparison_report.md`
+5. `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
+6. `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
 
 Bu siralama seni su cizgide tasir:
 
@@ -625,3 +669,22 @@ Bu siralama seni su cizgide tasir:
 
 
 
+
+---
+
+## 15. Faz 7'nin Nihai Sonucu
+
+Faz 7, teacher-policy sensitivity tamamlanip kanonik teacher secimi sabitlenerek kapatilmistir.
+
+Nihai Faz 7 sonucu:
+- kanonik teacher: `teacher_contextual_reward_aligned`
+- kanonik pretrained checkpoint: `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip`
+- `Scratch PPO`: `63.00%`
+- `Pretrained + PPO`: `75.20%`
+- final karar yapisi: `Edge %75` agirlikli, `Full Cloud` degil
+
+Bu nedenle Faz 7 icin ana iddia su sekilde sabitlenmistir:
+
+> Two-stage training bu projede yalnizca ogrenme hizini degil, dogru teacher secildiginde final performansi ve decision structure kalitesini de iyilestirebilir.
+
+Teacher bazli ayrintili karsilastirma tek kaynak olarak `v2_docs/phase_7/teacher_policy_sensitivity_report.md` icinde tutulur.

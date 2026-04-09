@@ -3,12 +3,13 @@ import csv
 import os
 import random
 import time
+from collections import Counter
 from datetime import datetime
 
 import numpy as np
 import simpy
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback, CallbackList
 
@@ -17,6 +18,55 @@ from src.core.evaluation import evaluate_policy
 from src.env.rl_env import OffloadingEnv
 from src.env.simulation_env import CloudServer, EdgeServer, IoTDevice, WirelessChannel
 from src.utils.reproducibility import set_seed
+
+
+STATE_FEATURE_COLUMNS = [
+    "state_snr_norm",
+    "state_task_size_norm",
+    "state_cpu_cycles_norm",
+    "state_battery_norm",
+    "state_edge_load_norm",
+    "state_edge_energy_norm",
+    "prior_local",
+    "prior_edge_25",
+    "prior_edge_50",
+    "prior_edge_75",
+    "prior_edge_full",
+    "prior_cloud",
+]
+
+
+def _normalize_teacher_policy_name(name):
+    mapping = {
+        "teacher_latency_greedy": "teacher_latency_greedy",
+        "latency_oracle": "teacher_latency_greedy",
+        "teacher_energy_greedy": "teacher_energy_greedy",
+        "energy_oracle": "teacher_energy_greedy",
+        "teacher_balanced_semantic": "teacher_balanced_semantic",
+        "weighted_objective_oracle": "teacher_balanced_semantic",
+        "teacher_reward_aligned": "teacher_reward_aligned",
+        "reward_aligned_oracle": "teacher_reward_aligned",
+        "teacher_contextual_reward_aligned": "teacher_contextual_reward_aligned",
+    }
+    return mapping.get(name, name)
+
+
+def _anchor_row_teacher_policy(row):
+    return _normalize_teacher_policy_name(str(row.get("teacher_policy") or row.get("objective") or ""))
+
+
+def _anchor_row_action_id(row):
+    raw_value = row.get("selected_action_id", row.get("oracle_action", -1))
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError):
+        return -1
+
+
+def _anchor_row_state_vector(row):
+    if all(column in row for column in STATE_FEATURE_COLUMNS):
+        return [float(row[column]) for column in STATE_FEATURE_COLUMNS]
+    return [float(row[f"obs_{i}"]) for i in range(len(STATE_FEATURE_COLUMNS))]
 
 
 ALGORITHM_DEFAULTS = {
@@ -142,33 +192,52 @@ def create_model(algorithm, env, hyperparams):
     return model_class("MlpPolicy", env, verbose=0, **model_kwargs)
 
 
-def _load_anchor_dataloader(dataset_path, objective, min_margin=0.0, batch_size=128):
+def _load_anchor_dataloader(dataset_path, teacher_policy, min_margin=0.0, batch_size=128, allowed_actions=None, allowed_splits=None, balance_actions=False, balance_power=1.0, samples_per_epoch=None):
+    requested_teacher_policy = _normalize_teacher_policy_name(teacher_policy)
+    allowed_action_set = None if allowed_actions is None else {int(action) for action in allowed_actions}
+    allowed_splits = set(allowed_splits or ["train"])
     rows = []
     with open(dataset_path, "r", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
-            if row.get("objective") != objective:
+            if _anchor_row_teacher_policy(row) != requested_teacher_policy:
                 continue
-            if row.get("split", "train") != "train":
+            if row.get("split", "train") not in allowed_splits:
                 continue
             try:
-                margin = float(row.get("oracle_margin", 0.0))
+                margin = float(row.get("teacher_margin", row.get("oracle_margin", 0.0)))
             except (TypeError, ValueError):
                 margin = 0.0
             if margin < float(min_margin):
                 continue
+            try:
+                oracle_action = _anchor_row_action_id(row)
+            except (TypeError, ValueError):
+                oracle_action = -1
+            if allowed_action_set is not None and oracle_action not in allowed_action_set:
+                continue
             rows.append(row)
 
     if not rows:
-        raise ValueError(f"No anchor samples found for objective={objective!r} min_margin={min_margin}")
+        raise ValueError(f"No anchor samples found for teacher_policy={teacher_policy!r} min_margin={min_margin}")
 
     observations = torch.tensor(
-        [[float(row[f"obs_{i}"]) for i in range(12)] for row in rows],
+        [_anchor_row_state_vector(row) for row in rows],
         dtype=torch.float32,
     )
-    labels = torch.tensor([int(row["oracle_action"]) for row in rows], dtype=torch.long)
+    labels = torch.tensor([_anchor_row_action_id(row) for row in rows], dtype=torch.long)
     dataset = TensorDataset(observations, labels)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    if not balance_actions:
+        return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    label_list = labels.cpu().tolist()
+    label_counts = Counter(label_list)
+    weights = []
+    for label in label_list:
+        count = max(1, int(label_counts.get(label, 1)))
+        weights.append(1.0 / (count ** float(balance_power)))
+    num_samples = int(samples_per_epoch or len(label_list))
+    sampler = WeightedRandomSampler(torch.tensor(weights, dtype=torch.double), num_samples=num_samples, replacement=True)
+    return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
 
 class PolicyAnchoringCallback(BaseCallback):
@@ -383,9 +452,14 @@ def train_single_agent(
     if algorithm == "ppo" and init_model_path and anchor_config.get("enabled", False):
         anchor_loader = _load_anchor_dataloader(
             dataset_path=anchor_config["dataset_path"],
-            objective=anchor_config.get("objective", "reward_aligned_oracle"),
+            teacher_policy=anchor_config.get("teacher_policy", anchor_config.get("objective", "teacher_reward_aligned")),
             min_margin=float(anchor_config.get("min_margin", 0.0)),
             batch_size=int(anchor_config.get("batch_size", 128)),
+            allowed_actions=anchor_config.get("allowed_actions"),
+            allowed_splits=anchor_config.get("allowed_splits", ["train"]),
+            balance_actions=anchor_config.get("balance_actions", False),
+            balance_power=float(anchor_config.get("balance_power", 1.0)),
+            samples_per_epoch=anchor_config.get("samples_per_epoch"),
         )
         callbacks.append(
             PolicyAnchoringCallback(

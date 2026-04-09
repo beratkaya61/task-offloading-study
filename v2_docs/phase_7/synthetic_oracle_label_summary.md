@@ -1,4 +1,4 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Synthetic Oracle Label Summary
 
@@ -9,7 +9,7 @@ Dataset, supervised pretraining oncesi observation -> action etiketi ureten ogre
 
 - Seed: `42`
 - Episode sayisi: `60`
-- Objective'ler: `latency_oracle, energy_oracle, weighted_objective_oracle, reward_aligned_oracle`
+- Teacher policies: `teacher_latency_greedy, teacher_energy_greedy, teacher_balanced_semantic, teacher_contextual_reward_aligned`
 
 ## Split Dagilimi
 
@@ -19,45 +19,48 @@ Dataset, supervised pretraining oncesi observation -> action etiketi ureten ogre
 | val | 1800 |
 | test | 1800 |
 
-## Objective Bazli Action Dagilimi
+## Teacher Policy Bazli Action Dagilimi
 
-### latency_oracle
-
-| Action | Count | Ratio |
-|---|---:|---:|
-| cloud | 2925 | 97.50% |
-| edge_100 | 39 | 1.30% |
-| edge_50 | 13 | 0.43% |
-| edge_75 | 17 | 0.57% |
-| local | 6 | 0.20% |
-
-### energy_oracle
+### teacher_latency_greedy
 
 | Action | Count | Ratio |
 |---|---:|---:|
-| cloud | 2931 | 97.70% |
-| edge_100 | 39 | 1.30% |
-| edge_50 | 13 | 0.43% |
-| edge_75 | 8 | 0.27% |
-| local | 9 | 0.30% |
+| cloud | 1238 | 41.27% |
+| edge_100 | 269 | 8.97% |
+| edge_25 | 269 | 8.97% |
+| edge_50 | 357 | 11.90% |
+| edge_75 | 574 | 19.13% |
+| local | 293 | 9.77% |
 
-### weighted_objective_oracle
-
-| Action | Count | Ratio |
-|---|---:|---:|
-| cloud | 1181 | 39.37% |
-| edge_25 | 7 | 0.23% |
-| edge_50 | 7 | 0.23% |
-| edge_75 | 1787 | 59.57% |
-| local | 18 | 0.60% |
-
-### reward_aligned_oracle
+### teacher_energy_greedy
 
 | Action | Count | Ratio |
 |---|---:|---:|
-| cloud | 1017 | 33.90% |
-| edge_100 | 3 | 0.10% |
-| edge_50 | 21 | 0.70% |
-| edge_75 | 1905 | 63.50% |
-| local | 54 | 1.80% |
+| cloud | 1035 | 34.50% |
+| edge_100 | 327 | 10.90% |
+| edge_25 | 276 | 9.20% |
+| edge_50 | 424 | 14.13% |
+| edge_75 | 607 | 20.23% |
+| local | 331 | 11.03% |
 
+### teacher_balanced_semantic
+
+| Action | Count | Ratio |
+|---|---:|---:|
+| cloud | 932 | 31.07% |
+| edge_100 | 302 | 10.07% |
+| edge_25 | 293 | 9.77% |
+| edge_50 | 428 | 14.27% |
+| edge_75 | 697 | 23.23% |
+| local | 348 | 11.60% |
+
+### teacher_contextual_reward_aligned
+
+| Action | Count | Ratio |
+|---|---:|---:|
+| cloud | 878 | 29.27% |
+| edge_100 | 252 | 8.40% |
+| edge_25 | 253 | 8.43% |
+| edge_50 | 302 | 10.07% |
+| edge_75 | 1049 | 34.97% |
+| local | 266 | 8.87% |

@@ -324,11 +324,17 @@ def write_report(final_df, final_summary, progress_summary, convergence_summary,
                 pretrained_auc = float(pretrained_conv['success_auc_mean'].iloc[0])
                 if not np.isnan(scratch_step) and not np.isnan(pretrained_step):
                     lines.append(f"- `Pretrained + PPO`, `%75` success esigine ortalama `{pretrained_step:.0f}` stepte ulasir; `Scratch PPO` ise `{scratch_step:.0f}` stepte ulasir.")
+                elif np.isnan(scratch_step) and not np.isnan(pretrained_step):
+                    lines.append(f"- `Pretrained + PPO`, `%75` success esigine `{pretrained_step:.0f}` stepte ulasir; `Scratch PPO` bu esige bu batchte ulasamaz.")
                 lines.append(f"- Success curve AUC karsilastirmasi: scratch `{scratch_auc:.4f}`, pretrained `{pretrained_auc:.4f}`.")
-                if pretrained_step < scratch_step:
-                    lines.append('- Yorum: pretrained baslangic hizini iyilestiriyor; ancak bu batchte scratch PPO orta-ileri asamada daha guclu final dengeye oturuyor.')
+                if delta_success > 0 and pretrained_auc >= scratch_auc:
+                    lines.append('- Yorum: pretrained kolu hem erken ogrenmede hem final performansta ustunluk gosteriyor.')
+                elif delta_success > 0:
+                    lines.append('- Yorum: pretrained kolu final performansta ustun, ancak ogrenme egrisi avantaji her metrikte ayni duzeyde degil.')
+                elif delta_success == 0:
+                    lines.append('- Yorum: pretrained kolu finalde parity sagliyor; fark daha cok ogrenme hizinda ortaya cikiyor.')
                 else:
-                    lines.append('- Yorum: pretrained baslangic hizi acisindan belirgin ustunluk kurmuyor; buna ragmen finalde de geride kaliyor.')
+                    lines.append('- Yorum: pretrained kolu erken asamada fayda gosterse de bu batchte final performans ustunlugune donusemiyor.')
 
     with open(output_path, 'w', encoding='utf-8') as handle:
         handle.write('\n'.join(lines) + '\n')
@@ -350,11 +356,11 @@ def run_staged_training_comparison(config_path='configs/synthetic/staged_trainin
     pretrained_overrides = training_cfg.get('pretrained_overrides', {}) or {}
     pretrained_schedule = training_cfg.get('pretrained_schedule', {}) or {}
     base_config = training_cfg.get('base_config', 'configs/synthetic/rl_training.yaml')
-    pretrained_checkpoint = pretraining_cfg.get('checkpoint_path', 'models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip')
-    model_root = output_cfg.get('model_root', 'models/ppo/staged_training')
-    final_csv = output_cfg.get('final_csv', 'results/raw/synthetic/staged_training/staged_training_comparison.csv')
-    progress_csv = output_cfg.get('progress_csv', 'results/raw/synthetic/staged_training/staged_training_progress.csv')
-    report_path = output_cfg.get('report_path', 'v2_docs/phase_7/staged_training_comparison_report.md')
+    pretrained_checkpoint = pretraining_cfg.get('checkpoint_path', 'models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip')
+    model_root = output_cfg.get('model_root', 'models/ppo/teacher_policy_sensitivity/contextual_reward_aligned')
+    final_csv = output_cfg.get('final_csv', 'results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv')
+    progress_csv = output_cfg.get('progress_csv', 'results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv')
+    report_path = output_cfg.get('report_path')
 
     use_pretrained_schedule = bool(pretrained_schedule.get('enabled', False))
     pretrained_phases = pretrained_schedule.get('phases', []) if use_pretrained_schedule else []
@@ -494,11 +500,13 @@ def run_staged_training_comparison(config_path='configs/synthetic/staged_trainin
     progress_summary = _aggregate_progress(progress_df)
     convergence_summary, _ = _aggregate_convergence(progress_df, threshold=SUCCESS_THRESHOLD)
     action_profile = _aggregate_action_profile(final_df)
-    write_report(final_df, final_summary, progress_summary, convergence_summary, action_profile, report_path, current_batch_id, pretrained_checkpoint)
+    if report_path:
+        write_report(final_df, final_summary, progress_summary, convergence_summary, action_profile, report_path, current_batch_id, pretrained_checkpoint)
 
     print(f'[INFO] Final CSV: {final_csv}')
     print(f'[INFO] Progress CSV: {progress_csv}')
-    print(f'[INFO] Report: {report_path}')
+    if report_path:
+        print(f'[INFO] Report: {report_path}')
     print(f'[INFO] Batch ID: {current_batch_id}')
 
 

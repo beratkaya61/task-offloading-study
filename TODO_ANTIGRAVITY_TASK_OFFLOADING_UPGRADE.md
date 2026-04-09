@@ -420,6 +420,11 @@ Bu bir adim atlama degil, uygulama sirasinin pratik olarak yeniden duzenlenmis h
 5. Faz 7 staged training grubu
    - `PPO from scratch`
    - `Pretrained + PPO`
+6. Teacher policy sensitivity grubu
+   - `teacher_latency_greedy`
+   - `teacher_energy_greedy`
+   - `teacher_balanced_semantic`
+   - `teacher_reward_aligned`
 
 ### Guncel kapsama ozeti
 
@@ -467,6 +472,8 @@ Faz 7.3 ve 7.4 tamamlandiktan sonra bu zorunlu metrik paketi, guncel planda `tas
 - [ ] fairness-jitter comparison
 - [ ] QoE violin plot
 - [ ] CDF of latency
+- [ ] Teacher policy sensitivity tablosu ve grafik seti
+- [ ] Teacher policy secimine gore staged-training / trace replay karsilastirmasi
 
 ## Done kriteri
 
@@ -826,8 +833,8 @@ Bu sÄ±rayÄ± bozma.
 > Faz 7 icin ilk oracle label dataset'i uretildi: results/raw/synthetic/pretraining/oracle_label_dataset.csv
 > Ilk bulgu: scoring kalibrasyonu sonrasinda `weighted_objective_oracle` daha dengeli hale getirildi ve supervised pretraining icin kullanilabilir duruma yaklasti.
 
-> Faz 7 guncellemesi: supervised pretraining tamamlandi.
-> Uretilen checkpoint: models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip
-> Sonuc: best val acc 78.00%, test acc 80.22%. 30 epoch + early stopping denemesinde egitim 16. epochta durdu; en iyi nokta yine epoch 11 civarinda kaldi.
+> Faz 7 guncellemesi: teacher-policy sensitivity tamamlandi ve kanonik teacher `teacher_contextual_reward_aligned` olarak secildi.
+> Kanonik checkpoint: models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip
+> Kanonik supervised pretraining sonucu: best val acc 82.67%, test acc 83.11%. Ayrintili teacher karsilastirmasi: v2_docs/phase_7/teacher_policy_sensitivity_report.md
 
-
+> Faz 7 kapanisi: teacher-policy sensitivity tamamlandi, kanonik teacher `teacher_contextual_reward_aligned` olarak sabitlendi ve Faz 7 `Pretrained + PPO = 75.20%` vs `Scratch PPO = 63.00%` sonucu ile kapatildi. Ayrintili ozet: v2_docs/phase_7/teacher_policy_sensitivity_report.md

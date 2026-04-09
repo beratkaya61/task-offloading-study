@@ -1,4 +1,4 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Faz 6 Report: Trace-Driven Training
 

@@ -1,4 +1,4 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 **Tarih:** 2 Nisan 2026  
 **Durum:** sealed / Faz 5 donduruldu  

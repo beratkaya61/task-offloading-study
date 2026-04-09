@@ -1,10 +1,10 @@
 ﻿seed: 42
 
-objectives:
-  - "latency_oracle"
-  - "energy_oracle"
-  - "weighted_objective_oracle"
-  - "reward_aligned_oracle"
+teacher_policies:
+  - "teacher_latency_greedy"
+  - "teacher_energy_greedy"
+  - "teacher_balanced_semantic"
+  - "teacher_contextual_reward_aligned"
 
 env:
   max_steps: 50
@@ -15,6 +15,20 @@ dataset:
   n_episodes: 60
   train_ratio: 0.7
   val_ratio: 0.15
+  teacher_train_rebalance:
+    enabled: true
+    teacher_policies:
+      - "teacher_latency_greedy"
+      - "teacher_energy_greedy"
+      - "teacher_balanced_semantic"
+      - "teacher_contextual_reward_aligned"
+    target_ratios:
+      local: 0.12
+      edge_25: 0.12
+      edge_50: 0.14
+      edge_75: 0.22
+      edge_100: 0.12
+      cloud: 0.28
 
 scoring:
   delay_weight: 0.46
@@ -31,6 +45,163 @@ scoring:
   semantic_mismatch_penalty: 0.08
   local_large_task_penalty: 0.22
   full_edge_penalty: 0.05
+  reward_aligned_local_bonus: 0.26
+  reward_aligned_edge25_bonus: 0.22
+  reward_aligned_edge50_bonus: 0.20
+  reward_aligned_edge75_bonus: 0.18
+  reward_aligned_edge100_bonus: 0.20
+  reward_aligned_cloud_bonus: 0.16
+  reward_aligned_semantic_bonus: 0.22
+  reward_aligned_cloud_penalty: 0.18
+  coverage_aware_selection:
+    teacher_policies:
+      - "teacher_latency_greedy"
+      - "teacher_energy_greedy"
+      - "teacher_balanced_semantic"
+      - "teacher_contextual_reward_aligned"
+    contextual_target_ratios:
+      local: 0.12
+      edge_25: 0.12
+      edge_50: 0.14
+      edge_75: 0.22
+      edge_100: 0.12
+      cloud: 0.28
+    contextual_action_slack:
+      local: 1.10
+      edge_25: 1.80
+      edge_50: 1.40
+      edge_75: 0.90
+      edge_100: 1.60
+      cloud: 0.60
+    contextual_coverage_weight: 2.4
+    contextual_preference_bonus: 0.28
+    contextual_semantic_bonus: 0.16
+    contextual_gap_penalty: 0.55
+    contextual_bootstrap_min_counts:
+      local: 12
+      edge_25: 12
+      edge_50: 12
+      edge_75: 12
+      edge_100: 12
+      cloud: 24
+    contextual_bootstrap_action_slack:
+      local: 1.40
+      edge_25: 3.20
+      edge_50: 2.00
+      edge_75: 1.40
+      edge_100: 2.20
+      cloud: 0.70
+    teacher_overrides:
+      teacher_latency_greedy:
+        contextual_target_ratios:
+          local: 0.12
+          edge_25: 0.10
+          edge_50: 0.14
+          edge_75: 0.18
+          edge_100: 0.10
+          cloud: 0.36
+        contextual_action_slack:
+          local: 1.30
+          edge_25: 2.60
+          edge_50: 1.80
+          edge_75: 1.20
+          edge_100: 1.70
+          cloud: 0.60
+        contextual_coverage_weight: 3.0
+        contextual_gap_penalty: 0.45
+        contextual_bootstrap_min_counts:
+          local: 12
+          edge_25: 18
+          edge_50: 14
+          edge_75: 14
+          edge_100: 12
+          cloud: 24
+        contextual_bootstrap_action_slack:
+          local: 1.60
+          edge_25: 5.20
+          edge_50: 2.60
+          edge_75: 1.80
+          edge_100: 2.20
+          cloud: 0.70
+      teacher_energy_greedy:
+        contextual_target_ratios:
+          local: 0.12
+          edge_25: 0.10
+          edge_50: 0.14
+          edge_75: 0.18
+          edge_100: 0.10
+          cloud: 0.36
+        contextual_action_slack:
+          local: 1.25
+          edge_25: 2.60
+          edge_50: 1.75
+          edge_75: 1.10
+          edge_100: 1.70
+          cloud: 0.60
+        contextual_coverage_weight: 3.0
+        contextual_gap_penalty: 0.45
+        contextual_bootstrap_min_counts:
+          local: 12
+          edge_25: 18
+          edge_50: 14
+          edge_75: 14
+          edge_100: 12
+          cloud: 24
+        contextual_bootstrap_action_slack:
+          local: 1.40
+          edge_25: 3.20
+          edge_50: 2.00
+          edge_75: 1.40
+          edge_100: 2.20
+          cloud: 0.70
+      teacher_balanced_semantic:
+        contextual_target_ratios:
+          local: 0.12
+          edge_25: 0.12
+          edge_50: 0.14
+          edge_75: 0.22
+          edge_100: 0.10
+          cloud: 0.30
+        contextual_action_slack:
+          local: 1.10
+          edge_25: 1.40
+          edge_50: 1.20
+          edge_75: 0.85
+          edge_100: 1.90
+          cloud: 0.65
+        contextual_coverage_weight: 2.8
+        contextual_gap_penalty: 0.50
+        contextual_bootstrap_min_counts:
+          local: 12
+          edge_25: 12
+          edge_50: 12
+          edge_75: 16
+          edge_100: 12
+          cloud: 20
+        contextual_bootstrap_action_slack:
+          local: 1.50
+          edge_25: 1.80
+          edge_50: 1.50
+          edge_75: 1.10
+          edge_100: 2.60
+          cloud: 0.80
+      teacher_contextual_reward_aligned:
+        contextual_target_ratios:
+          local: 0.12
+          edge_25: 0.12
+          edge_50: 0.14
+          edge_75: 0.22
+          edge_100: 0.12
+          cloud: 0.28
+        contextual_action_slack:
+          local: 1.00
+          edge_25: 1.40
+          edge_50: 1.00
+          edge_75: 0.75
+          edge_100: 1.30
+          cloud: 0.55
+        contextual_coverage_weight: 2.4
+        contextual_gap_penalty: 0.55
 
 output:
   csv_path: "results/raw/synthetic/pretraining/oracle_label_dataset.csv"

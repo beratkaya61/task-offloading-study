@@ -1,0 +1,65 @@
+anchoring:
+  enabled: false
+output:
+  final_csv: results/raw/synthetic/teacher_policy_sensitivity/energy_greedy/staged_training_comparison.csv
+  model_root: models/ppo/teacher_policy_sensitivity/energy_greedy
+  progress_csv: results/raw/synthetic/teacher_policy_sensitivity/energy_greedy/staged_training_progress.csv
+  report_path: null
+pretraining:
+  checkpoint_path: models/ppo/teacher_policy_pretrained/energy_greedy/ppo_pretrained.zip
+training:
+  base_config: configs/synthetic/rl_training.yaml
+  eval_episodes: 10
+  eval_interval_steps: 5000
+  pretrained_overrides: {}
+  pretrained_schedule:
+    enabled: true
+    phases:
+    - anchor_config:
+        balance_actions: true
+        balance_power: 0.75
+        batch_size: 128
+        batches_per_round: 2
+        dataset_path: results/raw/synthetic/pretraining/oracle_label_dataset.csv
+        enabled: true
+        interval_steps: 2500
+        loss_weight: 0.15
+        min_margin: 0.0
+        samples_per_epoch: 4096
+        teacher_policy: teacher_energy_greedy
+        until_step: 10000
+      hyperparam_overrides:
+        learning_rate: 5.0e-05
+      name: retention
+      timesteps: 10000
+    - anchor_config:
+        allowed_actions:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        balance_actions: true
+        balance_power: 0.75
+        batch_size: 128
+        batches_per_round: 1
+        dataset_path: results/raw/synthetic/pretraining/oracle_label_dataset.csv
+        enabled: true
+        interval_steps: 5000
+        loss_weight: 0.04
+        min_margin: 0.0
+        samples_per_epoch: 4096
+        teacher_policy: teacher_energy_greedy
+        until_step: 20000
+      hyperparam_overrides:
+        learning_rate: 0.00015
+      name: refinement
+      timesteps: 20000
+  progress_eval_episodes: 5
+  scratch_overrides: {}
+  seeds:
+  - 42
+  - 43
+  - 44
+  total_timesteps: 30000

@@ -39,12 +39,16 @@
     else:
         reward -= 12.0 * conf_factor # Slightly higher penalty for disobeying high-conf rec
         
+    priority_score = semantic.get('priority_score', 0.5) if semantic else 0.5
+    size_norm = min(1.0, getattr(task, 'size_bits', 0.0) / 1e7)
+
     # 3. Penalize Cloud Cost
-    cloud_cost = 30.0 + 18.0 * min(1.0, getattr(task, "size_bits", 0.0) / 1e7)
+    cloud_cost = 30.0 + 18.0 * size_norm
     if action == 5:
         reward -= cloud_cost
-        
-    priority_score = semantic.get('priority_score', 0.5) if semantic else 0.5
+        if llm_rec == 'edge':
+            reward -= (14.0 + 8.0 * size_norm) * conf_factor
+    partial_preference = 0.35 + 0.35 * size_norm + 0.30 * priority_score
     
     # 4. Deadline Miss Penalty (Normalized by priority)
     deadline = max(0.1, task.deadline)
@@ -78,6 +82,18 @@
             reward += 12.0 * ((local_delay_only - delay) / local_delay_only)
 
         reward += 5.0 * (1.0 - energy / max(1e-5, local_energy_pred))
+
+        # Structural incentive: preserve semantically aligned split-edge behaviour.
+        if llm_rec == 'edge':
+            if action in (1, 2, 3):
+                reward += 10.0 * conf_factor * partial_preference
+                if task_success:
+                    reward += 6.0 * partial_preference
+                if action == 3:
+                    reward += 2.5 * conf_factor
+            elif action == 4:
+                reward += 4.0 * conf_factor * (0.4 + 0.6 * priority_score)
+                reward -= 2.0 * size_norm
 
     if action == 0 and delay <= deadline:
         reward += 4.0

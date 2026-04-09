@@ -1,32 +1,29 @@
-﻿seed: 42
-
+seed: 42
 env:
   max_steps: 50
   num_edge_servers: 3
   num_devices: 5
-
 ppo:
   learning_rate: 0.0003
   n_steps: 512
   batch_size: 64
   n_epochs: 10
   gamma: 0.99
-  device: "cpu"
-
+  device: cpu
 dataset:
-  csv_path: "results/raw/synthetic/pretraining/oracle_label_dataset.csv"
-  objective: "reward_aligned_oracle"
-  min_margin: 10.0
-
+  csv_path: results/raw/synthetic/pretraining/oracle_label_dataset.csv
+  teacher_policy: teacher_contextual_reward_aligned
+  min_margin: 0.0
+  balance_actions: true
+  balance_power: 0.75
+  samples_per_epoch: 4096
 training:
   epochs: 30
   batch_size: 128
   learning_rate: 0.001
   early_stopping_patience: 5
   early_stopping_min_delta: 0.0001
-
 output:
-  checkpoint_path: "models/ppo/pretrained/ppo_reward_aligned_pretrained"
-  metrics_csv: "results/raw/synthetic/pretraining/supervised_pretraining_metrics.csv"
-  report_path: "v2_docs/phase_7/supervised_pretraining_report.md"
-
+  checkpoint_path: models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained
+  metrics_csv: results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/supervised_pretraining_metrics.csv
+  report_path: null

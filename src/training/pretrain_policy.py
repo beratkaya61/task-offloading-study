@@ -3,6 +3,7 @@
 import csv
 import math
 from collections import Counter, defaultdict
+import random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List
@@ -10,7 +11,7 @@ from typing import Dict, Iterable, List
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from stable_baselines3 import PPO
 
 from src.core.config import load_config
@@ -26,11 +27,73 @@ ACTION_LABELS = {
     5: "cloud",
 }
 
+STATE_FEATURE_COLUMNS = [
+    "state_snr_norm",
+    "state_task_size_norm",
+    "state_cpu_cycles_norm",
+    "state_battery_norm",
+    "state_edge_load_norm",
+    "state_edge_energy_norm",
+    "prior_local",
+    "prior_edge_25",
+    "prior_edge_50",
+    "prior_edge_75",
+    "prior_edge_full",
+    "prior_cloud",
+]
+
+TEACHER_POLICY_LABELS = {
+    "teacher_latency_greedy": "teacher_latency_greedy",
+    "latency_oracle": "teacher_latency_greedy",
+    "teacher_energy_greedy": "teacher_energy_greedy",
+    "energy_oracle": "teacher_energy_greedy",
+    "teacher_balanced_semantic": "teacher_balanced_semantic",
+    "weighted_objective_oracle": "teacher_balanced_semantic",
+    "teacher_reward_aligned": "teacher_reward_aligned",
+    "reward_aligned_oracle": "teacher_reward_aligned",
+    "teacher_contextual_reward_aligned": "teacher_contextual_reward_aligned",
+}
+
+TEACHER_POLICY_SCORING_MODE = {
+    "teacher_latency_greedy": "latency_oracle",
+    "teacher_energy_greedy": "energy_oracle",
+    "teacher_balanced_semantic": "weighted_objective_oracle",
+    "teacher_reward_aligned": "reward_aligned_oracle",
+    "teacher_contextual_reward_aligned": "reward_aligned_oracle",
+}
+
+
+def normalize_teacher_policy_name(name: str) -> str:
+    return TEACHER_POLICY_LABELS.get(name, name)
+
+
+def resolve_teacher_policy_mode(name: str) -> str:
+    teacher_policy = normalize_teacher_policy_name(name)
+    return TEACHER_POLICY_SCORING_MODE.get(teacher_policy, teacher_policy)
+
+
+def _row_teacher_policy(row: Dict[str, object]) -> str:
+    return normalize_teacher_policy_name(str(row.get("teacher_policy") or row.get("objective") or ""))
+
+
+def _row_action_id(row: Dict[str, object]) -> int:
+    raw_value = row.get("selected_action_id", row.get("oracle_action", -1))
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError):
+        return -1
+
+
+def _row_state_vector(row: Dict[str, object]) -> List[float]:
+    if all(column in row for column in STATE_FEATURE_COLUMNS):
+        return [float(row[column]) for column in STATE_FEATURE_COLUMNS]
+    return [float(row[f"obs_{i}"]) for i in range(len(STATE_FEATURE_COLUMNS))]
+
 
 @dataclass
 class OracleDecision:
     action: int
-    objective: str
+    teacher_policy: str
     score: float
     score_margin: float
     predicted_delay: float
@@ -140,6 +203,9 @@ def _predict_action_outcome(env, action: int) -> Dict[str, float]:
         "deadline_met": delay <= max(0.1, getattr(task, "deadline", 1.0)),
         "semantic_target": semantic_target,
         "semantic_match": bool(semantic_match),
+        "semantic_confidence": float(semantic.get("confidence", 0.5)),
+        "priority_score": float(semantic.get("priority_score", 0.5)),
+        "link_quality_factor": float(link_quality_factor),
         "edge_energy_cost": float(edge_energy_cost),
         "edge_energy_ratio": float(edge_energy_ratio),
         "switching_overhead": float(overhead),
@@ -201,9 +267,49 @@ def _score_outcome(
     if objective == "energy_oracle":
         return energy + (0.20 * delay_norm) + (deadline_penalty * 0.5)
     if objective == "reward_aligned_oracle":
+        semantic_confidence = float(outcome.get("semantic_confidence", 0.5))
+        link_quality = float(outcome.get("link_quality_factor", 0.5))
+        action = int(outcome["action"])
+
+        local_suitability = 0.45 * (1.0 - size_norm) + 0.35 * (1.0 - cpu_norm) + 0.20 * (1.0 - link_quality)
+        edge25_suitability = 0.40 * (1.0 - size_norm) + 0.25 * battery_ratio + 0.20 * priority_score + 0.15 * link_quality
+        edge50_suitability = 0.45 * (1.0 - abs(size_norm - 0.45)) + 0.20 * (1.0 - abs(cpu_norm - 0.45)) + 0.20 * priority_score + 0.15 * link_quality
+        edge75_suitability = 0.40 * size_norm + 0.25 * priority_score + 0.20 * semantic_confidence + 0.15 * link_quality
+        edge100_suitability = 0.35 * cpu_norm + 0.25 * size_norm + 0.20 * battery_ratio + 0.20 * link_quality
+        cloud_suitability = 0.45 * cpu_norm + 0.30 * size_norm + 0.15 * max(0.0, 1.0 - outcome["edge_energy_ratio"]) + 0.10 * (1.0 - link_quality)
+
+        action_context_bonus = 0.0
+        if action == 0:
+            action_context_bonus = scoring_cfg.get("reward_aligned_local_bonus", 0.26) * local_suitability
+        elif action == 1:
+            action_context_bonus = scoring_cfg.get("reward_aligned_edge25_bonus", 0.22) * edge25_suitability
+        elif action == 2:
+            action_context_bonus = scoring_cfg.get("reward_aligned_edge50_bonus", 0.20) * edge50_suitability
+        elif action == 3:
+            action_context_bonus = scoring_cfg.get("reward_aligned_edge75_bonus", 0.18) * edge75_suitability
+        elif action == 4:
+            action_context_bonus = scoring_cfg.get("reward_aligned_edge100_bonus", 0.20) * edge100_suitability
+        elif action == 5:
+            action_context_bonus = scoring_cfg.get("reward_aligned_cloud_bonus", 0.16) * cloud_suitability
+
+        semantic_alignment_bonus = 0.0
+        if semantic_target == "local" and action == 0:
+            semantic_alignment_bonus = scoring_cfg.get("reward_aligned_semantic_bonus", 0.22) * (0.5 + 0.5 * semantic_confidence)
+        elif semantic_target == "edge" and action in (1, 2, 3, 4):
+            semantic_alignment_bonus = scoring_cfg.get("reward_aligned_semantic_bonus", 0.22) * (0.45 + 0.55 * semantic_confidence)
+        elif semantic_target == "cloud" and action == 5:
+            semantic_alignment_bonus = scoring_cfg.get("reward_aligned_semantic_bonus", 0.22) * (0.4 + 0.6 * semantic_confidence)
+
+        cloud_off_target_penalty = 0.0
+        if action == 5 and semantic_target != "cloud":
+            cloud_off_target_penalty = scoring_cfg.get("reward_aligned_cloud_penalty", 0.18) * (0.35 + 0.65 * priority_score)
+
         reward_score = -float(outcome["reward"])
         reward_score += 0.10 * delay_norm
         reward_score += 0.05 * energy_norm
+        reward_score += cloud_off_target_penalty
+        reward_score -= action_context_bonus
+        reward_score -= semantic_alignment_bonus
         return reward_score
 
     return (
@@ -222,21 +328,143 @@ def _score_outcome(
     )
 
 
+def _contextual_target_action(task, battery_ratio: float, candidates: List[OracleDecision]) -> int:
+    semantic = getattr(task, "semantic_analysis", {}) or {}
+    semantic_target = semantic.get("recommended_target", "edge")
+    size_norm = min(1.0, getattr(task, "size_bits", 0.0) / 1e7)
+    cpu_norm = min(1.0, getattr(task, "cpu_cycles", 0.0) / 1e10)
+    intensity = 0.55 * size_norm + 0.45 * cpu_norm
+
+    if semantic_target == "local":
+        return 0
+    if semantic_target == "cloud":
+        if intensity < 0.35 and battery_ratio > 0.35:
+            return 2
+        return 5
+
+    if battery_ratio < 0.18 and intensity < 0.22:
+        return 1
+    if intensity < 0.18:
+        return 1
+    if intensity < 0.40:
+        return 2
+    if intensity < 0.72:
+        return 3
+    return 4
+
+
+def _coverage_lookup(mapping: Dict[object, float] | None, action_id: int, default: float) -> float:
+    if not mapping:
+        return float(default)
+    if action_id in mapping:
+        return float(mapping[action_id])
+    action_name = ACTION_LABELS.get(action_id)
+    if action_name in mapping:
+        return float(mapping[action_name])
+    action_key = str(action_id)
+    if action_key in mapping:
+        return float(mapping[action_key])
+    return float(default)
+
+
+def _resolve_coverage_selection_cfg(teacher_policy: str, scoring_cfg: Dict[str, float] | None) -> Dict[str, object] | None:
+    scoring_cfg = scoring_cfg or {}
+    coverage_cfg = (scoring_cfg.get("coverage_aware_selection", {}) or {})
+    enabled_teachers = coverage_cfg.get("teacher_policies", [])
+    normalized_teachers = {normalize_teacher_policy_name(str(name)) for name in enabled_teachers}
+    if teacher_policy not in normalized_teachers:
+        return None
+
+    resolved_cfg: Dict[str, object] = {
+        key: value for key, value in coverage_cfg.items() if key not in {"teacher_policies", "teacher_overrides"}
+    }
+    teacher_overrides = (coverage_cfg.get("teacher_overrides", {}) or {}).get(teacher_policy, {})
+    if teacher_overrides:
+        resolved_cfg.update(teacher_overrides)
+    return resolved_cfg
+
+
+def _select_contextual_candidate(candidates: List[OracleDecision], task, battery_ratio: float, scoring_cfg: Dict[str, float] | None, action_usage_counter: Counter | None = None) -> OracleDecision:
+    selection_cfg = scoring_cfg or {}
+    ranked = sorted(candidates, key=lambda x: (x.score, x.predicted_delay, x.predicted_energy))
+    best = ranked[0]
+    preferred_action = _contextual_target_action(task, battery_ratio, ranked)
+    coverage_counter = action_usage_counter or Counter()
+    total_seen = sum(coverage_counter.values())
+    target_ratios = selection_cfg.get(
+        "contextual_target_ratios",
+        {"local": 0.12, "edge_25": 0.14, "edge_50": 0.18, "edge_75": 0.20, "edge_100": 0.12, "cloud": 0.24},
+    )
+    per_action_slack = selection_cfg.get(
+        "contextual_action_slack",
+        {"local": 0.90, "edge_25": 1.00, "edge_50": 0.90, "edge_75": 0.60, "edge_100": 1.10, "cloud": 0.55},
+    )
+    coverage_weight = float(selection_cfg.get("contextual_coverage_weight", 1.4))
+    preference_bonus = float(selection_cfg.get("contextual_preference_bonus", 0.30))
+    semantic_bonus = float(selection_cfg.get("contextual_semantic_bonus", 0.18))
+    gap_penalty = float(selection_cfg.get("contextual_gap_penalty", 0.85))
+
+    feasible = []
+    for cand in ranked:
+        allowed_gap = _coverage_lookup(per_action_slack, cand.action, 0.5)
+        if cand.score <= best.score + allowed_gap:
+            feasible.append(cand)
+    if not feasible:
+        return best
+
+    bootstrap_min_counts = selection_cfg.get("contextual_bootstrap_min_counts", {})
+    bootstrap_action_slack = selection_cfg.get("contextual_bootstrap_action_slack", per_action_slack)
+    bootstrap_candidates = []
+    for cand in feasible:
+        required_count = int(round(_coverage_lookup(bootstrap_min_counts, cand.action, 0.0)))
+        current_count = int(coverage_counter.get(cand.action, 0))
+        if required_count <= 0 or current_count >= required_count:
+            continue
+        bootstrap_gap = _coverage_lookup(bootstrap_action_slack, cand.action, 0.0)
+        if cand.score <= best.score + bootstrap_gap:
+            bootstrap_candidates.append((required_count - current_count, cand.score, cand.predicted_delay, cand))
+    if bootstrap_candidates:
+        bootstrap_candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+        return bootstrap_candidates[0][3]
+
+    best_candidate = best
+    best_utility = -1e9
+    for cand in feasible:
+        current_ratio = (coverage_counter.get(cand.action, 0) / total_seen) if total_seen else 0.0
+        target_ratio = _coverage_lookup(target_ratios, cand.action, 0.0)
+        coverage_deficit = max(0.0, target_ratio - current_ratio)
+        utility = 0.0
+        if cand.action == preferred_action:
+            utility += preference_bonus
+        if cand.semantic_match:
+            utility += semantic_bonus
+        utility += coverage_weight * coverage_deficit
+        utility -= gap_penalty * max(0.0, cand.score - best.score)
+        utility -= 0.02 * cand.predicted_delay
+        if utility > best_utility:
+            best_utility = utility
+            best_candidate = cand
+    return best_candidate
+
+
 def choose_oracle_action(
     env,
-    objective: str = "weighted_objective_oracle",
+    teacher_policy: str = "teacher_balanced_semantic",
     scoring_cfg: Dict[str, float] | None = None,
+    action_usage_counter: Counter | None = None,
 ) -> OracleDecision:
+    teacher_policy = normalize_teacher_policy_name(teacher_policy)
+    scoring_mode = resolve_teacher_policy_mode(teacher_policy)
     battery_ratio = min(1.0, max(0.0, getattr(env.current_device, "battery", 10000.0) / 10000.0))
     candidates: List[OracleDecision] = []
 
     for action in getattr(env, "valid_actions", [0, 1, 2, 3, 4, 5]):
         outcome = _predict_action_outcome(env, action)
-        score = _score_outcome(outcome, objective, battery_ratio, env.current_task, scoring_cfg)
+        score = _score_outcome(outcome, scoring_mode, battery_ratio, env.current_task, scoring_cfg)
         candidates.append(
             OracleDecision(
                 action=outcome["action"],
-                objective=objective,
+                teacher_policy=teacher_policy,
                 score=float(score),
                 score_margin=0.0,
                 predicted_delay=outcome["delay"],
@@ -252,10 +480,13 @@ def choose_oracle_action(
         )
 
     ranked = sorted(candidates, key=lambda x: (x.score, x.predicted_delay, x.predicted_energy))
-    best = ranked[0]
+    selected = ranked[0]
+    selection_cfg = _resolve_coverage_selection_cfg(teacher_policy, scoring_cfg)
+    if selection_cfg is not None:
+        selected = _select_contextual_candidate(ranked, env.current_task, battery_ratio, selection_cfg, action_usage_counter)
     second_best_score = ranked[1].score if len(ranked) > 1 else ranked[0].score
-    best.score_margin = float(second_best_score - best.score)
-    return best
+    selected.score_margin = float(second_best_score - selected.score)
+    return selected
 
 
 def _split_name(index: int, total: int, train_ratio: float, val_ratio: float) -> str:
@@ -279,12 +510,65 @@ def _write_dataset(csv_path: Path, rows: List[Dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
+def _rebalance_teacher_train_rows(rows: List[Dict[str, object]], teacher_policy: str, config: Dict[str, object]) -> List[Dict[str, object]]:
+    rebalance_cfg = (config.get("dataset", {}) or {}).get("teacher_train_rebalance", {})
+    enabled = bool(rebalance_cfg.get("enabled", False))
+    normalized_teacher = normalize_teacher_policy_name(teacher_policy)
+    target_teachers = rebalance_cfg.get("teacher_policies")
+    if target_teachers is None:
+        target_teachers = [rebalance_cfg.get("teacher_policy", normalized_teacher)]
+    normalized_targets = {normalize_teacher_policy_name(str(name)) for name in target_teachers}
+    if not enabled or normalized_teacher not in normalized_targets:
+        return rows
+
+    train_rows = [row for row in rows if row.get("split") == "train"]
+    other_rows = [row for row in rows if row.get("split") != "train"]
+    if not train_rows:
+        return rows
+
+    target_ratios = rebalance_cfg.get(
+        "target_ratios",
+        {"local": 0.12, "edge_25": 0.12, "edge_50": 0.14, "edge_75": 0.22, "edge_100": 0.12, "cloud": 0.28},
+    )
+    action_order = ["local", "edge_25", "edge_50", "edge_75", "edge_100", "cloud"]
+    total_count = len(train_rows)
+    rng = random.Random(int(config.get("seed", 42)) + 997)
+
+    target_counts = {}
+    running_total = 0
+    for action_name in action_order[:-1]:
+        count = int(round(total_count * float(target_ratios.get(action_name, 0.0))))
+        target_counts[action_name] = count
+        running_total += count
+    target_counts[action_order[-1]] = max(0, total_count - running_total)
+
+    grouped = defaultdict(list)
+    for row in train_rows:
+        grouped[str(row.get("selected_action_name", ""))].append(row)
+
+    balanced_rows = []
+    for action_name in action_order:
+        source_rows = grouped.get(action_name, [])
+        target_count = int(target_counts.get(action_name, 0))
+        if target_count <= 0 or not source_rows:
+            continue
+        if len(source_rows) >= target_count:
+            balanced_rows.extend(rng.sample(source_rows, target_count))
+        else:
+            balanced_rows.extend(source_rows)
+            extra_needed = target_count - len(source_rows)
+            balanced_rows.extend(rng.choices(source_rows, k=extra_needed))
+
+    rng.shuffle(balanced_rows)
+    return balanced_rows + other_rows
+
+
 def _write_summary(report_path: Path, rows: List[Dict[str, object]], config: Dict[str, object]) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    objective_counters = defaultdict(Counter)
+    teacher_counters = defaultdict(Counter)
     split_counters = Counter()
     for row in rows:
-        objective_counters[row["objective"]][row["oracle_action_name"]] += 1
+        teacher_counters[row["teacher_policy"]][row["selected_action_name"]] += 1
         split_counters[row["split"]] += 1
 
     lines = [
@@ -299,7 +583,7 @@ def _write_summary(report_path: Path, rows: List[Dict[str, object]], config: Dic
         "",
         f"- Seed: `{config.get('seed', 42)}`",
         f"- Episode sayisi: `{config.get('dataset', {}).get('n_episodes', 60)}`",
-        f"- Objective'ler: `{', '.join(config.get('objectives', []))}`",
+        f"- Teacher policies: `{', '.join(config.get('teacher_policies', config.get('objectives', [])))}`",
         "",
         "## Split Dagilimi",
         "",
@@ -311,14 +595,14 @@ def _write_summary(report_path: Path, rows: List[Dict[str, object]], config: Dic
 
     lines.extend([
         "",
-        "## Objective Bazli Action Dagilimi",
+        "## Teacher Policy Bazli Action Dagilimi",
         "",
     ])
 
-    for objective, counter in objective_counters.items():
+    for teacher_policy, counter in teacher_counters.items():
         total = sum(counter.values())
         lines.extend([
-            f"### {objective}",
+            f"### {teacher_policy}",
             "",
             "| Action | Count | Ratio |",
             "|---|---:|---:|",
@@ -336,9 +620,17 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
     dataset_cfg = config.get("dataset", {})
     env_cfg = config.get("env", {})
     scoring_cfg = config.get("scoring", {})
-    objectives: Iterable[str] = config.get(
-        "objectives",
-        ["latency_oracle", "energy_oracle", "weighted_objective_oracle", "reward_aligned_oracle"],
+    teacher_policies: Iterable[str] = config.get(
+        "teacher_policies",
+        config.get(
+            "objectives",
+            [
+                "teacher_latency_greedy",
+                "teacher_energy_greedy",
+                "teacher_balanced_semantic",
+                "teacher_reward_aligned",
+            ],
+        ),
     )
 
     seed = int(config.get("seed", 42))
@@ -350,14 +642,17 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
     num_devices = int(env_cfg.get("num_devices", 5))
 
     all_rows: List[Dict[str, object]] = []
+    action_usage_counters = defaultdict(Counter)
 
-    for objective_index, objective in enumerate(objectives):
+    for objective_index, teacher_policy_name in enumerate(teacher_policies):
         env = build_training_env(
             seed=seed + objective_index,
             max_steps=max_steps,
             num_edge_servers=num_edge_servers,
             num_devices=num_devices,
         )
+
+        teacher_rows: List[Dict[str, object]] = []
 
         for episode_idx in range(n_episodes):
             obs, _ = env.reset(seed=seed + objective_index + episode_idx)
@@ -366,39 +661,38 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
             split = _split_name(episode_idx, n_episodes, train_ratio, val_ratio)
 
             while not done:
-                decision = choose_oracle_action(env, objective, scoring_cfg)
+                teacher_policy = normalize_teacher_policy_name(teacher_policy_name)
+                decision = choose_oracle_action(env, teacher_policy, scoring_cfg, action_usage_counter=action_usage_counters[teacher_policy])
                 semantic = getattr(env.current_task, "semantic_analysis", {}) or {}
                 row = {
-                    "objective": objective,
+                    "teacher_policy": teacher_policy,
                     "split": split,
                     "episode_id": episode_idx,
                     "step_id": step_idx,
-                    "oracle_action": decision.action,
-                    "oracle_action_name": ACTION_LABELS[decision.action],
-                    "oracle_score": round(decision.score, 6),
-                    "oracle_margin": round(decision.score_margin, 6),
+                    "selected_action_id": decision.action,
+                    "selected_action_name": ACTION_LABELS[decision.action],
+                    "teacher_score": round(decision.score, 6),
+                    "teacher_margin": round(decision.score_margin, 6),
                     "predicted_delay": round(decision.predicted_delay, 6),
                     "predicted_energy": round(decision.predicted_energy, 6),
                     "predicted_reward": round(decision.predicted_reward, 6),
                     "deadline_met": int(decision.deadline_met),
                     "semantic_target": decision.semantic_target,
                     "semantic_match": int(decision.semantic_match),
-                    "switching_overhead": round(decision.switching_overhead, 6),
-                    "edge_energy_cost": round(decision.edge_energy_cost, 6),
-                    "edge_energy_ratio": round(decision.edge_energy_ratio, 6),
-                    "task_deadline": round(float(getattr(env.current_task, "deadline", 0.0)), 6),
-                    "task_size_bits": round(float(getattr(env.current_task, "size_bits", 0.0)), 6),
-                    "task_cpu_cycles": round(float(getattr(env.current_task, "cpu_cycles", 0.0)), 6),
-                    "device_battery": round(float(getattr(env.current_device, "battery", 0.0)), 6),
                     "priority_score": round(float(semantic.get("priority_score", 0.0)), 6),
                     "semantic_confidence": round(float(semantic.get("confidence", 0.0)), 6),
                 }
-                for i, value in enumerate(np.asarray(obs, dtype=np.float32).tolist()):
-                    row[f"obs_{i}"] = round(float(value), 6)
-                all_rows.append(row)
+                state_values = np.asarray(obs, dtype=np.float32).tolist()
+                for index, column in enumerate(STATE_FEATURE_COLUMNS):
+                    row[column] = round(float(state_values[index]), 6)
+                teacher_rows.append(row)
+                action_usage_counters[teacher_policy][decision.action] += 1
 
                 obs, _, done, _, _ = env.step(decision.action)
                 step_idx += 1
+
+        teacher_rows = _rebalance_teacher_train_rows(teacher_rows, teacher_policy_name, config)
+        all_rows.extend(teacher_rows)
 
     csv_path = Path(config.get("output", {}).get("csv_path", "results/raw/synthetic/pretraining/oracle_label_dataset.csv"))
     report_path = Path(config.get("output", {}).get("report_path", "v2_docs/phase_7/synthetic_oracle_label_summary.md"))
@@ -416,10 +710,10 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
 class OracleLabelDataset(Dataset):
     def __init__(self, rows: List[Dict[str, object]]):
         self.observations = torch.tensor(
-            [[float(row[f"obs_{i}"]) for i in range(12)] for row in rows],
+            [_row_state_vector(row) for row in rows],
             dtype=torch.float32,
         )
-        self.labels = torch.tensor([int(row["oracle_action"]) for row in rows], dtype=torch.long)
+        self.labels = torch.tensor([_row_action_id(row) for row in rows], dtype=torch.long)
 
     def __len__(self) -> int:
         return int(self.labels.shape[0])
@@ -428,15 +722,16 @@ class OracleLabelDataset(Dataset):
         return self.observations[index], self.labels[index]
 
 
-def _read_oracle_rows(csv_path: Path, objective: str, min_margin: float = 0.0) -> List[Dict[str, object]]:
+def _read_oracle_rows(csv_path: Path, teacher_policy: str, min_margin: float = 0.0) -> List[Dict[str, object]]:
+    requested_teacher = normalize_teacher_policy_name(teacher_policy)
     with open(csv_path, "r", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
-        rows = [row for row in reader if row.get("objective") == objective]
+        rows = [row for row in reader if _row_teacher_policy(row) == requested_teacher]
     if min_margin > 0.0:
         filtered = []
         for row in rows:
             try:
-                margin = float(row.get("oracle_margin", 0.0))
+                margin = float(row.get("teacher_margin", row.get("oracle_margin", 0.0)))
             except (TypeError, ValueError):
                 margin = 0.0
             if margin >= min_margin:
@@ -451,6 +746,23 @@ def _split_rows(rows: List[Dict[str, object]]) -> Dict[str, List[Dict[str, objec
         split = str(row.get("split", "train"))
         grouped.setdefault(split, []).append(row)
     return grouped
+
+
+def _build_train_loader(dataset: Dataset, batch_size: int, balance_actions: bool = False, balance_power: float = 1.0, samples_per_epoch: int | None = None) -> DataLoader:
+    if len(dataset) == 0:
+        return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    if not balance_actions:
+        return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    labels = dataset.labels.cpu().tolist()
+    label_counts = Counter(labels)
+    weights = []
+    for label in labels:
+        count = max(1, int(label_counts.get(label, 1)))
+        weights.append(1.0 / (count ** float(balance_power)))
+    num_samples = int(samples_per_epoch or len(labels))
+    sampler = WeightedRandomSampler(torch.tensor(weights, dtype=torch.double), num_samples=num_samples, replacement=True)
+    return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
 
 def _build_pretraining_model(config: Dict[str, object]):
@@ -503,21 +815,27 @@ def _evaluate_supervised(model, loader: DataLoader, criterion: nn.Module) -> Dic
 def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_pretraining.yaml") -> Dict[str, str]:
     config = load_config(config_path)
     dataset_path = Path(config.get("dataset", {}).get("csv_path", "results/raw/synthetic/pretraining/oracle_label_dataset.csv"))
-    objective = str(config.get("dataset", {}).get("objective", "weighted_objective_oracle"))
-    min_margin = float(config.get("dataset", {}).get("min_margin", 0.0))
+    teacher_policy = normalize_teacher_policy_name(
+        str(config.get("dataset", {}).get("teacher_policy", config.get("dataset", {}).get("objective", "teacher_balanced_semantic")))
+    )
+    dataset_cfg = config.get("dataset", {})
+    min_margin = float(dataset_cfg.get("min_margin", 0.0))
     batch_size = int(config.get("training", {}).get("batch_size", 128))
+    balance_actions = bool(dataset_cfg.get("balance_actions", False))
+    balance_power = float(dataset_cfg.get("balance_power", 1.0))
+    samples_per_epoch = dataset_cfg.get("samples_per_epoch")
     epochs = int(config.get("training", {}).get("epochs", 15))
     learning_rate = float(config.get("training", {}).get("learning_rate", 1e-3))
     patience = int(config.get("training", {}).get("early_stopping_patience", 5))
     min_delta = float(config.get("training", {}).get("early_stopping_min_delta", 1e-4))
 
-    rows = _read_oracle_rows(dataset_path, objective, min_margin=min_margin)
+    rows = _read_oracle_rows(dataset_path, teacher_policy, min_margin=min_margin)
     split_rows = _split_rows(rows)
     train_ds = OracleLabelDataset(split_rows.get("train", []))
     val_ds = OracleLabelDataset(split_rows.get("val", []))
     test_ds = OracleLabelDataset(split_rows.get("test", []))
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+    train_loader = _build_train_loader(train_ds, batch_size=batch_size, balance_actions=balance_actions, balance_power=balance_power, samples_per_epoch=samples_per_epoch)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
 
@@ -568,7 +886,7 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
             best_val_acc = val_metrics["accuracy"]
             best_epoch = epoch
             epochs_without_improvement = 0
-            save_path = Path(config.get("output", {}).get("checkpoint_path", "models/ppo/pretrained/ppo_weighted_oracle_pretrained"))
+            save_path = Path(config.get("output", {}).get("checkpoint_path", "models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained"))
             save_path.parent.mkdir(parents=True, exist_ok=True)
             model.save(str(save_path))
         else:
@@ -578,28 +896,32 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
             stopped_early = True
             break
 
-    checkpoint_path = Path(config.get("output", {}).get("checkpoint_path", "models/ppo/pretrained/ppo_weighted_oracle_pretrained"))
+    checkpoint_path = Path(config.get("output", {}).get("checkpoint_path", "models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained"))
     best_model = PPO.load(str(checkpoint_path) + ".zip", env=env)
     final_train = _evaluate_supervised(best_model, train_loader, criterion)
     final_val = _evaluate_supervised(best_model, val_loader, criterion)
     final_test = _evaluate_supervised(best_model, test_loader, criterion)
 
-    metrics_csv = Path(config.get("output", {}).get("metrics_csv", "results/raw/synthetic/pretraining/supervised_pretraining_metrics.csv"))
+    metrics_csv = Path(config.get("output", {}).get("metrics_csv", "results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/supervised_pretraining_metrics.csv"))
     metrics_csv.parent.mkdir(parents=True, exist_ok=True)
     with open(metrics_csv, "w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(metrics_rows[0].keys()))
         writer.writeheader()
         writer.writerows(metrics_rows)
 
-    summary_path = Path(config.get("output", {}).get("report_path", "v2_docs/phase_7/supervised_pretraining_report.md"))
-    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path_value = config.get("output", {}).get("report_path")
+    summary_path = Path(summary_path_value) if summary_path_value else None
+    if summary_path is not None:
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_lines = [
         "Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md",
         "",
         "# Supervised Pretraining Report",
         "",
-        f"- Objective: `{objective}`",
+        f"- Teacher policy: `{teacher_policy}`",
         f"- Min margin filter: `{min_margin}`",
+        f"- Action-balanced sampling: `{'yes' if balance_actions else 'no'}`",
+        f"- Balance power: `{balance_power}`",
         f"- Configured epoch count: `{epochs}`",
         f"- Executed epoch count: `{len(metrics_rows)}`",
         f"- Early stopping patience: `{patience}`",
@@ -612,13 +934,14 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
         f"- Metrics CSV: `{metrics_csv.as_posix()}`",
         f"- Checkpoint: `{str(checkpoint_path.as_posix())}.zip`",
         "",
-        "Bu rapor, Faz 7 kapsaminda PPO policy aginin oracle label dataset'i ile supervised sekilde isitilmasinin sonucunu ozetler.",
+        "Bu rapor, Faz 7 kapsaminda PPO policy aginin teacher-labeled oracle dataset ile supervised sekilde isitilmasinin sonucunu ozetler.",
     ]
-    summary_path.write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
+    if summary_path is not None:
+        summary_path.write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
 
     return {
         "metrics_csv": str(metrics_csv),
-        "report_path": str(summary_path),
+        "report_path": str(summary_path) if summary_path is not None else "",
         "checkpoint_path": str(checkpoint_path) + ".zip",
         "best_epoch": str(best_epoch),
         "best_val_accuracy": f"{best_val_acc * 100:.2f}",

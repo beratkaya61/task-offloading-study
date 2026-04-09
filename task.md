@@ -59,11 +59,13 @@ Not:
 
 ## Faz 7 - Two-Stage Training (AgentVNE Concept)
 - [x] 7.1 Oracle / heuristic labels [results/raw/synthetic/pretraining/oracle_label_dataset.csv uretildi; kalibrasyon notu Phase_7_Report.md icine dusuldu]
-- [x] 7.2 Imitation / supervised pretraining [models/ppo/pretrained/ppo_weighted_oracle_pretrained.zip uretildi; best epoch 11, val acc 78.00%, test acc 80.22%, 30 epoch config early stopping ile 16 epochta durdu]
-- [x] 7.3 Fine-tune PPO vs scratch comparison [v2_docs/phase_7/staged_training_comparison_report.md ile tamamlandi; reward-aligned teacher ve `retention -> refinement` schedule ile `Pretrained + PPO` final success tarafinda `Scratch PPO` uzerine cikti (`84.60%` vs `83.67%`), ayni anda `%75` success esigine daha az adimda ulasilabildigi gosterildi]
-- [ ] 7.4 Phase 7 test and commit
+- [x] 7.2 Imitation / supervised pretraining [teacher-policy sensitivity sonrasi kanonik teacher `teacher_contextual_reward_aligned` olarak sabitlendi; `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip` uretildi; best epoch `17`, val acc `82.67%`, test acc `83.11%`; ayrintilar `v2_docs/phase_7/teacher_policy_sensitivity_report.md` icinde tutuluyor]
+- [x] 7.3 Fine-tune PPO vs scratch comparison [teacher-policy sensitivity tamamlandi; kanonik staged-training sonucu `teacher_contextual_reward_aligned` ile `v2_docs/phase_7/teacher_policy_sensitivity_report.md` dosyasina tasindi; `Pretrained + PPO = 75.20%` ve `Scratch PPO = 63.00%`; davranissal olarak final politika `Full Cloud` yerine `Edge %75` agirlikli kaldi. Tum teacher karsilastirmasi `v2_docs/phase_7/teacher_policy_sensitivity_report.md` icinde tutuluyor]
+- [x] 7.4 Phase 7 test and commit [Faz 7 kanonik teacher secimi, teacher-policy sensitivity ozetinin tek raporda toplanmasi, legacy artefakt temizligi ve dokumantasyon hizalamasi tamamlandi; kapanis yorumu `phase_reports/Phase_7_Report.md` ve `v2_docs/phase_7/phase_7_Two_Stage_Training_plan.md` icine islendi]
 
 ## Faz 8 - Graph-Aware Policy Upgrade
+Not:
+- Faz 8'e gecis oncesi Faz 7'den kalan ana izleme notu, kanonik pretrained policy'nin `Edge %75` agirlikli kalmasidir. `Full Cloud` collapse kirilmis olsa da tam context-sensitive action diversity henuz nihai olarak cozulmus sayilmaz; Faz 8 boyunca bu davranissal sinir izlenecektir.
 - [ ] 8.1 Graph state node and edge features
 - [ ] 8.2 GNN policy implementation
 - [ ] 8.3 Semantic prior fusion
@@ -78,8 +80,10 @@ Not:
 - [ ] 9.2 Fairness/Jitter/QoE/Reward decomposition panelleri ve GUI entegrasyonu
 - [ ] 9.3 5-seed protokolu, mean +- std, 95% CI ve uygun istatistiksel testler
 - [ ] 9.4 Sonuc tablolarinin sentetik, trace ve staged-training karsilastirmalarina uygulanmasi
-- [ ] 9.5 Faz 7'den devralinan staged-training metrik eksiklerinin kapatilmasi
-- [ ] 9.6 Phase 9 test and commit
+- [ ] 9.5 Teacher-policy sensitivity analizi (`teacher_latency_greedy`, `teacher_energy_greedy`, `teacher_balanced_semantic`, `teacher_contextual_reward_aligned`) ve staged-training sonuclarina etkisinin raporlanmasi
+- [ ] 9.6 GUI experiment mode icinde trace replay / canliya yakin veri akisi secilirken teacher policy seciminin de acilabilir hale getirilmesi ve sonuc panellerinin buna gore guncellenmesi
+- [ ] 9.7 Faz 7'den devralinan staged-training metrik eksiklerinin kapatilmasi
+- [ ] 9.8 Phase 9 test and commit
 
 ## Faz 10 - LLM Self-Reflection & Experience Replay
 - [ ] 10.1 Post-hoc analysis for bad decisions
