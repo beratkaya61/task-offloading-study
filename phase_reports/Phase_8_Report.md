@@ -4,7 +4,7 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 **Durum:** Devam ediyor  
 **Baslangic tarihi:** 5 May 2026  
-**Guncel tamamlanan adim:** 8.1 Graph state node and edge features
+**Guncel tamamlanan adim:** 8.2 GNN policy implementation
 
 ---
 
@@ -33,6 +33,13 @@ Yeni kod:
 Yeni test:
 
 - `tests/test_graph_state_builder.py`
+
+Yeni gorsellestirme:
+
+- `src/visualization/graph_state_visualizer.py`
+- `experiments/synthetic/visualize_graph_state.py`
+- `results/figures/phase_8/sample_graph_state.png`
+- `results/figures/phase_8/sample_graph_state_detailed.png`
 
 Yeni destek dokumani:
 
@@ -87,7 +94,7 @@ python -m unittest tests.test_graph_state_builder
 Sonuc:
 
 ```text
-Ran 2 tests in 0.012s
+Ran 3 tests in 1.688s
 OK
 ```
 
@@ -102,28 +109,121 @@ Testlerin kapsami:
 - semantic ablation behavior
 - NaN/Inf kontrolu
 - metadata ve trace context tasinmasi
+- graph visualization PNG yazimi
+
+### Graph Visualization Kontrolu
+
+Calistirilan komut:
+
+```powershell
+python experiments\synthetic\visualize_graph_state.py
+```
+
+Sonuc:
+
+```text
+[OK] GraphState visualization written to results\figures\phase_8\sample_graph_state.png
+```
+
+Ek olarak edge label'lari acik detayli gorsel de uretildi:
+
+```powershell
+python experiments\synthetic\visualize_graph_state.py --show-edge-labels --output results\figures\phase_8\sample_graph_state_detailed.png
+```
+
+Bu gorsel, GNN policy'ye gecmeden once graph topology'nin insan tarafindan okunabilir hale gelmesini saglar.
 
 ### Repo Hijyen Notu
 
-`.gitignore` icindeki `ENV/` kurali Windows ortaminda `src/env/` altindaki yeni dosyalari da ignore edebildigi icin dar bir istisna eklendi:
+`.gitignore` icindeki `ENV/` kurali Windows ortaminda `src/env/` altindaki yeni dosyalari da ignore edebildigi icin guvenli bir istisna eklendi:
 
 - `!src/env/`
-- `src/env/*`
-- `!src/env/graph_state_builder.py`
+- `!src/env/*.py`
 
-Bu sayede sadece yeni `graph_state_builder.py` dosyasi commit adaylari arasinda gorunur hale geldi.
+Bu sayede `src/env` altindaki Python kaynak kodlari commit adaylari arasinda gorunur kalir.
+
+## 8.2 GNN Policy Implementation
+
+### Yapilanlar
+
+Yeni kod:
+
+- `src/agents/graph_policy.py`
+
+Yeni test:
+
+- `tests/test_graph_policy.py`
+
+Bu adimda PyTorch-only ilk graph-aware policy forward path kuruldu.
+PyTorch Geometric mevcut ortamda kurulu olmayabilecegi icin ilk model PyG'e bagimli degil.
+
+### Model Ciktisi
+
+`GraphPolicyNetwork`, `GraphState` girdisinden su ciktilari uretir:
+
+- `logits`
+- `masked_logits`
+- `action_probabilities`
+- `graph_embedding`
+
+Bu sayede model henuz egitilmemis olsa bile su temel yol dogrulandi:
+
+```text
+GraphState -> message passing -> graph embedding -> 6 action logits
+```
+
+### Teknik Not
+
+Ilk modelde:
+
+- node feature encoder
+- edge feature encoder
+- PyTorch-only message passing
+- mean graph pooling
+- global feature encoder
+- action mask
+- optional late semantic prior logit fusion
+
+bulunur.
+
+Semantic prior fusion yardimci fonksiyonu eklendi, ancak Faz 8.3 altinda bunun deneysel etkisi ayrica ele alinacak.
+
+### Test Sonucu
+
+Calistirilan komut:
+
+```powershell
+python -m unittest tests.test_graph_state_builder tests.test_graph_policy
+```
+
+Sonuc:
+
+```text
+Ran 7 tests in 1.836s
+OK
+```
+
+Testlerin kapsami:
+
+- graph policy logits shape
+- masked logits shape
+- action probability normalization
+- graph embedding shape
+- action mask'in partial aksiyonlari kapatmasi
+- deterministic predict davranisi
+- `GraphState` tensor donusumu
+- visualization smoke testinin devam etmesi
 
 ---
 
-## 8.2'ye Devredilenler
+## 8.3'e Devredilenler
 
 Siradaki adim:
 
-- `src/agents/graph_policy.py` icinde graph-aware policy forward path kurmak
-- `GraphState` ciktilarini PyTorch tensor formatina cevirmek
-- 6 action logits ureten ilk graph policy modelini test etmek
-- semantic prior'i once late-fusion stratejisiyle policy tarafina baglamak
+- semantic prior fusion stratejilerini net ayirmak
+- `none`, `late`, ileride `early/node-feature fusion` varyantlarini karsilastirmak
+- teacher-label dataset ile supervised graph warm-start icin hazirlik yapmak
 
-Faz 8.1 sonunda kabul edilen sonuc:
+Faz 8.2 sonunda kabul edilen sonuc:
 
-> Bir offloading karar ani artik sadece 12 boyutlu vektor olarak degil, device-task-edge-cloud iliskilerini tasiyan test edilmis bir graph observation olarak temsil edilebiliyor.
+> Bir offloading karar ani artik graph olarak temsil edilebiliyor ve bu graph, ilk PyTorch-only graph-aware policy tarafindan 6 aksiyon logit'ine donusturulebiliyor.

@@ -118,6 +118,8 @@ Durum guncellemesi:
 - Framework-neutral `GraphState` dataclass'i kuruldu.
 - `node_features`, `edge_index`, `edge_features`, `global_features`, `action_prior`, `action_mask`, `metadata` ve `vector_state_reference` alanlariyla genisletilebilir cikti sozlesmesi olusturuldu.
 - Unit test: `tests/test_graph_state_builder.py`
+- Graph topology gorsellestirme: `src/visualization/graph_state_visualizer.py` ve `experiments/synthetic/visualize_graph_state.py`
+- Ornek cikti: `results/figures/phase_8/sample_graph_state.png`
 - Ayrintili sozlesme ve test notu: `v2_docs/phase_8/graph_state_builder_contract.md`
 
 Node feature taslagi:
@@ -138,29 +140,23 @@ Edge feature taslagi:
 | task-device | local execution cost proxy |
 | task-edge/task-cloud | offload feasibility proxy |
 
-### 8.2 Graph Observation Wrapper
+### 8.2 GNN Policy Implementation
 
-Yeni dosya onerisi:
+Yeni dosyalar:
 
-- `src/env/graph_rl_env.py`
+- `src/agents/graph_policy.py`
+- ileride gerekirse `src/env/graph_rl_env.py`
 
 Amac:
 
-- Mevcut `OffloadingEnv` davranisini bozmadan graph observation donduren ikinci bir env katmani kurmak.
-- MLP-PPO checkpoint uyumlulugunu korumak icin mevcut `OffloadingEnv` aynen kalacak.
-- Graph policy deneyleri ayri entrypoint ile calisacak.
-
-Bu asamada SB3'e dogrudan graph observation vermek yerine PyTorch tabanli custom policy loop daha temiz olabilir. SB3 `MlpPolicy` graph batch yapisini dogal olarak tasimadigi icin, ilk Faz 8 prototipi custom actor-critic veya supervised graph policy olarak baslatilacak.
-
-### 8.3 GNN Policy Implementation
-
-Yeni dosya onerisi:
-
-- `src/agents/graph_policy.py`
+- Mevcut `OffloadingEnv` ve MLP-PPO deneylerini bozmadan graph-aware policy forward path kurmak.
+- `GraphState` ciktilarini PyTorch tensor formatina cevirmek.
+- Graph policy deneylerini ayri entrypoint/test hattinda calistirmak.
+- SB3'e dogrudan graph observation vermek yerine ilk prototipi PyTorch-only custom policy olarak baslatmak.
 
 Ilk mimari:
 
-- graph encoder: 2 katman `GCNConv` veya PyTorch-only message passing fallback
+- graph encoder: PyTorch-only message passing fallback
 - graph pooling: global mean / attention pooling
 - fusion: pooled graph embedding + semantic prior
 - output: 6 action logits
@@ -169,6 +165,30 @@ Ilk hedef PPO'dan once su iki problemi cozmek:
 
 1. Graph encoder forward pass deterministik calisiyor mu?
 2. Ayni state icin action logits ve valid action mask dogru uretiliyor mu?
+
+Durum guncellemesi:
+
+- `src/agents/graph_policy.py` eklendi.
+- PyTorch-only `GraphPolicyNetwork` kuruldu; PyTorch Geometric zorunlu degil.
+- `GraphState -> tensor` donusumu icin `graph_state_to_tensors(...)` eklendi.
+- Action mask uygulamasi `apply_action_mask(...)` ile test edildi.
+- Ilk semantic prior late-fusion yardimcisi `fuse_semantic_prior_logits(...)` eklendi; asil 8.3 deneysel fusion karsilastirmasi ayri adim olarak kalacak.
+- Unit test: `tests/test_graph_policy.py`
+- Combined test: `python -m unittest tests.test_graph_state_builder tests.test_graph_policy`
+- Sonuc: 7 test OK
+
+### 8.3 Semantic Prior Fusion
+
+Amac:
+
+- Semantic prior'in graph policy kararina etkisini ayri ve olculebilir hale getirmek.
+- `none`, `late fusion` ve ileride `early/node-feature fusion` varyantlarini karsilastirmak.
+- Semantic prior'in action diversity uzerindeki etkisini Faz 7'den gelen `Edge %75` agirlikli davranis siniriyle birlikte okumak.
+
+Durum:
+
+- `fuse_semantic_prior_logits(...)` yardimcisi 8.2 kapsaminda eklendi.
+- 8.3 henuz kapanmadi; asil kapanis icin fusion varyantlari test ve raporla karsilastirilacak.
 
 ### 8.4 Training Strategy
 

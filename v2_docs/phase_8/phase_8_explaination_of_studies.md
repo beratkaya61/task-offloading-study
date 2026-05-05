@@ -506,6 +506,8 @@ Guncel durum:
 - Cikti sozlesmesi `GraphState` dataclass'i ile sabitlendi.
 - Detayli sozlesme `v2_docs/phase_8/graph_state_builder_contract.md` icinde aciklandi.
 - Ilk unit testler `tests/test_graph_state_builder.py` ile calistirildi.
+- Graph yapisini gormek icin `experiments/synthetic/visualize_graph_state.py` eklendi.
+- Ornek gorsel `results/figures/phase_8/sample_graph_state.png` olarak uretildi.
 
 ### Adim 2: Graph policy forward pass
 
@@ -522,6 +524,13 @@ Basari kriteri:
 - output shape `(6,)` veya batch icin `(batch, 6)`
 - NaN/Inf yok
 - deterministic seed ile tekrar edilebilir
+
+Guncel durum:
+
+- `src/agents/graph_policy.py` eklendi.
+- `GraphPolicyNetwork`, `GraphState` girdisinden 6 action logits uretebiliyor.
+- Action mask uygulanabiliyor; partial offloading kapaliysa `edge_25`, `edge_50`, `edge_75` olasiliklari sifirlaniyor.
+- `tests/test_graph_policy.py` ile forward path, action mask ve deterministic predict davranisi test edildi.
 
 ### Adim 3: Supervised warm-start
 

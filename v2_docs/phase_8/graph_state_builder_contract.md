@@ -185,7 +185,41 @@ Bu alan Faz 8.3 semantic prior fusion ve ileride action masking icin kritik olac
 
 ---
 
-## 9. Test Sonucu
+## 9. GraphState Gorsellestirme
+
+Graph yapisini gozle inceleyebilmek icin eklenen dosyalar:
+
+- `src/visualization/graph_state_visualizer.py`
+- `experiments/synthetic/visualize_graph_state.py`
+
+Ornek temiz topology gorseli:
+
+```powershell
+python experiments\synthetic\visualize_graph_state.py
+```
+
+Cikti:
+
+```text
+results/figures/phase_8/sample_graph_state.png
+```
+
+Detayli edge label'lariyla gorsel:
+
+```powershell
+python experiments\synthetic\visualize_graph_state.py --show-edge-labels --output results\figures\phase_8\sample_graph_state_detailed.png
+```
+
+Bu gorsellestirme GNN egitiminden once su sorulari hizli kontrol etmek icin kullanilacak:
+
+- node'lar bekledigimiz gibi mi?
+- device-task-edge-cloud iliskileri dogru kurulmus mu?
+- semantic prior ve action mask gorsel baglamda okunabiliyor mu?
+- edge sayisi veya topology beklenenden fazla/eksik mi?
+
+---
+
+## 10. Test Sonucu
 
 Calistirilan test:
 
@@ -196,7 +230,7 @@ python -m unittest tests.test_graph_state_builder
 Sonuc:
 
 ```text
-Ran 2 tests in 0.005s
+Ran 3 tests in 1.688s
 OK
 ```
 
@@ -211,10 +245,11 @@ Testlerin kontrol ettigi ana noktalar:
 - semantic ablation davranisi
 - NaN/Inf olmamasi
 - metadata ve trace context tasinmasi
+- graph visualization PNG yazimi
 
 ---
 
-## 10. Faz 8.2'ye Devredilenler
+## 11. Faz 8.2'ye Devredilenler
 
 Bu adimdan sonra siradaki teknik adim:
 

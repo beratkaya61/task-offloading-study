@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 import numpy as np
@@ -9,6 +11,7 @@ from src.env.graph_state_builder import (
     NODE_FEATURE_SCHEMA,
     build_graph_state,
 )
+from src.visualization.graph_state_visualizer import draw_graph_state
 
 
 class DummyChannel:
@@ -111,6 +114,23 @@ class GraphStateBuilderTest(unittest.TestCase):
         self.assertEqual(graph_state.action_prior.tolist(), [0.0] * 6)
         self.assertEqual(graph_state.action_mask.tolist(), [1.0, 0.0, 0.0, 0.0, 1.0, 1.0])
         graph_state.validate()
+
+    def test_graph_state_visualizer_writes_png(self):
+        device, task, edge_servers, cloud = make_fixture()
+        graph_state = build_graph_state(
+            device=device,
+            task=task,
+            edge_servers=edge_servers,
+            cloud_server=cloud,
+            channel=DummyChannel(),
+        )
+
+        with TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / "graph_state.png"
+            written_path = draw_graph_state(graph_state, str(output_path), show_edge_labels=False)
+
+            self.assertTrue(written_path.exists())
+            self.assertGreater(written_path.stat().st_size, 0)
 
 
 if __name__ == "__main__":
