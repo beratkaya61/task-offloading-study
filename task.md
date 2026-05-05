@@ -66,7 +66,9 @@ Not:
 ## Faz 8 - Graph-Aware Policy Upgrade
 Not:
 - Faz 8'e gecis oncesi Faz 7'den kalan ana izleme notu, kanonik pretrained policy'nin `Edge %75` agirlikli kalmasidir. `Full Cloud` collapse kirilmis olsa da tam context-sensitive action diversity henuz nihai olarak cozulmus sayilmaz; Faz 8 boyunca bu davranissal sinir izlenecektir.
-- [ ] 8.1 Graph state node and edge features
+- Faz 8 baslangic plani `v2_docs/phase_8/phase_8_Graph_Aware_Policy_Upgrade_plan.md` icinde tutuluyor. Ilk uygulama sirasi: graph-state sozlesmesi, graph env/wrapper, GNN policy forward path, semantic prior fusion ve MLP-PPO vs graph-aware policy karsilastirmasidir.
+- Faz 8'i hic bilmeyen biri icin "neden graph-aware policy, ne elde edecegiz, bize katkisi ne?" aciklamasi `v2_docs/phase_8/phase_8_explaination_of_studies.md` icinde tutuluyor. Faz 8 dokumanlarini okurken once bu aciklama, sonra teknik plan okunmalidir.
+- [x] 8.1 Graph state node and edge features [`src/env/graph_state_builder.py`, `tests/test_graph_state_builder.py`, `v2_docs/phase_8/graph_state_builder_contract.md`; unit test: `python -m unittest tests.test_graph_state_builder` OK]
 - [ ] 8.2 GNN policy implementation
 - [ ] 8.3 Semantic prior fusion
 - [ ] 8.4 Phase 8 test and commit
@@ -102,9 +104,6 @@ Not:
 
 - Trace-to-task ceviri varsayimlari v2_docs/trace_mapping_assumptions.md icinde merkezi olarak belgelendi.
 - Domain-shift akisi experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml uzerinden calistirildi; guncel tablo v2_docs/phase_6/trace_domain_shift_report.md icinde tutuluyor.
-
-
-
 
 
 
