@@ -14,19 +14,23 @@ To solve the "sparse reward" problem in DRL-based offloading by using Large Lang
 
 ## Current Experiment Structure
 
-- `configs/synthetic/` and `experiments/synthetic/`: simulated environment workflows
-- `configs/trace/` and `experiments/trace/`: trace-driven workflows
+- `configs/phase_5/` and `experiments/phase_5/`: sentetik RL, baseline ve ablation calismalari
+- `configs/phase_6/` and `experiments/phase_6/`: synthetic-trace pipeline ve real-data recovery / real-composite trace akisi
+- `configs/phase_7/` and `experiments/phase_7/`: oracle labeling, supervised warm-start ve staged training calismalari
+- `configs/phase_8/` and `experiments/phase_8/`: graph-aware policy ve fusion karsilastirmalari
 - `models/`: reusable checkpoints that are loaded again by later experiments
-- `results/`: logs, reports, and figures produced by training/evaluation runs
+- `results/`: faz bazli ham CSV, gorsel ve ozet artefaktlari (`results/README.md`)
 
 In short:
-- `synthetic` means the model is trained or evaluated on the simulated environment
-- `trace` means the model is trained or evaluated on trace-driven data
+- `phase_*` folders tell you which stage of the study a config or experiment belongs to
+- data regime is then made explicit in file names such as `synthetic_*`, `synthetic_trace_*`, or `real_composite_trace_*`
 
 ## How to Reproduce
 1. Ensure dependencies are installed (e.g., `gymnasium`, `stable-baselines3`, `simpy`, `transformers`).
-2. Run synthetic RL retraining: `python experiments/synthetic/train_rl_agents.py`
-3. Run synthetic policy evaluation: `python experiments/synthetic/evaluate_policies.py`
-4. Run trace-driven PPO training: `python experiments/trace/train_ppo.py`
+2. Run synthetic RL retraining: `python experiments/phase_5/run_synthetic_rl_retraining.py`
+3. Run synthetic policy evaluation: `python experiments/phase_5/run_synthetic_policy_evaluation.py`
+4. Run trace-driven PPO training: `python experiments/phase_6/train_synthetic_trace_ppo.py`
 5. Experiment seed (`seed`), specific configurations, and models are deterministic via `src/utils/reproducibility.py`.
-6. Inspect logs: Detailed execution logs are written as workflow-specific CSV files under `results/raw/` and summarized in `results/tables/offloading_experiment_report.md`.
+6. Inspect artefacts: workflow-specific CSV files phase bazli olarak `results/phase_*/metrics/` altina, gorseller ise `results/phase_*/figures/` altina yazilir. Faz 5 kanonik ozet raporu `v2_docs/phase_5/offloading_experiment_report.md` dosyasindadir.
+
+

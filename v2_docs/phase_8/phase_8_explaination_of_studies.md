@@ -7,6 +7,11 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 Bu projede artik basit bir "kod calissin" hedefinden daha ileri bir noktadayiz.
 Faz 1-7 boyunca sistemi daha tekrarlanabilir, daha adil karsilastirilabilir, trace-driven deneylere daha yakin ve staged-training destekli hale getirdik.
 
+2026-05-09 kapsam duzeltmesi:
+Bu dokumanda anlatilan Faz 8 mimarisi ve final graph karsilastirmasi teknik olarak gecerlidir; ancak mevcut final sayilar raw real-data validated sonuc degildir.
+Mevcut Faz 8 ciktilari `synthetic/simulation-stage graph comparison` olarak okunmalidir.
+Veri seti edinimi ve real-data recovery plani Faz 6 altinda ve `v2_docs/real_data_strategy.md` dokumaninda tutulur.
+
 Fakat bu noktada proje gittikce daha teknik kavramlar icermeye basladi:
 
 - RL agent
@@ -446,7 +451,7 @@ Katkisi ne?
 
 Bu dosya Faz 8'in model tarafindaki ana yeniligi olacak.
 
-### `experiments/synthetic/...`
+### `experiments/phase_8/...`
 
 Burada graph policy icin deney scriptleri olacak.
 
@@ -505,9 +510,9 @@ Guncel durum:
 - Bu adim icin `src/env/graph_state_builder.py` eklendi.
 - Cikti sozlesmesi `GraphState` dataclass'i ile sabitlendi.
 - Detayli sozlesme bu dokumanin devamindaki "GraphState sozlesmesi" bolumune tasindi.
-- Ilk unit testler `tests/test_graph_state_builder.py` ile calistirildi.
-- Graph yapisini gormek icin `experiments/synthetic/visualize_graph_state.py` eklendi.
-- Ornek gorsel `results/figures/phase_8/sample_graph_state.png` olarak uretildi.
+- Ilk unit testler `tests/phase_8/test_graph_state_builder.py` ile calistirildi.
+- Graph yapisini gormek icin `experiments/phase_8/visualize_graph_state.py` eklendi.
+- Ornek gorsel `results/phase_8/figures/sample_graph_state.png` olarak uretildi.
 
 ### Adim 1.1: GraphState sozlesmesi
 
@@ -520,7 +525,7 @@ Ana kod:
 
 Ana test:
 
-- `tests/test_graph_state_builder.py`
+- `tests/phase_8/test_graph_state_builder.py`
 
 `build_graph_state(...)` fonksiyonu su girdileri kabul edebilecek sekilde tasarlandi:
 
@@ -644,18 +649,18 @@ Bu alanlar Faz 8.3 semantic prior fusion ve ileride action masking icin kritik o
 GraphState gorsellestirme:
 
 - `src/visualization/graph_state_visualizer.py`
-- `experiments/synthetic/visualize_graph_state.py`
+- `experiments/phase_8/visualize_graph_state.py`
 
 Temiz topology gorseli:
 
 ```powershell
-python experiments\synthetic\visualize_graph_state.py
+python experiments\phase_8\visualize_graph_state.py
 ```
 
 Detayli edge label'lariyla gorsel:
 
 ```powershell
-python experiments\synthetic\visualize_graph_state.py --show-edge-labels --output results\figures\phase_8\sample_graph_state_detailed.png
+python experiments\phase_8\visualize_graph_state.py --show-edge-labels --output results\phase_8\figures\sample_graph_state_detailed.png
 ```
 
 Bu gorsellestirme GNN egitiminden once su sorulari kontrol etmek icin kullanilir:
@@ -668,7 +673,7 @@ Bu gorsellestirme GNN egitiminden once su sorulari kontrol etmek icin kullanilir
 GraphState test sonucu:
 
 ```powershell
-python -m unittest tests.test_graph_state_builder
+python -m unittest tests.phase_8.test_graph_state_builder
 ```
 
 Ilk sonuc:
@@ -712,7 +717,7 @@ Guncel durum:
 - `src/agents/graph_policy.py` eklendi.
 - `GraphPolicyNetwork`, `GraphState` girdisinden 6 action logits uretebiliyor.
 - Action mask uygulanabiliyor; partial offloading kapaliysa `edge_25`, `edge_50`, `edge_75` olasiliklari sifirlaniyor.
-- `tests/test_graph_policy.py` ile forward path, action mask ve deterministic predict davranisi test edildi.
+- `tests/phase_8/test_graph_policy.py` ile forward path, action mask ve deterministic predict davranisi test edildi.
 
 ### Adim 3: Supervised warm-start
 
@@ -748,7 +753,7 @@ Guncel durum:
 - Graph policy'yi mevcut vector-state evaluator mantigina baglamak icin `src/agents/graph_policy_evaluator.py` eklendi.
 - Bu adapter, `OffloadingEnv` icindeki canli `device/task/edge/cloud` durumundan tekrar `GraphState` kurup graph policy'ye verir.
 - Boylece eski MLP-PPO hattini bozmadan ayni rollout mantigi altinda graph policy degerlendirilebilir.
-- Faz 8.4 karsilastirma entrypoint'i: `experiments/synthetic/run_phase8_policy_comparison.py`
+- Faz 8.4 karsilastirma entrypoint'i: `experiments/phase_8/run_graph_policy_comparison.py`
 
 ### Adim 5: Faz raporu
 
@@ -942,7 +947,7 @@ Bu sadece sunu gosterir:
 
 Faz 8 fusion sonucu icin kullanilacak tek kanonik config:
 
-- `configs/synthetic/graph_supervised_pretraining.yaml`
+- `configs/phase_8/graph_supervised_pretraining.yaml`
 
 Bu config artik kisa smoke config degil, profesyonel deney config'idir:
 
@@ -956,7 +961,7 @@ Bu config artik kisa smoke config degil, profesyonel deney config'idir:
 Calistirilacak minimum komut:
 
 ```powershell
-python experiments\synthetic\run_graph_fusion_comparison.py --config configs\synthetic\graph_supervised_pretraining.yaml --fusions none late --seeds 42 43 44 45 46
+python experiments\phase_8\run_graph_fusion_comparison.py --config configs\phase_8\graph_supervised_pretraining.yaml --fusions none late --seeds 42 43 44 45 46
 ```
 
 Bu protokol su kosullari saglamalidir:
@@ -1018,20 +1023,25 @@ Izlenecek metrikler:
 Karsilastirma scripti:
 
 ```powershell
-python experiments\synthetic\run_phase8_policy_comparison.py --seeds 42 43 44 --eval_episodes 10 --report phase_reports\Phase_8_policy_comparison.md
+python experiments\phase_8\run_graph_policy_comparison.py --seeds 42 43 44 --eval_episodes 10 --report phase_reports\Phase_8_policy_comparison.md
 ```
 
 Bu script:
 
 - `MLP-PPO` icin `models/ppo/synthetic_rl_retraining/seed{seed}.zip`
 - `Pretrained MLP-PPO` icin `models/ppo/teacher_policy_sensitivity/contextual_reward_aligned/pretrained/seed{seed}/refinement.zip`
-- `GraphPolicy none/late` icin `configs/synthetic/graph_supervised_pretraining.yaml` uzerinden graph warm-start checkpoint'lerini
+- `GraphPolicy none/late` icin `configs/phase_8/graph_supervised_pretraining.yaml` uzerinden graph warm-start checkpoint'lerini
 
 ayni evaluator mantiginda yan yana kosar.
 
 ### 16.1 Faz 8 Final Sonucu
 
 Ortak final environment karsilastirmasi, mevcut kanonik PPO artefaktlarinin ortak seed kumesi olan `42, 43, 44` uzerinde calistirildi.
+
+Kapsam notu:
+Bu tablo raw real-data validated sonuc degildir.
+Bu tablo, synthetic/simulation-stage environment uzerinde graph-aware policy yolunun ve ortak evaluator koprusunun calistigini gosterir.
+Real-data validated final tablo, Faz 6R kapsaminda hazirlanacak veri omurgasi uzerinde tekrar uretilecektir.
 
 | Model | Seeds | Success Mean | Success 95% CI | P95 Latency Mean | Avg Energy Mean | QoE Mean | Dominant Action |
 |---|---:|---:|---:|---:|---:|---:|---|
@@ -1115,10 +1125,16 @@ Calisma notu ve rapor su hikaye akisiyle yazilacak:
 8. GraphPolicy success rate, p95 latency, avg energy ve QoE tarafinda ne yapti?
 9. GraphPolicy action diversity tarafinda Faz 7'den kalan `Edge %75` yigilmasini azaltti mi?
 10. Sonuc olarak graph-aware policy bu problem icin bilimsel olarak anlamli bir katki sundu mu?
+11. Bu sonuclar sentetik/simulation-stage olarak mi, yoksa real-data validated olarak mi etiketleniyor?
+12. Real-data validated iddia icin Faz 6R sonrasi ayni karsilastirma yeniden kosuldu mu?
 
 Faz sonunda doldurulacak sonuc paragrafi taslagi:
 
 > Faz 8'de mevcut vector-state MLP-PPO hattini bozmadan, offloading karar anini device-task-edge-cloud graph'i olarak temsil eden yeni bir graph-aware policy yolu kurduk. Ilk olarak GraphState sozlesmesini tanimladik, ardindan PyTorch-only GraphPolicyNetwork ile graph'tan 6 offloading aksiyonu icin karar skoru urettik. Semantic prior'i graph policy icinde ayrilabilir hale getirerek `none`, `input`, `late` ve `input_late` fusion modlarini tanimladik. Final karsilastirmada MLP-PPO, Pretrained MLP-PPO, GraphPolicy none ve GraphPolicy late ayni evaluator altinda karsilastirildi. Sonuc olarak [...buraya final bulgu gelecek...]. Bu bulgu, graph-aware temsilin partial task offloading probleminde [...katki yorumu...] sagladigini gostermektedir.
+
+Real-data ek notu:
+Bu paragraf tez/makale icin kullanilirken, mevcut Faz 8 sayilari `synthetic/simulation-stage` olarak etiketlenecek.
+Raw real-data iddia icin ayni hikaye, Faz 6R tamamlandiktan sonra real-data omurgasi uzerinde yeniden yazilacak.
 
 ---
 
@@ -1131,3 +1147,5 @@ Faz 8'i anlamak icin onerilen okuma sirasi:
 3. Faz sonunda `phase_reports/Phase_8_Report.md`
 
 Bu siralama once kavrami, sonra uygulama planini, sonra deney sonucunu takip etmeyi saglar.
+
+

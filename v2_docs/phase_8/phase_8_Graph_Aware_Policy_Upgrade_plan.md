@@ -117,9 +117,9 @@ Durum guncellemesi:
 - `src/env/graph_state_builder.py` eklendi.
 - Framework-neutral `GraphState` dataclass'i kuruldu.
 - `node_features`, `edge_index`, `edge_features`, `global_features`, `action_prior`, `action_mask`, `metadata` ve `vector_state_reference` alanlariyla genisletilebilir cikti sozlesmesi olusturuldu.
-- Unit test: `tests/test_graph_state_builder.py`
-- Graph topology gorsellestirme: `src/visualization/graph_state_visualizer.py` ve `experiments/synthetic/visualize_graph_state.py`
-- Ornek cikti: `results/figures/phase_8/sample_graph_state.png`
+- Unit test: `tests/phase_8/test_graph_state_builder.py`
+- Graph topology gorsellestirme: `src/visualization/graph_state_visualizer.py` ve `experiments/phase_8/visualize_graph_state.py`
+- Ornek cikti: `results/phase_8/figures/sample_graph_state.png`
 - Ayrintili sozlesme ve test notu ana aciklama dokumanina tasindi: `v2_docs/phase_8/phase_8_explaination_of_studies.md`
 
 Node feature taslagi:
@@ -173,8 +173,8 @@ Durum guncellemesi:
 - `GraphState -> tensor` donusumu icin `graph_state_to_tensors(...)` eklendi.
 - Action mask uygulamasi `apply_action_mask(...)` ile test edildi.
 - Ilk semantic prior late-fusion yardimcisi `fuse_semantic_prior_logits(...)` eklendi; asil 8.3 deneysel fusion karsilastirmasi ayri adim olarak kalacak.
-- Unit test: `tests/test_graph_policy.py`
-- Combined test: `python -m unittest tests.test_graph_state_builder tests.test_graph_policy`
+- Unit test: `tests/phase_8/test_graph_policy.py`
+- Combined test: `python -m unittest tests.phase_8.test_graph_state_builder tests.phase_8.test_graph_policy`
 - Sonuc: 7 test OK
 
 ### 8.3 Semantic Prior Fusion
@@ -195,8 +195,8 @@ Durum:
 - Sonuc: `late` fusion, `none` fusion'a gore test accuracy `66.67%` vs `63.54%` ve prediction diversity `0.3661` vs `0.0000` uretmistir.
 - Fusion protokolu ve kapanis hikayesi ana aciklama dokumanina tasindi: `v2_docs/phase_8/phase_8_explaination_of_studies.md`
 - Bu sonuc final bilimsel sonuc degil, sadece smoke/diagnostic bulgudur.
-- Profesyonel Faz 8 fusion protokolu `configs/synthetic/graph_supervised_pretraining.yaml` ile tanimlandi: 60 episode, 50 step, 30 epoch, minimum 12 epoch, patience 8 ve 5 seed.
-- `experiments/synthetic/run_graph_fusion_comparison.py` artik varsayilan olarak 5 seed uzerinden mean/std/95% CI ozet raporu uretir.
+- Profesyonel Faz 8 fusion protokolu `configs/phase_8/graph_supervised_pretraining.yaml` ile tanimlandi: 60 episode, 50 step, 30 epoch, minimum 12 epoch, patience 8 ve 5 seed.
+- `experiments/phase_8/run_graph_fusion_comparison.py` artik varsayilan olarak 5 seed uzerinden mean/std/95% CI ozet raporu uretir.
 - Rapor kalabaligini onlemek icin per-fusion aciklama dosyalari uretilmez; fusion anlatimi ana aciklama dokumaninda tutulur: `v2_docs/phase_8/phase_8_explaination_of_studies.md`.
 
 ### 8.4 Training Strategy
@@ -229,7 +229,7 @@ Faz 8 sonunda minimum karsilastirma:
 Guncel implementasyon notu:
 
 - Graph evaluator adapter'i `src/agents/graph_policy_evaluator.py` icinde kuruldu.
-- Faz 8.4 karsilastirma entrypoint'i `experiments/synthetic/run_phase8_policy_comparison.py` olarak ayrildi.
+- Faz 8.4 karsilastirma entrypoint'i `experiments/phase_8/run_graph_policy_comparison.py` olarak ayrildi.
 - Bu script, mevcut `evaluate_policy(...)` mantigini koruyup graph policy icin sadece observation-to-graph koprusunu ekler.
 
 Izlenecek ana metrikler:
@@ -247,7 +247,7 @@ Gelismis istatistiksel paket Faz 9'a birakilacak; ancak Faz 8 icinde graph polic
 Faz 8 icinde fusion icin minimum bilimsel protokol:
 
 ```powershell
-python experiments\synthetic\run_graph_fusion_comparison.py --config configs\synthetic\graph_supervised_pretraining.yaml --fusions none late --seeds 42 43 44 45 46
+python experiments\phase_8\run_graph_fusion_comparison.py --config configs\phase_8\graph_supervised_pretraining.yaml --fusions none late --seeds 42 43 44 45 46
 ```
 
 Bu komutun uretmesi gereken ana dosya:
@@ -256,7 +256,7 @@ Bu komutun uretmesi gereken ana dosya:
 
 Rapor/sonuc hijyeni:
 
-- `results/raw/synthetic/phase_8` altinda varsayilan olarak per-run CSV uretilmeyecek.
+- Varsayilan akista Faz 8 icin per-run CSV klasoru zorunlu tutulmayacak; yalnizca acikca `--write_csv` istendiginde `results/phase_8/metrics/` altina olcum yazilacak.
 - Ham CSV sadece debug icin ozellikle `--write_csv` verilirse uretilir.
 - Faz 8 takibi ve not alma tek konsolide markdown raporu uzerinden yapilacak.
 
@@ -327,3 +327,5 @@ Ilk kod adimi:
 3. PyG kurulumu dogrulanacak; kurulum sorunluysa PyTorch-only fallback ile graph batch temsili kurulacak.
 
 Bu karar, Faz 8'in riskini dusurur cunku once veri temsili ve test edilebilirlik sabitlenir; policy/training karmasikligi ikinci adima birakilir.
+
+

@@ -8,6 +8,28 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 ---
 
+## 2026-05-09 Real-Data Kapsam Notu
+
+Bu rapordaki Faz 8 sonuclari graph-aware policy mimarisinin, semantic prior fusion hattinin ve MLP-vs-Graph karsilastirma evaluator'unun calistigini gosterir.
+Ancak bu rapordaki final sayilar henuz raw real-data backbone uzerinde yeniden kosulmus sonuclar degildir.
+
+Dogru etiket:
+
+```text
+synthetic/simulation-stage graph comparison
+```
+
+Bu nedenle Faz 8'in bilimsel cikti dili su sekilde sinirlandirilmalidir:
+
+- Graph-aware temsil ve evaluator koprusu teknik olarak dogrulandi.
+- Semantic prior supervised graph warm-start tarafinda faydali gorundu.
+- Final env karsilastirmasinda semantic prior katkisi henuz net ustunluge donusmedi.
+- Bu bulgular raw real-data validated sonuc olarak sunulmayacak.
+
+Nihai tez/makale iddiasi icin Faz 6R kapsaminda hazirlanacak real-data omurgasi uzerinde bu karsilastirma yeniden kosulmalidir.
+
+---
+
 ## Faz 8 Hedefi
 
 Faz 8'in hedefi, mevcut 12 boyutlu vektor state ile calisan MLP tabanli policy hattini graph-aware bir karar mekanizmasina tasimaktir.
@@ -32,14 +54,14 @@ Yeni kod:
 
 Yeni test:
 
-- `tests/test_graph_state_builder.py`
+- `tests/phase_8/test_graph_state_builder.py`
 
 Yeni gorsellestirme:
 
 - `src/visualization/graph_state_visualizer.py`
-- `experiments/synthetic/visualize_graph_state.py`
-- `results/figures/phase_8/sample_graph_state.png`
-- `results/figures/phase_8/sample_graph_state_detailed.png`
+- `experiments/phase_8/visualize_graph_state.py`
+- `results/phase_8/figures/sample_graph_state.png`
+- `results/phase_8/figures/sample_graph_state_detailed.png`
 
 Yeni destek dokumani:
 
@@ -88,7 +110,7 @@ Directed edge aileleri:
 Calistirilan komut:
 
 ```powershell
-python -m unittest tests.test_graph_state_builder
+python -m unittest tests.phase_8.test_graph_state_builder
 ```
 
 Sonuc:
@@ -116,19 +138,19 @@ Testlerin kapsami:
 Calistirilan komut:
 
 ```powershell
-python experiments\synthetic\visualize_graph_state.py
+python experiments\phase_8\visualize_graph_state.py
 ```
 
 Sonuc:
 
 ```text
-[OK] GraphState visualization written to results\figures\phase_8\sample_graph_state.png
+[OK] GraphState visualization written to results\phase_8\figures\sample_graph_state.png
 ```
 
 Ek olarak edge label'lari acik detayli gorsel de uretildi:
 
 ```powershell
-python experiments\synthetic\visualize_graph_state.py --show-edge-labels --output results\figures\phase_8\sample_graph_state_detailed.png
+python experiments\phase_8\visualize_graph_state.py --show-edge-labels --output results\phase_8\figures\sample_graph_state_detailed.png
 ```
 
 Bu gorsel, GNN policy'ye gecmeden once graph topology'nin insan tarafindan okunabilir hale gelmesini saglar.
@@ -152,7 +174,7 @@ Yeni kod:
 
 Yeni test:
 
-- `tests/test_graph_policy.py`
+- `tests/phase_8/test_graph_policy.py`
 
 Bu adimda PyTorch-only ilk graph-aware policy forward path kuruldu.
 PyTorch Geometric mevcut ortamda kurulu olmayabilecegi icin ilk model PyG'e bagimli degil.
@@ -193,7 +215,7 @@ Semantic prior fusion yardimci fonksiyonu eklendi, ancak Faz 8.3 altinda bunun d
 Calistirilan komut:
 
 ```powershell
-python -m unittest tests.test_graph_state_builder tests.test_graph_policy
+python -m unittest tests.phase_8.test_graph_state_builder tests.phase_8.test_graph_policy
 ```
 
 Sonuc:
@@ -235,14 +257,14 @@ Faz 8.2 sonunda kabul edilen sonuc:
 Yeni kod:
 
 - `src/training/pretrain_graph_policy.py`
-- `experiments/synthetic/run_graph_supervised_pretraining.py`
-- `experiments/synthetic/run_graph_fusion_comparison.py`
-- `configs/synthetic/graph_supervised_pretraining.yaml`
+- `experiments/phase_8/run_graph_supervised_pretraining.py`
+- `experiments/phase_8/run_graph_fusion_comparison.py`
+- `configs/phase_8/graph_supervised_pretraining.yaml`
 
 Guncellenen kod:
 
 - `src/agents/graph_policy.py`
-- `tests/test_graph_policy.py`
+- `tests/phase_8/test_graph_policy.py`
 
 Bu adimda semantic prior fusion deneysel olarak ayrilabilir hale getirildi.
 Onemli duzeltme: `semantic_prior_fusion="none"` secildiginde semantic prior artik policy head'e gizli sekilde girmiyor.
@@ -274,14 +296,14 @@ Amaci, graph-aware policy'nin teacher kararlarini taklit edip edemedigini ve sem
 Calistirilan komut:
 
 ```powershell
-python experiments\synthetic\run_graph_fusion_comparison.py --fusions none late
+python experiments\phase_8\run_graph_fusion_comparison.py --fusions none late
 ```
 
 Kanonik cikarimlar:
 
 - Faz 8 aciklama ve not dokumani: `v2_docs/phase_8/phase_8_explaination_of_studies.md`
-- Graph warm-start config: `configs/synthetic/graph_supervised_pretraining.yaml`
-- Graph warm-start scriptleri: `src/training/pretrain_graph_policy.py`, `experiments/synthetic/run_graph_supervised_pretraining.py`, `experiments/synthetic/run_graph_fusion_comparison.py`
+- Graph warm-start config: `configs/phase_8/graph_supervised_pretraining.yaml`
+- Graph warm-start scriptleri: `src/training/pretrain_graph_policy.py`, `experiments/phase_8/run_graph_supervised_pretraining.py`, `experiments/phase_8/run_graph_fusion_comparison.py`
 - Graph checkpoint'leri calistirildiginda kanonik olarak `models/phase_8/` altina yazilir
 
 Rapor hijyen karari:
@@ -289,7 +311,7 @@ Rapor hijyen karari:
 - Per-run/per-fusion aciklama raporlari Faz 8 klasorunde tutulmayacak.
 - Fusion karsilastirmasi ve kapanis hikayesi ana aciklama dosyasinda izlenecek: `v2_docs/phase_8/phase_8_explaination_of_studies.md`.
 - Tekil debug kosulari icin ayrica markdown raporu uretilmeyecek; normal Faz 8 takibi ana aciklama dokumani uzerinden yapilacak.
-- Varsayilan akista `results/raw/synthetic/phase_8` benzeri per-run ham result klasoru tutulmayacak.
+- Varsayilan akista Faz 8 icin per-run debug CSV klasoru zorunlu tutulmayacak; yalnizca acikca `--write_csv` istendiginde `results/phase_8/metrics/` altina olcum yazilacak.
 - Ham CSV ciktisi yalnizca ozellikle `--write_csv` verilirse debug amacli uretilir; normal Faz 8 takibi tek markdown raporu uzerinden yapilir.
 
 Ilk smoke protokolu:
@@ -316,7 +338,7 @@ Kullanim amaci:
 
 Yeni full config:
 
-- `configs/synthetic/graph_supervised_pretraining.yaml`
+- `configs/phase_8/graph_supervised_pretraining.yaml`
 
 Full protokol:
 
@@ -331,7 +353,7 @@ Full protokol:
 Calistirilacak komut:
 
 ```powershell
-python experiments\synthetic\run_graph_fusion_comparison.py --config configs\synthetic\graph_supervised_pretraining.yaml --fusions none late --seeds 42 43 44 45 46
+python experiments\phase_8\run_graph_fusion_comparison.py --config configs\phase_8\graph_supervised_pretraining.yaml --fusions none late --seeds 42 43 44 45 46
 ```
 
 Rapor hijyeni:
@@ -344,7 +366,7 @@ Rapor hijyeni:
 Calistirilan komut:
 
 ```powershell
-python -m unittest tests.test_graph_state_builder tests.test_graph_policy
+python -m unittest tests.phase_8.test_graph_state_builder tests.phase_8.test_graph_policy
 ```
 
 Sonuc:
@@ -357,9 +379,9 @@ OK
 Ek smoke komutlari:
 
 ```powershell
-python experiments\synthetic\run_graph_supervised_pretraining.py --fusion none
-python experiments\synthetic\run_graph_supervised_pretraining.py --fusion late
-python experiments\synthetic\run_graph_fusion_comparison.py --fusions none late
+python experiments\phase_8\run_graph_supervised_pretraining.py --fusion none
+python experiments\phase_8\run_graph_supervised_pretraining.py --fusion late
+python experiments\phase_8\run_graph_fusion_comparison.py --fusions none late
 ```
 
 Not:
@@ -375,14 +397,14 @@ Not:
 Yeni kod:
 
 - `src/agents/graph_policy_evaluator.py`
-- `experiments/synthetic/run_phase8_policy_comparison.py`
-- `tests/test_phase8_evaluation_bridge.py`
+- `experiments/phase_8/run_graph_policy_comparison.py`
+- `tests/phase_8/test_phase8_evaluation_bridge.py`
 
 Guncellenen kod:
 
 - `src/core/evaluation.py`
 - `src/training/pretrain_graph_policy.py`
-- `configs/synthetic/graph_supervised_pretraining.yaml`
+- `configs/phase_8/graph_supervised_pretraining.yaml`
 
 Bu adimda graph policy'nin mevcut vector-state evaluator mantigina dogrudan baglanmasi saglandi.
 `GraphPolicyEnvAdapter`, `OffloadingEnv` icindeki canli `device/task/edge/cloud` durumundan tekrar `GraphState` kurup graph policy'ye aktarir.
@@ -393,7 +415,7 @@ Boylece `MLP-PPO`, `Pretrained MLP-PPO`, `GraphPolicy none` ve `GraphPolicy late
 Calistirilan komut:
 
 ```powershell
-python experiments\synthetic\run_phase8_policy_comparison.py --seeds 42 43 44 --eval_episodes 10 --report phase_reports\Phase_8_policy_comparison.md
+python experiments\phase_8\run_graph_policy_comparison.py --seeds 42 43 44 --eval_episodes 10 --report phase_reports\Phase_8_policy_comparison.md
 ```
 
 Not:
@@ -407,7 +429,7 @@ Not:
 Calistirilan komut:
 
 ```powershell
-python -m unittest tests.test_graph_state_builder tests.test_graph_policy tests.test_phase8_evaluation_bridge
+python -m unittest tests.phase_8.test_graph_state_builder tests.phase_8.test_graph_policy tests.phase_8.test_phase8_evaluation_bridge
 ```
 
 Sonuc:
@@ -490,14 +512,19 @@ Bu nedenle Faz 8'in bilimsel cikarimi su sekilde yazilabilir:
 
 Siradaki adim:
 
+- Real-data recovery kapisini acmak ve Faz 6R kapsaminda hazirlanacak veri omurgasi uzerinde bu graph karsilastirmasini yeniden kosmak
+- Real-data mode icin sessiz synthetic fallback'i kapatmak ve manifest tabanli veri envanteri tutmak
 - Faz 9 kapsaminda daha zengin metrikler (`p99`, fairness, jitter, battery depletion, decision overhead) ile Faz 8 sonucunu derinlestirmek
 - Graph policy icin RL fine-tuning veya alternatif fusion stratejileriyle `semantic prior` katkisinin env seviyesinde guclenip guclenmedigini test etmek
 - `Edge %75` attractor problemini graph tarafinda da azaltmaya yonelik yeni egitim veya reward tasarimlari denemek
 
 Zorunlu kapanis notu:
 
-> Faz 8'in zorunlu kapanis kapisi olan `MLP-PPO / Pretrained MLP-PPO / GraphPolicy none / GraphPolicy late` karsilastirmasi tamamlanmistir.
+> Faz 8'in teknik kapanis kapisi olan `MLP-PPO / Pretrained MLP-PPO / GraphPolicy none / GraphPolicy late` karsilastirmasi synthetic/simulation-stage kosulda tamamlanmistir.
+> Real-data validated kapanis icin ayni karsilastirma Faz 6R kapsaminda hazirlanacak veri omurgasi uzerinde tekrar kosulacaktir.
 
 Faz 8 sonunda kullanilacak hikaye formatli kapanis sablonu:
 
 - `v2_docs/phase_8/phase_8_explaination_of_studies.md`
+
+

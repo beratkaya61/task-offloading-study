@@ -3,34 +3,68 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 # Faz 6 Report: Trace-Driven Training
 
 **Tarih:** 08 April 2026  
-**Durum:** tamamlandi / Faz 7 icin hazir  
-**Kapsam:** trace-driven PPO egitimi, domain-shift degerlendirmesi, hold-out test ve Faz 5 -> Faz 6 bulgu baginin kurulmasi
+**Durum:** trace pipeline tamamlandi; raw real-data revalidation gerekli  
+**Kapsam:** trace-inspired PPO egitimi, domain-shift degerlendirmesi, hold-out test ve Faz 5 -> Faz 6 bulgu baginin kurulmasi
+
+---
+
+## 2026-05-09 Kapsam Duzeltmesi
+
+Bu rapor artik raw real dataset uzerinde tamamlanmis nihai dogrulama raporu olarak okunmayacaktir.
+Repo durum kontrolunde `data/synthetic_trace/` altindaki mevcut episode splitlerinin `synthetic_didi` ailesinden gelen trace-inspired episode'lar oldugu ve lokal raw Didi/Glasgow/UCI/Alibaba dosyalarinin henuz dogrulanmadigi netlesmistir.
+
+Bu nedenle Faz 6'nin dogru etiketi sudur:
+
+```text
+synthetic_didi / trace-inspired pipeline validation
+```
+
+Bu fazdaki sonuclar cope atilmaz; trace loader, processor, split, hold-out test ve domain-shift deney omurgasinin calistigini gosterir.
+Ancak tez/makale icin `real-data validated` iddia kurulmadan once `v2_docs/real_data_strategy.md` icindeki veri kaynaklariyla Faz 6R yeniden kosulmalidir.
+
+Kullanilacak real-data omurgasi:
+
+- Glasgow MEC real-data dataset: mobility + server utilisation backbone
+- UCI MEC image-recognition execution-time dataset: edge execution/turnaround latency calibration
+- Alibaba Cluster Trace: workload/resource-demand ve server-load kaynagi
+- Google Cluster Trace: opsiyonel workload cross-check
+- Didi Gaia: opsiyonel ikinci mobility/domain validation
 
 ---
 
 ## Ozet
 
-Faz 6'da sentetik ortamdan cikilip trace tabanli episode splitleri ile PPO modeli yeniden egitildi.
-Bu asamanin amaci, Faz 5'te sentetik tarafta gorulen bulgularin trace verisi uzerinde ne kadar tasinabildigini gormekti.
+Faz 6'da sentetik ortamdan cikmaya hazirlanan trace pipeline kurulmus ve trace-inspired episode splitleri ile PPO modeli yeniden egitilmistir.
+Bu asamanin amaci, Faz 5'te sentetik tarafta gorulen bulgularin trace benzeri veri akisi uzerinde ne kadar tasinabildigini gormekti.
 
 Bu faz sonunda su zincir tamamlandi:
 - trace training kosusu basariyla tamamlandi,
 - yeni checkpoint `models/ppo/trace_training/ppo_v3_trace_best.zip` olarak uretildi,
-- training metrics `results/raw/trace/training/trace_training_metrics.csv` altina yazildi,
+- training metrics `results/phase_6/metrics/synthetic_trace/training/trace_training_metrics.csv` altina yazildi,
 - synthetic -> trace ve trace -> synthetic domain-shift tablosu uretildi,
 - `test_episodes.json` uzerinde ayri final hold-out evaluation kosturuldu,
-- Faz 6 raporu gercek artefaktlarla temiz ve okunur hale getirildi.
+- Faz 6 raporu mevcut artefaktlarla temiz ve okunur hale getirildi.
 
-Bu nedenle Faz 6 artik acik bir is listesi degil, kapanmis bir trace-driven deney paketi olarak okunabilir.
+Bu nedenle Faz 6 artik teknik trace pipeline acisindan kapanmis sayilabilir.
+Fakat raw real-data bilimsel dogrulama acisindan Faz 6R adimlari aciktir.
+
+Ek mimari not:
+- raw veri okuyuculari ve debug/synthetic kaynak yardimcilari `src/core/dataset_loader.py` icinde toplandi
+- materialized episode split ve raw trace IO ise `src/core/trace_loader.py` icinde tutuldu
+- inventory + readiness denetimi `experiments/phase_6/inspect_raw_real_datasets.py` altinda birlestirildi
 
 ---
 
 ## Kullanilan Veri ve Splitler
 
 Trace pipeline su dosyalari kullanir:
-- egitim: `data/traces/train_episodes.json`
-- validation: `data/traces/val_episodes.json`
-- hold-out test: `data/traces/test_episodes.json`
+- egitim: `data/synthetic_trace/train_episodes.json`
+- validation: `data/synthetic_trace/val_episodes.json`
+- hold-out test: `data/synthetic_trace/test_episodes.json`
+
+Kapsam notu:
+Bu dosyalar mevcut repo durumunda materyalize episode splitleridir.
+Raw real dataset dosyalarindan yeniden uretildikleri dogrulanmadigi icin bu bolum `real-data validated` olarak degil, `synthetic_didi / trace-inspired` olarak okunmalidir.
 
 Bu rapordaki trace training sonucu, `train_episodes.json` ile egitim ve `val_episodes.json` ile ara dogrulama mantigina dayanir.
 Final kapanis kontrolu ise ayri olarak `test_episodes.json` uzerinde yapilmistir.
@@ -41,7 +75,7 @@ Final kapanis kontrolu ise ayri olarak `test_episodes.json` uzerinde yapilmistir
 
 Kaynak artefaktlar:
 - checkpoint: `models/ppo/trace_training/ppo_v3_trace_best.zip`
-- training metrics: `results/raw/trace/training/trace_training_metrics.csv`
+- training metrics: `results/phase_6/metrics/synthetic_trace/training/trace_training_metrics.csv`
 
 Trace training CSV ozetine gore:
 - episode sayisi: `532`
@@ -60,7 +94,7 @@ Bu sayilar, trace ortaminda PPO'nun hizli sekilde istikrarli bir policy ogrendig
 ## Final Split Karsilastirmasi ve Hold-Out Test
 
 Kaynak artefaktlar:
-- CSV: `results/raw/trace/holdout/trace_holdout_evaluation.csv`
+- CSV: `results/phase_6/metrics/synthetic_trace/holdout/trace_holdout_evaluation.csv`
 - rapor: `v2_docs/phase_6/trace_holdout_test_report.md`
 
 Ayni trace checkpoint icin `train`, `val` ve `test` splitleri birlikte olculdu:
@@ -101,7 +135,7 @@ Ilk okuma:
 ## Domain-Shift Sonuclari
 
 Kaynak artefaktlar:
-- CSV: `results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv`
+- CSV: `results/phase_6/metrics/synthetic_trace/domain_shift/trace_domain_shift_evaluation.csv`
 - rapor: `v2_docs/phase_6/trace_domain_shift_report.md`
 
 | Train Domain | Test Domain | Model | Success Rate | P95 Latency | Avg Energy | Dominant Action |
@@ -145,11 +179,11 @@ Bu tablo ne soyluyor:
 
 Bu faz sonunda artik su iddialari daha guvenli kurabiliyoruz:
 
-1. Proje yalnizca sentetik RL prototipi degil.
-Trace splitleri ile egitim, degerlendirme ve checkpoint uretimi calisan bir pipeline haline geldi.
+1. Proje yalnizca tek dosyalik sentetik RL prototipi degil.
+Trace-style splitler ile egitim, degerlendirme ve checkpoint uretimi calisan bir pipeline haline geldi.
 
 2. Faz 5'te kurulan sentetik PPO tabani tamamen yapay bir basari degildi.
-Sentetikten trace'e geciste policy guclu kalabildi.
+Sentetikten trace-inspired akisa geciste policy guclu kalabildi.
 
 3. Domain shift olgusu projede olculebilir hale geldi.
 Yani "bir ortamda iyi olan model diger ortamda ne yapiyor?" sorusu artik sayisal olarak cevaplanabiliyor.
@@ -161,21 +195,27 @@ Bu da Faz 6'yi sadece bir egitim fazi olmaktan cikarip, genelleme ve dagilim far
 
 ## Faz 6 Sonunda Acik Notlar
 
-Faz 6 tamamlanmis kabul edilse de, ileride guclendirilebilecek noktalar vardir:
+Faz 6 teknik pipeline olarak tamamlanmis kabul edilse de, bilimsel real-data dogrulama icin acik noktalar vardir:
 
-1. Faz 5 bulgularinin trace tarafindaki dogrulamasi henuz sinirlidir.
+1. Raw real datasetler henuz lokal olarak dogrulanmamistir.
+Glasgow MEC, UCI MEC execution-time, Alibaba Cluster Trace ve opsiyonel Didi/Google kaynaklari indirilip manifest ile kayda alinmalidir.
+
+2. Real-data mode icin sessiz synthetic fallback kapatilmalidir.
+Ham veri yoksa deney durmali, synthetic episode uretimi otomatik olarak devreye girmemelidir.
+
+3. Faz 5 bulgularinin real-data tarafindaki dogrulamasi henuz yapilmamistir.
 Su an sadece hizli ablation spot-check vardir. Gerekirse trace tarafinda daha sistematik semantic/partial/mobility karsilastirmasi eklenebilir.
 
-2. `experiments/trace/train_ppo.py` icindeki otomatik rapor yazimi bir onceki kosuda encoding bozulmasi uretmisti.
+4. `experiments/phase_6/train_synthetic_trace_ppo.py` icindeki otomatik rapor yazimi bir onceki kosuda encoding bozulmasi uretmisti.
 Bu rapor temizlenmis son surumdur; ileride script raporu tekrar overwrite edecekse encoding akisinin sabitlenmesi gerekir.
 
 ---
 
 ## Artefaktlar
 
-- [trace_training_metrics.csv](D:/task-offloading-study/results/raw/trace/training/trace_training_metrics.csv)
-- [trace_holdout_evaluation.csv](D:/task-offloading-study/results/raw/trace/holdout/trace_holdout_evaluation.csv)
-- [trace_domain_shift_evaluation.csv](D:/task-offloading-study/results/raw/trace/domain_shift/trace_domain_shift_evaluation.csv)
+- [trace_training_metrics.csv](D:/task-offloading-study/results/phase_6/metrics/synthetic_trace/training/trace_training_metrics.csv)
+- [trace_holdout_evaluation.csv](D:/task-offloading-study/results/phase_6/metrics/synthetic_trace/holdout/trace_holdout_evaluation.csv)
+- [trace_domain_shift_evaluation.csv](D:/task-offloading-study/results/phase_6/metrics/synthetic_trace/domain_shift/trace_domain_shift_evaluation.csv)
 - [trace_holdout_test_report.md](D:/task-offloading-study/v2_docs/phase_6/trace_holdout_test_report.md)
 - [trace_domain_shift_report.md](D:/task-offloading-study/v2_docs/phase_6/trace_domain_shift_report.md)
 - [ppo_v3_trace_best.zip](D:/task-offloading-study/models/ppo/trace_training/ppo_v3_trace_best.zip)
@@ -185,9 +225,10 @@ Bu rapor temizlenmis son surumdur; ileride script raporu tekrar overwrite edecek
 
 ## Faz 6 Karari
 
-Faz 6 tamamlandi.
+Faz 6 teknik trace pipeline olarak tamamlandi.
 
-Trace training, domain-shift evaluation ve final hold-out test birlikte okundugunda, proje artik trace-driven dogrulama asamasini gecmis durumdadir.
-Bir sonraki dogru adim Faz 7'de two-stage training / oracle-label hattina gecmektir.
+Trace training, domain-shift evaluation ve final hold-out test birlikte okundugunda, proje artik trace-style deney omurgasina sahiptir.
+Ancak raw real-data validated asama henuz gecilmis sayilmaz.
 
+Bir sonraki dogru adim, mevcut mimariyi koruyarak real-data recovery hattini acmak ve Faz 6R kapsaminda gercek veri kaynaklariyla yeniden dogrulamaktir.
 

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import csv
 import math
@@ -615,7 +615,7 @@ def _write_summary(report_path: Path, rows: List[Dict[str, object]], config: Dic
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labeling.yaml") -> Dict[str, str]:
+def generate_oracle_dataset(config_path: str = "configs/phase_7/oracle_labeling.yaml") -> Dict[str, str]:
     config = load_config(config_path)
     dataset_cfg = config.get("dataset", {})
     env_cfg = config.get("env", {})
@@ -694,7 +694,7 @@ def generate_oracle_dataset(config_path: str = "configs/synthetic/oracle_labelin
         teacher_rows = _rebalance_teacher_train_rows(teacher_rows, teacher_policy_name, config)
         all_rows.extend(teacher_rows)
 
-    csv_path = Path(config.get("output", {}).get("csv_path", "results/raw/synthetic/pretraining/oracle_label_dataset.csv"))
+    csv_path = Path(config.get("output", {}).get("csv_path", "results/phase_7/metrics/synthetic/pretraining/oracle_label_dataset.csv"))
     report_path = Path(config.get("output", {}).get("report_path", "v2_docs/phase_7/synthetic_oracle_label_summary.md"))
     _write_dataset(csv_path, all_rows)
     _write_summary(report_path, all_rows, config)
@@ -812,9 +812,9 @@ def _evaluate_supervised(model, loader: DataLoader, criterion: nn.Module) -> Dic
     }
 
 
-def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_pretraining.yaml") -> Dict[str, str]:
+def run_supervised_pretraining(config_path: str = "configs/phase_7/supervised_pretraining.yaml") -> Dict[str, str]:
     config = load_config(config_path)
-    dataset_path = Path(config.get("dataset", {}).get("csv_path", "results/raw/synthetic/pretraining/oracle_label_dataset.csv"))
+    dataset_path = Path(config.get("dataset", {}).get("csv_path", "results/phase_7/metrics/synthetic/pretraining/oracle_label_dataset.csv"))
     teacher_policy = normalize_teacher_policy_name(
         str(config.get("dataset", {}).get("teacher_policy", config.get("dataset", {}).get("objective", "teacher_balanced_semantic")))
     )
@@ -902,7 +902,7 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
     final_val = _evaluate_supervised(best_model, val_loader, criterion)
     final_test = _evaluate_supervised(best_model, test_loader, criterion)
 
-    metrics_csv = Path(config.get("output", {}).get("metrics_csv", "results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/supervised_pretraining_metrics.csv"))
+    metrics_csv = Path(config.get("output", {}).get("metrics_csv", "results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/supervised_pretraining_metrics.csv"))
     metrics_csv.parent.mkdir(parents=True, exist_ok=True)
     with open(metrics_csv, "w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(metrics_rows[0].keys()))
@@ -949,6 +949,7 @@ def run_supervised_pretraining(config_path: str = "configs/synthetic/supervised_
         "executed_epochs": str(len(metrics_rows)),
         "early_stopping_triggered": "yes" if stopped_early else "no",
     }
+
 
 
 

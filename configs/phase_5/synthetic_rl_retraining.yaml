@@ -1,0 +1,13 @@
+training:
+  base_config: "configs/phase_5/synthetic_rl_training.yaml"
+  algorithms: ["ppo", "dqn", "a2c"]
+  seeds: [42, 43, 44]
+  total_timesteps: 30000
+  eval_episodes: 10
+
+output:
+  model_root: "models"
+  csv_path: "results/phase_5/metrics/synthetic/rl_retraining/synthetic_rl_retraining.csv"
+  report_path: "v2_docs/phase_5/offloading_experiment_report.md"
+
+

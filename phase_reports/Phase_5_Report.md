@@ -6,6 +6,33 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 ---
 
+## 2026-05-09 Kapsam Duzeltmesi
+
+Faz 5 sonuclari metodolojik olarak gecerlidir, ancak bunlar `synthetic/simulation-stage` sonuclardir.
+Bu fazda elde edilen bulgular:
+
+- mekanizma dogrulamasi icin degerlidir
+- hangi bilesenin ne kadar etkili olduguna dair ilk bilimsel sinyali verir
+- ama tek basina `real-data validated` iddia kurdurmaz
+
+Bu nedenle Faz 5 kapanmis olsa da su adim atlanmayacaktir:
+
+```text
+Faz 5R - real-data ablation spot-check
+```
+
+Bu spot-check'in amaci, sentetik ortamda guclu gorunen ana bilesenlerin gercek veri omurgasi uzerinde de ayni yonde sinyal verip vermedigini kontrol etmektir.
+Minimum tekrar paketi:
+
+- `full_model`
+- `w/o semantic prior`
+- `w/o reward shaping`
+- `w/o partial offloading`
+
+Bu not, Faz 5'in degerini dusurmez; sadece bilimsel kapsamini dogru sinirlar.
+
+---
+
 ## Ozet
 
 Faz 5 sonunda synthetic ortam yeniden kalibre edildi ve onceki `cloud-only collapse` davranisi kirildi. Son durumda RL ajanlari agirlikli olarak `action=3` etrafinda karar veriyor; yani tam cloud yerine edge-dominant bir stratejiye kaymis durumdalar.
@@ -142,14 +169,14 @@ Kanonik synthetic rapor:
 - [offloading_experiment_report.md](C:/Users/BERAT/Desktop/task-offloading-study/v2_docs/phase_5/offloading_experiment_report.md)
 
 Temel figure'lar:
-- [synthetic_ablation_ppo_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/figures/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining_success_rate.png)
-- [synthetic_ablation_dqn_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/figures/synthetic/ablation/synthetic_ablation_dqn_multi_seed_retraining_success_rate.png)
-- [synthetic_ablation_a2c_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/figures/synthetic/ablation/synthetic_ablation_a2c_multi_seed_retraining_success_rate.png)
+- [synthetic_ablation_ppo_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/phase_5/figures/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining_success_rate.png)
+- [synthetic_ablation_dqn_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/phase_5/figures/synthetic/ablation/synthetic_ablation_dqn_multi_seed_retraining_success_rate.png)
+- [synthetic_ablation_a2c_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/phase_5/figures/synthetic/ablation/synthetic_ablation_a2c_multi_seed_retraining_success_rate.png)
 
 Ham CSV'ler:
-- [synthetic_ablation_ppo_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/raw/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining.csv)
-- [synthetic_ablation_dqn_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/raw/synthetic/ablation/synthetic_ablation_dqn_multi_seed_retraining.csv)
-- [synthetic_ablation_a2c_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/raw/synthetic/ablation/synthetic_ablation_a2c_multi_seed_retraining.csv)
+- [synthetic_ablation_ppo_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/phase_5/metrics/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining.csv)
+- [synthetic_ablation_dqn_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/phase_5/metrics/synthetic/ablation/synthetic_ablation_dqn_multi_seed_retraining.csv)
+- [synthetic_ablation_a2c_multi_seed_retraining.csv](C:/Users/BERAT/Desktop/task-offloading-study/results/phase_5/metrics/synthetic/ablation/synthetic_ablation_a2c_multi_seed_retraining.csv)
 
 ---
 
@@ -161,7 +188,6 @@ Bu karar, sentetik tarafta her sorunun tamamen cozuldugu anlamina gelmiyor. Anla
 - Faz 5'in cevapladigi soru artik yeterince net,
 - Faz 6'ya gecmek icin gereken sentetik taban yeterince olgun,
 - geri kalan belirsizliklerin dogru adresi artik trace-driven asama.
-
 
 
 

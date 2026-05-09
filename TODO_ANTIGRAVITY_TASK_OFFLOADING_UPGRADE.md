@@ -1,14 +1,24 @@
-﻿Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
+Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # TODO â€” Antigravity Upgrade Plan for `task-offloading-study`
 
 > Guncel durum notu (2026-04-02):
 > Faz 1-5 tamamlandi ve Faz 5 sentetik taraf donduruldu.
 > Faz 6 aktif asamadadir.
-> `src/core/trace_loader.py` implement edildi ve `experiments/trace/train_ppo.py` akisina baglandi.
+> `src/core/trace_loader.py` implement edildi ve `experiments/phase_6/train_synthetic_trace_ppo.py` akisina baglandi.
 > Faz 6'da acik kalan ana maddeler artik `Success Bonus`, switching overhead, domain-shift analizi ve final trace artefaktlaridir.
 > Faz numaralari konusunda not: bu dosya ana master-roadmap gibi korunmustur; fiili uygulama sirasi `task.md` icinde izlenmektedir.
 > Bu nedenle bu dosyadaki `Gelismis Metrik ve Istatistiksel Analiz` bolumu eski numaralandirmada Faz 7, `task.md` icinde ise Faz 9 olarak takip edilmektedir. Ayrintili kapsam notu bu dosyanin ilgili bolumune eklenmistir.
+
+> Real-data duzeltme notu (2026-05-09):
+> Mevcut Faz 6/7/8 ciktikalari raw real-data validated sonuc olarak okunmayacaktir.
+> Faz 6 mevcut durumda `synthetic_didi / trace-inspired pipeline validation`, Faz 7-8 ise `synthetic/simulation-stage results` olarak etiketlenir.
+> Ana bilimsel iddia icin secilen real-data kaynaklari ve rolleri `v2_docs/real_data_strategy.md` icinde tutulur.
+> Merkezi karar dokumani: `v2_docs/real_data_strategy.md`.
+> Operasyonel veri envanteri: `configs/phase_6/raw_real_data_manifest.yaml`.
+> Real-data mode acikken sentetik fallback sessizce calismayacak; ham veri yoksa deney duracaktir.
+> Config ve experiment yapisi faz bazli okunacak sekilde sadeleştirildi: `configs/phase_5..8` ve `experiments/phase_5..8`.
+> Klasor haritalari: `configs/README.md` ve `experiments/README.md`.
 
 Bu dosya, projeyi seminer seviyesinden **tez + makale + gÃ¼Ã§lÃ¼ demo** seviyesine Ã§Ä±karmak iÃ§in hazÄ±rlanmÄ±ÅŸ sÄ±ralÄ± geliÅŸtirme planÄ±dÄ±r.
 
@@ -117,15 +127,15 @@ Projeyi â€œÃ§alÄ±ÅŸÄ±yor seviyesinden â€œtekrarlanabilir araÅŸ
   - [ ] `src/pretrain_policy.py`
   - [ ] `src/utils/reproducibility.py`
 - [ ] `configs/` klasÃ¶rÃ¼ oluÅŸtur:
-  - [ ] `configs/synthetic/rl_training.yaml`
-  - [ ] `configs/synthetic/policy_evaluation.yaml`
-  - [ ] `configs/synthetic/ablation.yaml`
-  - [ ] `configs/trace/ppo_training.yaml`
+  - [ ] `configs/phase_5/synthetic_rl_training.yaml`
+  - [ ] `configs/phase_5/synthetic_policy_evaluation.yaml`
+  - [ ] `configs/phase_5/synthetic_ablation.yaml`
+  - [ ] `configs/phase_6/synthetic_trace_ppo_training.yaml`
 - [ ] `results/` klasÃ¶rÃ¼ oluÅŸtur:
-  - [ ] `results/raw/`
-  - [ ] `results/processed/`
-  - [ ] `results/figures/`
-  - [ ] `results/tables/`
+  - [ ] `results/phase_5/`
+  - [ ] `results/phase_6/`
+  - [ ] `results/phase_7/`
+  - [ ] `results/phase_8/`
 
 ### 3.2. Seed ve determinism kontrolÃ¼
 
@@ -345,25 +355,58 @@ KatkÄ±nÄ±n nereden geldiÄŸini gÃ¶stermek.
 ## Done kriteri
 
 - [ ] Her ana tasarÄ±m kararÄ±nÄ±n katkÄ±sÄ± tablo ve grafikle ayrÄ±ÅŸtÄ±rÄ±labiliyor.
+- [ ] Sentetik Faz 5 bulgularinin gercek veri omurgasi uzerindeki minimum teyidi `Faz 5R` / Faz 6 recovery paketi icinde ayrica izleniyor.
 
 ---
 
-# 8. Faz 6 â€” GerÃ§ek Veri / Trace-Driven Deney Paketi
+# 8. Faz 6 â€” Trace Pipeline / Real-Data Recovery Gate
 
 ## Hedef
 
-Synthetic-only gÃ¶rÃ¼nÃ¼mden Ã§Ä±kmak.
+Synthetic-only gorunumden cikmak ve trace pipeline'i kurmak.
+
+2026-05-09 kapsam duzeltmesi:
+
+- Mevcut lokal Faz 6 artefaktlari raw real dataset dogrulamasi olarak sunulmayacak.
+- `data/synthetic_trace/` altindaki mevcut episode splitleri `synthetic_didi / trace-inspired pipeline validation` icin kullanilmistir.
+- Bu fazin teknik katkisi trace loader, trace processor, splitleme, hold-out ve domain-shift deney omurgasini kurmus olmasidir.
+- Nihai real-data iddiasi icin `Faz 6R` recovery kapisi zorunludur.
+
+Ana real-data kaynak rolleri:
+
+- Glasgow MEC real-data dataset (`10.5525/gla.researchdata.896`): Rome Taxi mobility + Alibaba server utilisation ile ana MEC backbone.
+- UCI MEC Image Recognition Execution Times (`10.24432/C5N617`): edge execution/turnaround latency kalibrasyonu.
+- Alibaba Cluster Trace v2018: workload, server utilisation ve resource-demand proxy.
+- Google Cluster Trace: opsiyonel workload cross-check.
+- Didi Gaia: opsiyonel ikinci mobility/domain validation; tek basina offloading task alanlarini doldurmaz.
+
+Veri seti rolleri ve indirme/envanter ayrintisi bu faz altinda ve `v2_docs/real_data_strategy.md` ile `configs/phase_6/raw_real_data_manifest.yaml` icinde tutulur.
+Ilk uygulama notu: kod tarafinda real-data mode icin manifest tabanli guard baslatildi; veri eksiginde sentetik fallback yerine sert hata verilmesi hedefleniyor. Ham veri henuz lokal olarak olmadigi icin bu faz tamamlandi sayilmaz.
+Guncel inventory notu: `Glasgow MEC`, `UCI MEC execution-times` ve `Alibaba Cluster Trace` lokal olarak indirildi ve temiz klasor yapisina getirildi. Opsiyonel tarafta `Google Cluster Trace` icin secondary-validation core subset, `Didi Gaia` icin ise sample-day mobility CSV'leri alindi. Klasorlerde yalnizca tutulacak veri dosyalari birakildi; zip ve gecici repo klasorleri temizlendi.
+Lokal veri profili `v2_docs/phase_6/real_data_inventory_report.md` icine yazildi; siradaki teknik adim bu gozlenen kolonlardan real-data split builder cikarmaktir.
+Ilk real-data composite split builder calistirildi; `5000` task kaydi ve `80/10/10` spliti `data/real_composite_trace/` altina yazildi. Smoke-load config'i: `configs/phase_6/real_composite_trace_ppo_training.yaml`.
+Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real dataset okuyuculari `src/core/dataset_loader.py` icinde toplandi; `src/core/trace_loader.py` yalnizca materialized episode split / raw trace IO sorumlulugunu tasiyor. Real-data inventory ve readiness kontrolu de `experiments/phase_6/inspect_raw_real_datasets.py` altinda birlestirildi.
 
 ## YapÄ±lacaklar
 
 ### 8.1. Trace loader
 
 - [ ] `src/trace_loader.py` yaz.
-- [ ] Google Cluster Trace iÃ§in:
+- [ ] Glasgow MEC dataset icin:
+  - [ ] Rome Taxi mobility/location
+  - [ ] Alibaba server utilisation
+  - [ ] mobile-edge/server context
+- [ ] UCI MEC execution-time dataset icin:
+  - [ ] edge execution/turnaround latency kalibrasyonu
+- [ ] Alibaba Cluster Trace icin:
+  - [ ] task/workload arrival pattern
+  - [ ] cpu/memory demand proxy
+  - [ ] server load profile
+- [ ] Google Cluster Trace icin opsiyonel cross-check:
   - [ ] task arrival pattern
   - [ ] cpu demand
   - [ ] duration / runtime approximation
-- [ ] Didi Gaia iÃ§in:
+- [ ] Didi Gaia icin opsiyonel mobility validation:
   - [ ] mobility trajectory
   - [ ] distance-to-edge profile
   - [ ] handover benzeri hareketlilik etkileri
@@ -376,22 +419,35 @@ Synthetic-only gÃ¶rÃ¼nÃ¼mden Ã§Ä±kmak.
   - [ ] `deadline`
   - [ ] `task_type`
 - [ ] Eksik alanlar iÃ§in aÃ§Ä±k mapping assumptions dosyasÄ± yaz:
-  - [ ] `doc/trace_mapping_assumptions.md`
+  - [ ] `v2_docs/phase_6/trace_mapping_assumptions.md`
+  - [ ] `v2_docs/real_data_strategy.md`
+- [ ] Veri setinde dogrudan olmayan alanlar gizli sentetik deger gibi raporlanmasin:
+  - [ ] `deadline` yoksa design parameter veya trace-derived proxy olarak etiketlensin
+  - [ ] `task_type` yoksa semantic ablation icin proxy oldugu yazilsin
+  - [ ] `semantic priority` yoksa real-data ana deneyde kapatilsin veya proxy ablation olarak ayrilsin
 
 ### 8.3. Ä°ki deney modu oluÅŸtur
 
 - [ ] `synthetic mode`
 - [ ] `trace-driven mode`
+- [ ] `real-data mode`
+- [ ] Real-data mode icin sessiz synthetic fallback yasaklansin
 
 ### 8.4. Domain shift testi
 
 - [ ] Syntheticâ€™te eÄŸit, traceâ€™de test et.
 - [ ] Traceâ€™de eÄŸit, syntheticâ€™te test et.
+- [ ] Real-data uzerinde egit/test splitleriyle nihai dogrulama yap.
+- [ ] Faz 5'in ana ablation bulgularini real-data omurgasi uzerinde en az spot-check seviyesinde yeniden sinayarak `Faz 5R` notunu kapat.
 - [ ] Generalization tablosu oluÅŸtur.
 
 ## Done kriteri
 
-- [ ] Proje artÄ±k sadece â€œgÃ¼zel simÃ¼lasyon deÄŸil, trace-driven Ã§alÄ±ÅŸma haline geliyor.
+- [ ] Proje artik sadece guzel simulasyon degil, belgeli trace pipeline'a sahip hale geliyor.
+- [ ] Real-data validated iddia icin ham datasetler lokal olarak mevcuttur.
+- [ ] Real-data manifest doldurulmustur.
+- [ ] Real-data mode sentetik fallback kullanmadan calismaktadir.
+- [ ] Sentetik, trace-inspired ve real-data sonuclar raporlarda ayri etiketlenmistir.
 
 ---
 
@@ -620,7 +676,7 @@ Seminerde "wow effect" yaratmak.
 - [ ] `doc/methodology_v2.md`
 - [ ] `doc/ablation_plan.md`
 - [ ] `doc/evaluation_protocol.md`
-- [ ] `doc/trace_mapping_assumptions.md`
+- [ ] `v2_docs/phase_6/trace_mapping_assumptions.md`
 - [ ] `doc/threats_to_validity.md`
 - [ ] `doc/future_work_graph_rl.md`
 
@@ -826,11 +882,12 @@ Yani sÄ±ra:
 
 Bu sÄ±rayÄ± bozma.
 
-> Trace mapping assumptions dokumani olusturuldu: v2_docs/trace_mapping_assumptions.md
-> Domain-shift evaluation config + scripti calistirildi: configs/trace/domain_shift_evaluation.yaml, experiments/trace/evaluate_domain_shift.py
+> Trace mapping assumptions dokumani olusturuldu: v2_docs/phase_6/trace_mapping_assumptions.md
+> Real-data strategy ve recovery karari: v2_docs/real_data_strategy.md
+> Domain-shift evaluation config + scripti calistirildi: configs/phase_6/synthetic_trace_domain_shift_evaluation.yaml, experiments/phase_6/evaluate_synthetic_trace_domain_shift.py
 > Guncel domain-shift tablosu: v2_docs/phase_6/trace_domain_shift_report.md `r`n> Guncel hold-out test raporu: v2_docs/phase_6/trace_holdout_test_report.md
 
-> Faz 7 icin ilk oracle label dataset'i uretildi: results/raw/synthetic/pretraining/oracle_label_dataset.csv
+> Faz 7 icin ilk oracle label dataset'i uretildi: results/phase_7/metrics/synthetic/pretraining/oracle_label_dataset.csv
 > Ilk bulgu: scoring kalibrasyonu sonrasinda `weighted_objective_oracle` daha dengeli hale getirildi ve supervised pretraining icin kullanilabilir duruma yaklasti.
 
 > Faz 7 guncellemesi: teacher-policy sensitivity tamamlandi ve kanonik teacher `teacher_contextual_reward_aligned` olarak secildi.
@@ -838,3 +895,6 @@ Bu sÄ±rayÄ± bozma.
 > Kanonik supervised pretraining sonucu: best val acc 82.67%, test acc 83.11%. Ayrintili teacher karsilastirmasi: v2_docs/phase_7/teacher_policy_sensitivity_report.md
 
 > Faz 7 kapanisi: teacher-policy sensitivity tamamlandi, kanonik teacher `teacher_contextual_reward_aligned` olarak sabitlendi ve Faz 7 `Pretrained + PPO = 75.20%` vs `Scratch PPO = 63.00%` sonucu ile kapatildi. Ayrintili ozet: v2_docs/phase_7/teacher_policy_sensitivity_report.md
+
+
+

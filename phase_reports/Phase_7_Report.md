@@ -17,9 +17,9 @@ Bu fazda hedef, PPO ajaninin once teacher-labeled oracle dataset ile isitilmasi 
 ## 7.1 Oracle Label Uretimi
 
 Kanonik artefaktlar:
-- dataset: `results/raw/synthetic/pretraining/oracle_label_dataset.csv`
+- dataset: `results/phase_7/metrics/synthetic/pretraining/oracle_label_dataset.csv`
 - summary: `v2_docs/phase_7/synthetic_oracle_label_summary.md`
-- config: `configs/synthetic/oracle_labeling.yaml`
+- config: `configs/phase_7/oracle_labeling.yaml`
 
 Son durum:
 - coverage-aware selection ve train rebalance sonrasinda tum teacher'larda `local / edge_25 / edge_50 / edge_75 / edge_100 / cloud` coverage'i saglandi
@@ -30,7 +30,7 @@ Son durum:
 ## 7.2 Supervised Pretraining
 
 Kanonik artefaktlar:
-- config: `configs/synthetic/supervised_pretraining.yaml`
+- config: `configs/phase_7/supervised_pretraining.yaml`
 - report: `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
 - checkpoint: `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip`
 
@@ -45,10 +45,10 @@ Kanonik sonuc:
 ## 7.3 PPO Fine-Tuning ve Teacher Sensitivity
 
 Kanonik staged-training artefaktlari:
-- final CSV: `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
-- progress CSV: `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv`
+- final CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
+- progress CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv`
 - report: `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
-- teacher sensitivity summary: `results/raw/synthetic/teacher_policy_sensitivity/teacher_policy_sensitivity.csv`
+- teacher sensitivity summary: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/teacher_policy_sensitivity.csv`
 - teacher sensitivity report: `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
 
 Kanonik sonuc (`teacher_contextual_reward_aligned`):
@@ -122,3 +122,5 @@ Bu nedenle Faz 8 boyunca sadece final success degil, action diversity ve decisio
 ## Faz 9'a Devredilen Paket
 
 Faz 7 kapatilirken bilincli olarak Faz 9'a devredilen kisim, gelismis metrik ve istatistiksel analiz paketidir. Bu paket Faz 7 sonucunu degistiren degil, Faz 7 cikarimini daha guclu ve daha savunulabilir hale getirecek tamamlayici asamadir.
+
+

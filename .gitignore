@@ -163,3 +163,12 @@ sample_didi_mobility.csv
 # Phase reports / generated logs
 phase_reports/semantic_logs/
 logs/
+
+# Local raw real datasets
+data/raw_real_datasets/**
+!data/raw_real_datasets/
+!data/raw_real_datasets/.gitkeep
+
+# Local generated real-data composite outputs
+data/real_composite_trace/**
+!data/real_composite_trace/

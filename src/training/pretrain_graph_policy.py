@@ -262,7 +262,7 @@ def _with_output_suffix(path_value: str, suffix: str | None) -> str:
 
 
 def run_graph_supervised_pretraining(
-    config_path: str = "configs/synthetic/graph_supervised_pretraining.yaml",
+    config_path: str = "configs/phase_8/graph_supervised_pretraining.yaml",
     semantic_prior_fusion: str | None = None,
     seed_override: int | None = None,
     output_suffix: str | None = None,
@@ -392,7 +392,7 @@ def run_graph_supervised_pretraining(
     final_val = _evaluate_graph_policy(policy, val_loader, criterion)
     final_test = _evaluate_graph_policy(policy, test_loader, criterion)
 
-    metrics_default = _with_output_suffix(f"results/raw/synthetic/debug/graph_supervised_{fusion_mode}.csv", output_suffix)
+    metrics_default = _with_output_suffix(f"results/phase_8/metrics/synthetic_debug/graph_supervised_{fusion_mode}.csv", output_suffix)
     report_default = ""
     metrics_value = metrics_default if using_fusion_override else output_cfg.get("metrics_csv", metrics_default)
     report_value = report_default if using_fusion_override else output_cfg.get("report_path", report_default)
@@ -424,3 +424,4 @@ def run_graph_supervised_pretraining(
     if write_report and report_value:
         _write_report(report_path, result)
     return result
+

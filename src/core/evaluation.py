@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 import os
 import uuid
 from datetime import datetime
@@ -36,7 +36,7 @@ def _is_sb3_model(model):
     return hasattr(model, "policy") and hasattr(model, "learn")
 
 
-def normalize_experiment_csv(csv_path="results/raw/experiment_results.csv"):
+def normalize_experiment_csv(csv_path="results/phase_5/metrics/synthetic/policy_evaluation/experiment_results.csv"):
     if not os.path.exists(csv_path):
         return
 
@@ -70,7 +70,7 @@ def evaluate_policy(
     semantic_mode="None",
     config_seed=42,
     extra_fields=None,
-    csv_path="results/raw/experiment_results.csv",
+    csv_path="results/phase_5/metrics/synthetic/policy_evaluation/experiment_results.csv",
 ):
     print(f"[EVAL] Starting evaluation: {run_name} ({num_episodes} episodes)")
 
@@ -178,9 +178,9 @@ def evaluate_policy(
 
 
 def summarize_logs(
-    results_dir="results/raw",
+    results_dir="results/phase_5/metrics",
     output_table="v2_docs/phase_5/offloading_experiment_report.md",
-    figure_path="results/figures/ablation_impact.png",
+    figure_path="results/phase_5/figures/ablation_impact.png",
 ):
     if not os.path.exists(results_dir):
         print(f"[WARN] Results directory not found: {results_dir}")

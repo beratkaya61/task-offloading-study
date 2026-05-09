@@ -1,9 +1,9 @@
-import os
+﻿import os
 
 import yaml
 
 
-def load_config(config_path="configs/synthetic/rl_training.yaml"):
+def load_config(config_path="configs/phase_5/synthetic_rl_training.yaml"):
     """
     Loads experiment configuration from a YAML file.
     """
@@ -16,3 +16,4 @@ def load_config(config_path="configs/synthetic/rl_training.yaml"):
 if __name__ == "__main__":
     cfg = load_config()
     print("Loaded Config:", cfg)
+

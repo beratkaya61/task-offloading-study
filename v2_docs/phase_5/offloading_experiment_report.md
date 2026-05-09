@@ -77,21 +77,21 @@ Kisaca: multi-seed evaluation, mevcut modelin test-dayanikliligini; multi-seed r
 - Retraining bolumleri ise training-seed cesitliligi ekler; Faz 5 kapanis yorumu icin asil dayanak bunlar olmalidir.
 - Bazi varyantlarin birbirine cok yakin cikmasi, ilgili bilesenin etkisiz oldugunu degil; mevcut state, reward veya env tasariminin bu farki yeterince ayristiramadigini da gosterebilir.
 - Ozellikle `w_o_reward_shaping` ve `w_o_queue_awareness` sonuclarini bu gozle okumak gerekir.
-- `configs/synthetic/ablation.yaml` tek kanonik sentetik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.
+- `configs/phase_5/synthetic_ablation.yaml` tek kanonik sentetik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.
 
 ## Kanonik Deney Akisi
 
 Bu repo icinde Faz 5 icin sade akisin hangi dosyalardan gectigi burada ozetlenir.
 
-- Sentetik RL egitim ayarlari: `configs/synthetic/rl_training.yaml`
-- Sentetik RL retraining orkestrasyonu: `configs/synthetic/rl_retraining.yaml`
-- Sentetik policy evaluation ayarlari: `configs/synthetic/policy_evaluation.yaml`
-- Sentetik ablation config ve mod secimi: `configs/synthetic/ablation.yaml`
-- Sentetik RL retraining scripti: `experiments/synthetic/train_rl_agents.py`
-- Sentetik policy evaluation scripti: `experiments/synthetic/evaluate_policies.py`
-- Sentetik ablation scripti: `experiments/synthetic/run_ablation_study.py`
-- Trace PPO egitim configi: `configs/trace/ppo_training.yaml`
-- Trace PPO egitim scripti: `experiments/trace/train_ppo.py`
+- Sentetik RL egitim ayarlari: `configs/phase_5/synthetic_rl_training.yaml`
+- Sentetik RL retraining orkestrasyonu: `configs/phase_5/synthetic_rl_retraining.yaml`
+- Sentetik policy evaluation ayarlari: `configs/phase_5/synthetic_policy_evaluation.yaml`
+- Sentetik ablation config ve mod secimi: `configs/phase_5/synthetic_ablation.yaml`
+- Sentetik RL retraining scripti: `experiments/phase_5/run_synthetic_rl_retraining.py`
+- Sentetik policy evaluation scripti: `experiments/phase_5/run_synthetic_policy_evaluation.py`
+- Sentetik ablation scripti: `experiments/phase_5/run_synthetic_ablation_study.py`
+- Sentetik-trace PPO egitim configi: `configs/phase_6/synthetic_trace_ppo_training.yaml`
+- Trace PPO egitim scripti: `experiments/phase_6/train_synthetic_trace_ppo.py`
 - Kanonik rapor: `v2_docs/phase_5/offloading_experiment_report.md`
 
 Model ciktilari agent bazli klasorlerde tutulur:
@@ -230,4 +230,6 @@ Bu bolum, algoritma ve kapsam bazli uretilmis tum sentetik ablation success-rate
 
 ---
 *Updated: 2026-04-02T18:24:42.212220*
+
+
 

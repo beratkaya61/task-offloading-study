@@ -20,7 +20,7 @@ class TraceLoader:
     """Loads raw trace inputs or saved episode splits from disk."""
 
     def __init__(self, trace_dir: Optional[str] = None):
-        self.trace_dir = Path(trace_dir) if trace_dir else Path("data/traces")
+        self.trace_dir = Path(trace_dir) if trace_dir else Path("data/synthetic_trace")
 
     def load_trace_frames(self, pattern: str = "*.csv") -> List[pd.DataFrame]:
         """Load raw trace CSV files from the configured directory."""

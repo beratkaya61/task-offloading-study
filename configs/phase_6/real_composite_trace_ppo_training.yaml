@@ -1,0 +1,56 @@
+# Faz 6R real-data composite split configuration
+# Uses generated episode JSON files from data/real_composite_trace/splits
+
+training:
+  algorithm: "PPO"
+  version: "v3_real_composite"
+  max_episodes: 500
+  episodes_per_eval: 10
+  learning_rate: 3.0e-4
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.2
+  entropy_coef: 0.01
+  value_coef: 0.5
+  max_grad_norm: 0.5
+  batch_size: 64
+  n_steps: 2048
+  n_epochs: 10
+  patience: 50
+  min_improvement: 0.005
+
+environment:
+  trace_source: "real_data"
+  n_devices: 20
+  n_tasks_per_episode: 50
+  use_reward_shaping: true
+  use_partial_offloading: true
+  use_semantic_features: true
+  use_confidence_weighting: false
+  use_battery_awareness: true
+  use_mobility_features: true
+  use_queue_awareness: false
+  use_success_bonus: true
+  success_bonus: 100.0
+
+data:
+  real_data_mode: true
+  real_data_manifest: "configs/phase_6/raw_real_data_manifest.yaml"
+  trace_dir: "data/real_composite_trace/splits"
+  train_episodes: 80
+  val_episodes: 10
+  test_episodes: 10
+  normalize_features: true
+  remove_outliers: true
+  seed: 42
+
+logging:
+  log_dir: "results/phase_6/metrics/real_composite_trace/training"
+  tensorboard: true
+  checkpoint_dir: "models/ppo/real_composite_training"
+  report_path: "phase_reports/Phase_6R_Report.md"
+
+device:
+  cuda: true
+  device_id: 0
+

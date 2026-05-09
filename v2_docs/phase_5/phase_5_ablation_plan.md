@@ -1,4 +1,4 @@
-﻿# Faz 5 - Sistematik Ablation Study Hazirlik Plani
+# Faz 5 - Sistematik Ablation Study Hazirlik Plani
 
 ## Faz 5 Hedefi
 Semantik bilesenlerin (`LLM prior`, `reward shaping`, `confidence` vb.) task offloading sistemine katkisini sistematik olarak olcmek.
@@ -11,7 +11,7 @@ Ana soru:
 ## Yapilacaklar
 
 ### Adim 1: Ablation Konfigurasyonlarini Hazirlama
-- [x] `configs/synthetic/ablation.yaml` olusturuldu
+- [x] `configs/phase_5/synthetic_ablation.yaml` olusturuldu
 - [ ] Faz 4 sonuclariyla karsilastirma icin baseline kaydi korunacak
 
 Planlanan ablation'lar:
@@ -29,7 +29,7 @@ Planlanan ablation'lar:
 
 ### Adim 2: Ablation Runner Script Yazma
 Hedef dosya:
-- `experiments/synthetic/run_ablation_study.py`
+- `experiments/phase_5/run_synthetic_ablation_study.py`
 
 ### Adim 3: RL Environment Modifikasyonlari
 Hedef dosya:
@@ -58,8 +58,8 @@ Planlanan metrikler:
 ### Adim 5: Sonuclari Analiz Etme
 Beklenen ciktillar:
 - [ ] `v2_docs/phase_5/offloading_experiment_report.md`
-- [ ] `results/figures/synthetic_ablation_<algorithm>_<scope>_success_rate.png`
-- [ ] `results/raw/ablation_experiments.csv`
+- [ ] `results/phase_5/figures/synthetic/ablation/synthetic_ablation_<algorithm>_<scope>_success_rate.png`
+- [ ] `results/phase_5/metrics/synthetic/ablation/ablation_experiments.csv`
 
 ### Adim 6: Faz 5 Raporunu Yazma
 Hedef dosya:
@@ -88,7 +88,7 @@ Evet. Ama amac, RL politikasinin semantic bilesenlere ne kadar bagimli oldugunu 
 ---
 
 ## Baglantilar
-- Ablation config: `configs/synthetic/ablation.yaml`
+- Ablation config: `configs/phase_5/synthetic_ablation.yaml`
 - Onceki sonuc: `phase_reports/Phase_4_Report.md`
 - Kanonik Faz 5 klasoru: `v2_docs/phase_5/`
 
@@ -107,3 +107,5 @@ Evet. Ama amac, RL politikasinin semantic bilesenlere ne kadar bagimli oldugunu 
 ## Not
 Bu dosya Faz 5 baslamadan onceki plan notunu temsil eder. Faz 5'in gercek kapanis sonucu icin kanonik dokuman su dosyadir:
 - `v2_docs/phase_5/offloading_experiment_report.md`
+
+

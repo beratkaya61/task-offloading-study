@@ -1,0 +1,135 @@
+# Real-data manifest for task-offloading-study
+#
+# Status values:
+# - not_downloaded: dataset is selected but not available locally yet
+# - downloaded: raw files exist locally but are not validated yet
+# - validated: raw files were checked and can be used by real-data mode
+#
+# Real-data mode must fail if a required dataset is missing. It must not
+# silently fall back to synthetic_didi or generated traces.
+
+real_data_policy:
+  synthetic_fallback_allowed: false
+  central_strategy_doc: "v2_docs/real_data_strategy.md"
+  current_legacy_trace_label: "synthetic_didi / trace-inspired pipeline validation"
+
+datasets:
+  glasgow_mec:
+    title: "Simulating Mobile Edge Computing Environment with Real Data Sets"
+    doi: "10.5525/gla.researchdata.896"
+    url: "https://researchdata.gla.ac.uk/896/"
+    role: "primary MEC backbone: Rome Taxi mobility plus Alibaba server utilisation"
+    required_for_real_data_claim: true
+    local_root: "data/raw_real_datasets/glasgow_mec"
+    status: "downloaded"
+    expected_globs:
+      - "**/*.csv"
+      - "**/*.txt"
+      - "**/*.zip"
+    provides:
+      - "mobile_location"
+      - "mobility_trace"
+      - "server_utilisation"
+      - "edge_context"
+    missing_or_proxy:
+      - "semantic_priority"
+      - "task_type"
+      - "task_payload"
+
+  uci_mec_execution_times:
+    title: "Image Recognition Task Execution Times in Mobile Edge Computing"
+    doi: "10.24432/C5N617"
+    url: "https://uci-ics-mlr-prod.aws.uci.edu/dataset/859/image%2Brecognition%2Btask%2Bexecution%2Btimes%2Bin%2Bmobile%2Bedge%2Bcomputing"
+    role: "edge execution and turnaround latency calibration"
+    required_for_real_data_claim: true
+    local_root: "data/raw_real_datasets/uci_mec_execution_times"
+    status: "downloaded"
+    expected_globs:
+      - "**/*.csv"
+      - "**/*.data"
+      - "**/*.zip"
+    provides:
+      - "edge_execution_latency"
+      - "turnaround_time"
+    missing_or_proxy:
+      - "mobility"
+      - "cpu_cycles"
+      - "semantic_priority"
+
+  alibaba_cluster_trace_2018:
+    title: "Alibaba Cluster Trace v2018"
+    url: "https://github.com/alibaba/clusterdata"
+    role: "production workload, resource demand, and server-load source"
+    required_for_real_data_claim: true
+    local_root: "data/raw_real_datasets/alibaba_cluster_trace_2018"
+    status: "downloaded"
+    acquisition_scope: "minimal_subset_for_initial_composite_benchmark"
+    expected_globs:
+      - "**/*.csv"
+      - "**/*.txt"
+      - "**/*.tar.gz"
+      - "**/*.zip"
+    provides:
+      - "task_arrival"
+      - "cpu_memory_demand"
+      - "machine_utilisation"
+      - "workload_pressure"
+    missing_or_proxy:
+      - "mobility"
+      - "semantic_priority"
+
+  google_cluster_trace:
+    title: "Google Cluster Trace"
+    url: "https://github.com/google/cluster-data"
+    role: "optional workload cross-check"
+    required_for_real_data_claim: false
+    local_root: "data/raw_real_datasets/google_cluster_trace"
+    status: "downloaded"
+    acquisition_scope: "secondary_validation_core_subset"
+    expected_globs:
+      - "**/*.csv"
+      - "**/*.txt"
+      - "**/*.gz"
+      - "**/*.zip"
+    provides:
+      - "job_task_scheduling"
+      - "resource_demand"
+      - "workload_pattern"
+    missing_or_proxy:
+      - "mobility"
+      - "mec_execution_time"
+      - "semantic_priority"
+
+  didi_gaia:
+    title: "DiDi GAIA Open Data Initiative"
+    role: "optional secondary mobility/domain validation"
+    required_for_real_data_claim: false
+    local_root: "data/raw_real_datasets/didi_gaia"
+    status: "downloaded"
+    acquisition_scope: "secondary_validation_sample_day"
+    expected_globs:
+      - "**/*.csv"
+      - "**/*.txt"
+      - "**/*.zip"
+    provides:
+      - "trajectory"
+      - "mobility_location"
+    missing_or_proxy:
+      - "task_arrival"
+      - "cpu_cycles"
+      - "deadline"
+      - "semantic_priority"
+
+field_policy:
+  deadline:
+    source: "dataset if present; otherwise design parameter or trace-derived proxy"
+    reporting_rule: "must be labelled as proxy if not directly observed"
+  task_type:
+    source: "not directly available in selected real-data backbone"
+    reporting_rule: "disable in main real-data run or report as proxy ablation"
+  semantic_priority:
+    source: "not directly available in selected real-data backbone"
+    reporting_rule: "disable in main real-data run or report as semantic/proxy ablation"
+  cpu_cycles:
+    source: "Alibaba/Google resource-demand proxy when direct cycles are unavailable"
+    reporting_rule: "must be documented as resource-demand proxy"

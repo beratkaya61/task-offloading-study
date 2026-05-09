@@ -52,18 +52,18 @@ Kanonik teacher icin yorum:
 - Bu nedenle kanonik teacher kolunda fine-tuningin teacher bilgisini bozdugu degil, kucuk ama pozitif bir RL katkisi sagladigi yorumu daha dogrudur.
 - Buradan sonra Faz 8'de izlenecek ana mesele success dususu degil, action diversity ve decision structure'in ne kadar gelisecegidir.
 
-Ayrintili artefaktlar: `D:/task-offloading-study/results/raw/synthetic/teacher_policy_sensitivity/pretrained_checkpoint_evaluation.csv` ve `v2_docs/phase_7/pretrained_checkpoint_evaluation_report.md`.
+Ayrintili artefaktlar: `D:/task-offloading-study/results/phase_7/metrics/synthetic/teacher_policy_sensitivity/pretrained_checkpoint_evaluation.csv` ve `v2_docs/phase_7/pretrained_checkpoint_evaluation_report.md`.
 
 ## Teacher Bazli Ozetler
 
 ### Latency Greedy
 
 - Teacher policy: `teacher_latency_greedy`
-- Teacher config seti: `configs/synthetic/teacher_policy_configs/supervised_pretraining_latency_greedy.yaml` ve `configs/synthetic/teacher_policy_configs/staged_training_latency_greedy.yaml`
+- Teacher config seti: `configs/phase_7/teacher_policies/supervised_pretraining_latency_greedy.yaml` ve `configs/phase_7/teacher_policies/staged_training_latency_greedy.yaml`
 - Pretrained checkpoint: `models/ppo/teacher_policy_pretrained/latency_greedy/ppo_pretrained.zip`
-- Pretraining metrics CSV: `results/raw/synthetic/teacher_policy_sensitivity/latency_greedy/supervised_pretraining_metrics.csv`
-- Staged final CSV: `results/raw/synthetic/teacher_policy_sensitivity/latency_greedy/staged_training_comparison.csv`
-- Staged progress CSV: `results/raw/synthetic/teacher_policy_sensitivity/latency_greedy/staged_training_progress.csv`
+- Pretraining metrics CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/latency_greedy/supervised_pretraining_metrics.csv`
+- Staged final CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/latency_greedy/staged_training_comparison.csv`
+- Staged progress CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/latency_greedy/staged_training_progress.csv`
 - Coverage total (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `293/269/357/574/269/1238`
 - Coverage train (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `252/252/294/462/252/588`
 - Supervised pretraining: best epoch `8`, val acc `78.67%`, test acc `77.56%`
@@ -85,11 +85,11 @@ Bu teacher en yuksek final success artisini verdi, ancak final politika `Full Cl
 ### Contextual Reward Aligned
 
 - Teacher policy: `teacher_contextual_reward_aligned`
-- Teacher config seti: `configs/synthetic/teacher_policy_configs/supervised_pretraining_contextual_reward_aligned.yaml` ve `configs/synthetic/teacher_policy_configs/staged_training_contextual_reward_aligned.yaml`
+- Teacher config seti: `configs/phase_7/teacher_policies/supervised_pretraining_contextual_reward_aligned.yaml` ve `configs/phase_7/teacher_policies/staged_training_contextual_reward_aligned.yaml`
 - Pretrained checkpoint: `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip`
-- Pretraining metrics CSV: `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/supervised_pretraining_metrics.csv`
-- Staged final CSV: `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
-- Staged progress CSV: `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv`
+- Pretraining metrics CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/supervised_pretraining_metrics.csv`
+- Staged final CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
+- Staged progress CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv`
 - Coverage total (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `266/253/302/1049/252/878`
 - Coverage train (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `252/252/294/462/252/588`
 - Supervised pretraining: best epoch `17`, val acc `82.67%`, test acc `83.11%`
@@ -111,11 +111,11 @@ Bu teacher, Faz 7 icin kanonik secim olarak sabitlendi. Success artisi, dominant
 ### Balanced Semantic
 
 - Teacher policy: `teacher_balanced_semantic`
-- Teacher config seti: `configs/synthetic/teacher_policy_configs/supervised_pretraining_balanced_semantic.yaml` ve `configs/synthetic/teacher_policy_configs/staged_training_balanced_semantic.yaml`
+- Teacher config seti: `configs/phase_7/teacher_policies/supervised_pretraining_balanced_semantic.yaml` ve `configs/phase_7/teacher_policies/staged_training_balanced_semantic.yaml`
 - Pretrained checkpoint: `models/ppo/teacher_policy_pretrained/balanced_semantic/ppo_pretrained.zip`
-- Pretraining metrics CSV: `results/raw/synthetic/teacher_policy_sensitivity/balanced_semantic/supervised_pretraining_metrics.csv`
-- Staged final CSV: `results/raw/synthetic/teacher_policy_sensitivity/balanced_semantic/staged_training_comparison.csv`
-- Staged progress CSV: `results/raw/synthetic/teacher_policy_sensitivity/balanced_semantic/staged_training_progress.csv`
+- Pretraining metrics CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/balanced_semantic/supervised_pretraining_metrics.csv`
+- Staged final CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/balanced_semantic/staged_training_comparison.csv`
+- Staged progress CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/balanced_semantic/staged_training_progress.csv`
 - Coverage total (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `348/293/428/697/302/932`
 - Coverage train (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `252/252/294/462/252/588`
 - Supervised pretraining: best epoch `21`, val acc `78.00%`, test acc `83.56%`
@@ -137,11 +137,11 @@ Bu teacher dengeli bir ara nokta sundu, ancak final politika yine `Full Cloud` b
 ### Energy Greedy
 
 - Teacher policy: `teacher_energy_greedy`
-- Teacher config seti: `configs/synthetic/teacher_policy_configs/supervised_pretraining_energy_greedy.yaml` ve `configs/synthetic/teacher_policy_configs/staged_training_energy_greedy.yaml`
+- Teacher config seti: `configs/phase_7/teacher_policies/supervised_pretraining_energy_greedy.yaml` ve `configs/phase_7/teacher_policies/staged_training_energy_greedy.yaml`
 - Pretrained checkpoint: `models/ppo/teacher_policy_pretrained/energy_greedy/ppo_pretrained.zip`
-- Pretraining metrics CSV: `results/raw/synthetic/teacher_policy_sensitivity/energy_greedy/supervised_pretraining_metrics.csv`
-- Staged final CSV: `results/raw/synthetic/teacher_policy_sensitivity/energy_greedy/staged_training_comparison.csv`
-- Staged progress CSV: `results/raw/synthetic/teacher_policy_sensitivity/energy_greedy/staged_training_progress.csv`
+- Pretraining metrics CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/energy_greedy/supervised_pretraining_metrics.csv`
+- Staged final CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/energy_greedy/staged_training_comparison.csv`
+- Staged progress CSV: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/energy_greedy/staged_training_progress.csv`
 - Coverage total (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `331/276/424/607/327/1035`
 - Coverage train (`local / edge_25 / edge_50 / edge_75 / edge_100 / cloud`): `252/252/294/462/252/588`
 - Supervised pretraining: best epoch `30`, val acc `78.44%`, test acc `79.33%`
@@ -159,4 +159,5 @@ Bu teacher dengeli bir ara nokta sundu, ancak final politika yine `Full Cloud` b
 
 Yorum:
 Bu teacher success artisi saglasa da final karar yapisi yine `Full Cloud` tarafina kaydi. Energy perspektifi yararli kaldi, ancak Faz 7'nin context-sensitive behavior hedefi icin yeterli gorulmedi.
+
 

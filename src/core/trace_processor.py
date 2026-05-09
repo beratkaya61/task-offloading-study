@@ -72,23 +72,26 @@ class TraceProcessor:
             trace_dir: Directory containing trace files (CSV format)
             seed: Random seed for reproducibility
         """
-        self.trace_dir = Path(trace_dir) if trace_dir else Path('data/traces')
+        self.trace_dir = Path(trace_dir) if trace_dir else Path('data/synthetic_trace')
         self.seed = seed
         np.random.seed(seed)
         self.episodes = []
         self.metadata = {}
         
-    def load_traces(self, pattern: str = "*.csv") -> List[pd.DataFrame]:
+    def load_traces(self, pattern: str = "*.csv", allow_synthetic_fallback: bool = True) -> List[pd.DataFrame]:
         """
         Load trace files matching pattern.
         
         Args:
             pattern: Glob pattern for trace files
+            allow_synthetic_fallback: Whether missing raw traces may fall back to synthetic generation
             
         Returns:
             List of DataFrames from trace files
         """
         if not self.trace_dir.exists():
+            if not allow_synthetic_fallback:
+                raise FileNotFoundError(f"Trace directory not found for real-data mode: {self.trace_dir}")
             print(f"⚠️ Trace directory not found: {self.trace_dir}")
             print("   → Using synthetic traces instead")
             return self._generate_synthetic_traces()
@@ -102,7 +105,13 @@ class TraceProcessor:
             except Exception as e:
                 print(f"❌ Error loading {trace_file}: {e}")
         
-        return traces if traces else self._generate_synthetic_traces()
+        if traces:
+            return traces
+        if not allow_synthetic_fallback:
+            raise RuntimeError(
+                f"No raw trace CSV files found in {self.trace_dir} while synthetic fallback is disabled."
+            )
+        return self._generate_synthetic_traces()
     
     def _generate_synthetic_traces(self, n_devices: int = 20, 
                                    n_tasks: int = 500) -> List[pd.DataFrame]:
@@ -365,9 +374,9 @@ if __name__ == "__main__":
     train_eps, val_eps, test_eps = processor.split_episodes()
     
     # Save for training
-    processor.save_episodes(train_eps, 'data/traces/train_episodes.json')
-    processor.save_episodes(val_eps, 'data/traces/val_episodes.json')
-    processor.save_episodes(test_eps, 'data/traces/test_episodes.json')
+    processor.save_episodes(train_eps, 'data/synthetic_trace/train_episodes.json')
+    processor.save_episodes(val_eps, 'data/synthetic_trace/val_episodes.json')
+    processor.save_episodes(test_eps, 'data/synthetic_trace/test_episodes.json')
     
     # Statistics
     stats = processor.get_statistics()

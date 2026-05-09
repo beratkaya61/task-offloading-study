@@ -149,11 +149,11 @@ Bu dataset proje icinde sentetik environment ustunde uretilmistir.
 
 Guncel artifact:
 
-- `results/raw/synthetic/pretraining/oracle_label_dataset.csv`
+- `results/phase_7/metrics/synthetic/pretraining/oracle_label_dataset.csv`
 
 Bu dataset su script ile uretilir:
 
-- `experiments/synthetic/generate_oracle_labels.py`
+- `experiments/phase_7/generate_oracle_labels.py`
 
 Asil implementation burada bulunur:
 
@@ -161,7 +161,7 @@ Asil implementation burada bulunur:
 
 Kullandigi config:
 
-- `configs/synthetic/oracle_labeling.yaml`
+- `configs/phase_7/oracle_labeling.yaml`
 
 Yani bu dataset, bizim offloading problemimize gore olusturulmus, problem-ozel bir `teacher dataset`tir.
 
@@ -372,11 +372,11 @@ Implementation:
 
 Entrypoint:
 
-- `experiments/synthetic/run_supervised_pretraining.py`
+- `experiments/phase_7/run_supervised_pretraining.py`
 
 Config:
 
-- `configs/synthetic/supervised_pretraining.yaml`
+- `configs/phase_7/supervised_pretraining.yaml`
 
 Bu asamada PPO policy network bir siniflandirici gibi egitilir.
 
@@ -476,8 +476,8 @@ Model isimleriyle soyle gorunur:
 
 Kullanilan ana artifacts:
 
-- `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
-- `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv`
+- `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
+- `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_progress.csv`
 - `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
 
 Olculen baslica metrikler:
@@ -528,7 +528,7 @@ Evet. Faz 7 sonunda teacher-policy sensitivity tamamlandi ve kanonik kol su seki
 
 - kanonik teacher: `teacher_contextual_reward_aligned`
 - kanonik pretrained checkpoint: `models/ppo/teacher_policy_pretrained/contextual_reward_aligned/ppo_pretrained.zip`
-- kanonik staged comparison: `results/raw/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
+- kanonik staged comparison: `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/contextual_reward_aligned/staged_training_comparison.csv`
 
 Guncel 3-seed sonuc:
 
@@ -704,7 +704,7 @@ Bu sorunun cevabi, ayni sayilari karsilastirmiyor olmamizdir.
 Bu nedenle ek olarak `pretrained-only evaluation` yapildi ve teacher policy bazinda tablo cikarildi.
 Ayrintili rapor:
 - `v2_docs/phase_7/pretrained_checkpoint_evaluation_report.md`
-- `results/raw/synthetic/teacher_policy_sensitivity/pretrained_checkpoint_evaluation.csv`
+- `results/phase_7/metrics/synthetic/teacher_policy_sensitivity/pretrained_checkpoint_evaluation.csv`
 
 ## 21. Faz 7'nin Nihai Sonucu
 
@@ -722,3 +722,5 @@ Bu nedenle Faz 7 icin ana iddia su sekilde sabitlenmistir:
 > Two-stage training bu projede yalnizca ogrenme hizini degil, dogru teacher secildiginde final performansi ve decision structure kalitesini de iyilestirebilir.
 
 Teacher bazli ayrintili karsilastirma tek kaynak olarak `v2_docs/phase_7/teacher_policy_sensitivity_report.md` icinde tutulur.
+
+

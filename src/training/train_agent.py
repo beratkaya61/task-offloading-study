@@ -385,9 +385,9 @@ def train_single_agent(
     seed=42,
     save_path=None,
     run_name=None,
-    config_path="configs/synthetic/rl_training.yaml",
+    config_path="configs/phase_5/synthetic_rl_training.yaml",
     eval_episodes=10,
-    eval_csv_path="results/raw/synthetic_rl_retraining.csv",
+    eval_csv_path="results/phase_5/metrics/synthetic/rl_retraining/synthetic_rl_retraining.csv",
     extra_eval_fields=None,
     env_overrides=None,
     env_kwargs=None,
@@ -555,7 +555,7 @@ def train():
     parser.add_argument(
         "--config",
         type=str,
-        default="configs/synthetic/rl_training.yaml",
+        default="configs/phase_5/synthetic_rl_training.yaml",
         help="Training config path",
     )
     parser.add_argument("--eval_episodes", type=int, default=10, help="Final evaluation episodes")
@@ -573,5 +573,6 @@ def train():
 
 if __name__ == "__main__":
     train()
+
 
 

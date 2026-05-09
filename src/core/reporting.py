@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 import os
 
 import numpy as np
@@ -313,7 +313,7 @@ def _build_methodology_notes():
         "- Retraining bolumleri ise training-seed cesitliligi ekler; Faz 5 kapanis yorumu icin asil dayanak bunlar olmalidir.",
         "- Bazi varyantlarin birbirine cok yakin cikmasi, ilgili bilesenin etkisiz oldugunu degil; mevcut state, reward veya env tasariminin bu farki yeterince ayristiramadigini da gosterebilir.",
         "- Ozellikle `w_o_reward_shaping` ve `w_o_queue_awareness` sonuclarini bu gozle okumak gerekir.",
-        "- `configs/synthetic/ablation.yaml` tek kanonik sentetik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.",
+        "- `configs/phase_5/synthetic_ablation.yaml` tek kanonik sentetik ablation config dosyasidir; `mode: evaluation` ve `mode: retrain` ayni dosyadan yonetilir.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -324,15 +324,15 @@ def _build_workflow_map():
         "",
         "Bu repo icinde Faz 5 icin sade akisin hangi dosyalardan gectigi burada ozetlenir.",
         "",
-        "- Sentetik RL egitim ayarlari: `configs/synthetic/rl_training.yaml`",
-        "- Sentetik RL retraining orkestrasyonu: `configs/synthetic/rl_retraining.yaml`",
-        "- Sentetik policy evaluation ayarlari: `configs/synthetic/policy_evaluation.yaml`",
-        "- Sentetik ablation config ve mod secimi: `configs/synthetic/ablation.yaml`",
-        "- Sentetik RL retraining scripti: `experiments/synthetic/train_rl_agents.py`",
-        "- Sentetik policy evaluation scripti: `experiments/synthetic/evaluate_policies.py`",
-        "- Sentetik ablation scripti: `experiments/synthetic/run_ablation_study.py`",
-        "- Trace PPO egitim configi: `configs/trace/ppo_training.yaml`",
-        "- Trace PPO egitim scripti: `experiments/trace/train_ppo.py`",
+        "- Sentetik RL egitim ayarlari: `configs/phase_5/synthetic_rl_training.yaml`",
+        "- Sentetik RL retraining orkestrasyonu: `configs/phase_5/synthetic_rl_retraining.yaml`",
+        "- Sentetik policy evaluation ayarlari: `configs/phase_5/synthetic_policy_evaluation.yaml`",
+        "- Sentetik ablation config ve mod secimi: `configs/phase_5/synthetic_ablation.yaml`",
+        "- Sentetik RL retraining scripti: `experiments/phase_5/run_synthetic_rl_retraining.py`",
+        "- Sentetik policy evaluation scripti: `experiments/phase_5/run_synthetic_policy_evaluation.py`",
+        "- Sentetik ablation scripti: `experiments/phase_5/run_synthetic_ablation_study.py`",
+        "- Sentetik-trace PPO egitim configi: `configs/phase_6/synthetic_trace_ppo_training.yaml`",
+        "- Trace PPO egitim scripti: `experiments/phase_6/train_synthetic_trace_ppo.py`",
         "- Kanonik rapor: `v2_docs/phase_5/offloading_experiment_report.md`",
         "",
         "Model ciktilari agent bazli klasorlerde tutulur:",
@@ -516,7 +516,7 @@ def _build_ablation_extended_section(df):
     return "\n".join(lines) + "\n"
 
 
-def _build_ablation_figure_gallery(figure_dir="results/figures"):
+def _build_ablation_figure_gallery(figure_dir="results/phase_5/figures"):
     if not os.path.isdir(figure_dir):
         return "## Ablation Figure Galerisi\n\nBu bolum icin henuz figure yok.\n"
 
@@ -611,9 +611,9 @@ def _build_ablation_retraining_section(df):
 
 
 def write_experiment_report(
-    csv_path="results/raw",
+    csv_path="results/phase_5/metrics",
     output_path="v2_docs/phase_5/offloading_experiment_report.md",
-    figure_path="results/figures/ablation_impact.png",
+    figure_path="results/phase_5/figures/ablation_impact.png",
 ):
     df = _load_experiment_df(csv_path)
     baseline_df = _latest_batch_for_groups(
@@ -641,16 +641,16 @@ def write_experiment_report(
     with open(output_path, "w", encoding="utf-8") as handle:
         handle.write("# Task Offloading Experiment Report\n\n")
         handle.write(
-            "Bu dosya `results/tables` altindaki tek kanonik okuma noktasi olarak uretilir. "
-            "Ham veri workflow bazli CSV dosyalari halinde `results/raw/` altinda tutulur.\n\n"
+            "Bu dosya Faz 5 icin tek kanonik okuma noktasi olarak uretilir. "
+            "Ham veri workflow bazli CSV dosyalari halinde `results/phase_*/metrics/` altinda tutulur.\n\n"
         )
         handle.write("## Proje Akisi\n\n")
         handle.write(
             "- `models/`: egitilmis ajanlar\n"
             "- `experiments/`: deneyleri kosan script'ler\n"
-            "- `results/raw/`: kaynaga en yakin deney loglari\n"
+            "- `results/phase_*/metrics/`: kaynaga en yakin deney loglari\n"
             "- `v2_docs/phase_5/offloading_experiment_report.md`: insanlar icin tek ozet rapor\n"
-            "- `results/figures/`: gorseller\n\n"
+            "- `results/phase_*/figures/`: gorseller\n\n"
         )
         handle.write(
             "`results/` klasoru raporlar, metrikler ve gorseller icindir. "
@@ -683,4 +683,6 @@ def write_experiment_report(
         handle.write(_build_ablation_figure_gallery())
         handle.write("\n---\n")
         handle.write(f"*Updated: {datetime.now().isoformat()}*\n")
+
+
 

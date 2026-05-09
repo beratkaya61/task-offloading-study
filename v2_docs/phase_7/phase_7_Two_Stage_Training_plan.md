@@ -14,11 +14,11 @@ Faz 7'nin amaci, PPO ajanini sifirdan RL ile baslatmak yerine once teacher-label
 
 ## Kanonik Artefaktlar
 
-- Oracle dataset: `results/raw/synthetic/pretraining/oracle_label_dataset.csv`
+- Oracle dataset: `results/phase_7/metrics/synthetic/pretraining/oracle_label_dataset.csv`
 - Oracle summary: `v2_docs/phase_7/synthetic_oracle_label_summary.md`
-- Kanonik supervised pretraining config: `configs/synthetic/supervised_pretraining.yaml`
+- Kanonik supervised pretraining config: `configs/phase_7/supervised_pretraining.yaml`
 - Kanonik supervised pretraining report: `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
-- Kanonik staged comparison config: `configs/synthetic/staged_training_comparison.yaml`
+- Kanonik staged comparison config: `configs/phase_7/staged_training_comparison.yaml`
 - Kanonik staged comparison report: `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
 - Teacher sensitivity report: `v2_docs/phase_7/teacher_policy_sensitivity_report.md`
 
@@ -96,3 +96,4 @@ Faz 8'e gecis, Faz 7'nin asil amacinin karsilandigi kabul edilerek yapilir. Two-
 ## Faz 9'a Devredilenler
 
 Gelismis metrik, istatistiksel analiz ve GUI odakli sensitivity genisletmeleri Faz 9 altinda takip edilecektir.
+
