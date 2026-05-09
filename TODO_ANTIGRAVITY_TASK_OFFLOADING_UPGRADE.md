@@ -542,34 +542,34 @@ Bu yÃ¼zden GNN tabanlÄ± policy Ã§ok gÃ¼Ã§lÃ¼ bir upgrade olur.
 
 ### 11.1. Graph state tanÄ±mÄ±
 
-- [ ] Node tipleri:
-  - [ ] IoT device
-  - [ ] Edge server
-  - [ ] Cloud node
-  - [ ] Current task node (opsiyonel)
-- [ ] Node featureâ€™larÄ±:
-  - [ ] battery
-  - [ ] cpu capacity
-  - [ ] queue load
-  - [ ] mobility state
-  - [ ] semantic priority
-  - [ ] deadline pressure
-- [ ] Edge featureâ€™larÄ±:
-  - [ ] distance
-  - [ ] predicted rate
-  - [ ] transmission latency
-  - [ ] congestion estimate
+- [x] Node tipleri:
+  - [x] IoT device
+  - [x] Edge server
+  - [x] Cloud node
+  - [x] Current task node (opsiyonel)
+- [x] Node featureâ€™larÄ±:
+  - [x] battery
+  - [x] cpu capacity
+  - [x] queue load
+  - [x] mobility state
+  - [x] semantic priority
+  - [x] deadline pressure
+- [x] Edge featureâ€™larÄ±:
+  - [x] distance
+  - [x] predicted rate
+  - [x] transmission latency
+  - [x] congestion estimate
 
 ### 11.2. Graph encoder
 
-- [ ] `src/graph_policy.py` oluÅŸtur.
-- [ ] PyTorch Geometric veya DGL ile GNN encoder kur.
-- [ ] Ã‡Ä±kÄ±ÅŸta action logits Ã¼ret.
+- [x] `src/agents/graph_policy.py` oluÅŸtur.
+- [x] PyTorch-only graph encoder kur. PyTorch Geometric/DGL zorunlu degil; PyG daha sonra opsiyonel optimizasyon olarak kalabilir.
+- [x] Ã‡Ä±kÄ±ÅŸta action logits Ã¼ret.
 
 ### 11.3. Semantic prior fusion
 
-- [ ] LLM priorâ€™Ä± graph node feature veya policy prior olarak birleÅŸtir.
-- [ ] Erken fusion ve geÃ§ fusion olmak Ã¼zere iki strateji test et.
+- [x] LLM priorâ€™Ä± graph node feature veya policy prior olarak birleÅŸtir.
+- [x] Erken/input fusion ve geÃ§/late fusion olmak Ã¼zere stratejileri test et. Ilk smoke sonuc: `late` fusion, `none` fusion'a gore test accuracy `66.67%` vs `63.54%`, prediction diversity `0.3661` vs `0.0000`.
 
 ### 11.4. KarÅŸÄ±laÅŸtÄ±rma
 

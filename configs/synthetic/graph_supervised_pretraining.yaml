@@ -1,0 +1,78 @@
+seed: 42
+
+env:
+  max_steps: 50
+  num_edge_servers: 3
+  num_devices: 5
+
+dataset:
+  teacher_policy: teacher_contextual_reward_aligned
+  n_episodes: 60
+  train_ratio: 0.7
+  val_ratio: 0.15
+  balance_actions: true
+  balance_power: 0.75
+  samples_per_epoch: 4096
+
+graph_policy:
+  hidden_dim: 96
+  message_passing_steps: 2
+  semantic_prior_fusion: late
+  semantic_prior_weight: 0.35
+
+training:
+  epochs: 30
+  batch_size: 64
+  learning_rate: 0.0007
+  max_grad_norm: 1.0
+  early_stopping_patience: 8
+  early_stopping_min_delta: 0.0001
+  min_epochs_before_stopping: 12
+
+scoring:
+  delay_weight: 0.46
+  energy_weight: 0.14
+  deadline_weight: 0.16
+  cloud_weight: 0.18
+  battery_weight: 0.04
+  edge_risk_weight: 0.02
+  cloud_penalty: 0.85
+  partial_bonus: 0.22
+  edge_semantic_bonus: 0.18
+  local_semantic_bonus: 0.12
+  semantic_match_bonus: 0.12
+  semantic_mismatch_penalty: 0.08
+  local_large_task_penalty: 0.22
+  full_edge_penalty: 0.05
+  reward_aligned_local_bonus: 0.26
+  reward_aligned_edge25_bonus: 0.22
+  reward_aligned_edge50_bonus: 0.20
+  reward_aligned_edge75_bonus: 0.18
+  reward_aligned_edge100_bonus: 0.20
+  reward_aligned_cloud_bonus: 0.16
+  reward_aligned_semantic_bonus: 0.22
+  reward_aligned_cloud_penalty: 0.18
+  coverage_aware_selection:
+    teacher_policies:
+      - teacher_contextual_reward_aligned
+    contextual_target_ratios:
+      local: 0.12
+      edge_25: 0.12
+      edge_50: 0.14
+      edge_75: 0.22
+      edge_100: 0.12
+      cloud: 0.28
+    contextual_action_slack:
+      local: 1.00
+      edge_25: 1.40
+      edge_50: 1.00
+      edge_75: 0.75
+      edge_100: 1.30
+      cloud: 0.55
+    contextual_coverage_weight: 2.4
+    contextual_preference_bonus: 0.28
+    contextual_semantic_bonus: 0.16
+    contextual_gap_penalty: 0.55
+
+output:
+  checkpoint_path: models/phase_8/graph_policy_late.pt

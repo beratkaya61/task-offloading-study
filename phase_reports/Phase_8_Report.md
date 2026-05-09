@@ -2,9 +2,9 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 # Phase 8 Report: Graph-Aware Policy Upgrade
 
-**Durum:** Devam ediyor  
+**Durum:** Faz 8 teknik olarak tamamlandi  
 **Baslangic tarihi:** 5 May 2026  
-**Guncel tamamlanan adim:** 8.2 GNN policy implementation
+**Guncel tamamlanan adim:** 8.4 Final policy comparison
 
 ---
 
@@ -43,7 +43,7 @@ Yeni gorsellestirme:
 
 Yeni destek dokumani:
 
-- `v2_docs/phase_8/graph_state_builder_contract.md`
+- `v2_docs/phase_8/phase_8_explaination_of_studies.md`
 
 Bu adimda `GraphState` dataclass'i ve `build_graph_state(...)` fonksiyonu eklendi.
 Builder framework-neutral tasarlandi; yani PyTorch Geometric kurulu olmasa bile graph observation uretimi ve testleri calisiyor.
@@ -216,7 +216,7 @@ Testlerin kapsami:
 
 ---
 
-## 8.3'e Devredilenler
+## 8.2 Sonunda 8.3'e Devredilenler
 
 Siradaki adim:
 
@@ -227,3 +227,277 @@ Siradaki adim:
 Faz 8.2 sonunda kabul edilen sonuc:
 
 > Bir offloading karar ani artik graph olarak temsil edilebiliyor ve bu graph, ilk PyTorch-only graph-aware policy tarafindan 6 aksiyon logit'ine donusturulebiliyor.
+
+## 8.3 Semantic Prior Fusion
+
+### Yapilanlar
+
+Yeni kod:
+
+- `src/training/pretrain_graph_policy.py`
+- `experiments/synthetic/run_graph_supervised_pretraining.py`
+- `experiments/synthetic/run_graph_fusion_comparison.py`
+- `configs/synthetic/graph_supervised_pretraining.yaml`
+
+Guncellenen kod:
+
+- `src/agents/graph_policy.py`
+- `tests/test_graph_policy.py`
+
+Bu adimda semantic prior fusion deneysel olarak ayrilabilir hale getirildi.
+Onemli duzeltme: `semantic_prior_fusion="none"` secildiginde semantic prior artik policy head'e gizli sekilde girmiyor.
+Boylece `none` varyanti gercek kontrol grubu olarak kullanilabiliyor.
+
+Desteklenen fusion modlari:
+
+- `none`: graph policy semantic prior kullanmadan karar skoru uretir.
+- `input`: semantic prior policy head girisine eklenir.
+- `late`: graph policy once kendi skorlarini uretir, semantic prior son logit seviyesinde yumusak bias olarak eklenir.
+- `input_late`: semantic prior hem giriste hem son logit seviyesinde kullanilir.
+
+### Supervised Graph Warm-Start
+
+Graph policy icin Faz 7 teacher disiplinine uyumlu supervised warm-start hatti eklendi.
+Bu hat, synthetic environment icinde graph state uretir ve `teacher_contextual_reward_aligned` oracle kararlarini hedef etiket olarak kullanir.
+
+Akis:
+
+```text
+OffloadingEnv decision state -> GraphState -> GraphPolicyNetwork -> teacher action imitation
+```
+
+Bu asama RL fine-tuning degildir.
+Amaci, graph-aware policy'nin teacher kararlarini taklit edip edemedigini ve semantic prior fusion'in action diversity uzerindeki ilk etkisini olcmektir.
+
+### Smoke Fusion Comparison
+
+Calistirilan komut:
+
+```powershell
+python experiments\synthetic\run_graph_fusion_comparison.py --fusions none late
+```
+
+Kanonik cikarimlar:
+
+- Faz 8 aciklama ve not dokumani: `v2_docs/phase_8/phase_8_explaination_of_studies.md`
+- Graph warm-start config: `configs/synthetic/graph_supervised_pretraining.yaml`
+- Graph warm-start scriptleri: `src/training/pretrain_graph_policy.py`, `experiments/synthetic/run_graph_supervised_pretraining.py`, `experiments/synthetic/run_graph_fusion_comparison.py`
+- Graph checkpoint'leri calistirildiginda kanonik olarak `models/phase_8/` altina yazilir
+
+Rapor hijyen karari:
+
+- Per-run/per-fusion aciklama raporlari Faz 8 klasorunde tutulmayacak.
+- Fusion karsilastirmasi ve kapanis hikayesi ana aciklama dosyasinda izlenecek: `v2_docs/phase_8/phase_8_explaination_of_studies.md`.
+- Tekil debug kosulari icin ayrica markdown raporu uretilmeyecek; normal Faz 8 takibi ana aciklama dokumani uzerinden yapilacak.
+- Varsayilan akista `results/raw/synthetic/phase_8` benzeri per-run ham result klasoru tutulmayacak.
+- Ham CSV ciktisi yalnizca ozellikle `--write_csv` verilirse debug amacli uretilir; normal Faz 8 takibi tek markdown raporu uzerinden yapilir.
+
+Ilk smoke protokolu:
+
+| Fusion | Samples | Best Val Acc | Test Acc | Test Prediction Diversity |
+|---|---:|---:|---:|---:|
+| `none` | 432 | 72.92% | 63.54% | 0.0000 |
+| `late` | 432 | 72.92% | 66.67% | 0.3661 |
+
+Ilk yorum:
+
+- `none` fusion test accuracy acisindan makul basladi, ancak prediction diversity sifira yakin oldugu icin tek aksiyon yigilmasi riski tasiyor.
+- `late` fusion test accuracy'yi artirdi ve prediction diversity'yi anlamli bicimde yukseltti.
+- Bu sonuc, semantic prior'in graph policy icinde son karar skoruna kontrollu bias olarak eklenmesinin Faz 7'den kalan action diversity problemini azaltabilecegine dair ilk sinyaldir.
+- Bu tablo final bilimsel sonuc degildir; sadece hat dogrulama ve ilk sinyal icin smoke/diagnostic protokoldur.
+
+### Profesyonel Fusion Deney Protokolu
+
+Kullanim amaci:
+
+- Smoke testten gelen sinyali bilimsel olarak daha savunulabilir hale getirmek.
+- Tek seed / 4 epoch sonucuna dayanarak iddia kurmamak.
+- Fusion etkisini 5 seed uzerinden mean/std/95% CI ile raporlamak.
+
+Yeni full config:
+
+- `configs/synthetic/graph_supervised_pretraining.yaml`
+
+Full protokol:
+
+- 60 episode
+- 50 step
+- 30 epoch
+- minimum 12 epoch before early stopping
+- early stopping patience 8
+- 5 seed: `42, 43, 44, 45, 46`
+- tek konsolide markdown raporu
+
+Calistirilacak komut:
+
+```powershell
+python experiments\synthetic\run_graph_fusion_comparison.py --config configs\synthetic\graph_supervised_pretraining.yaml --fusions none late --seeds 42 43 44 45 46
+```
+
+Rapor hijyeni:
+
+- Per-seed veya per-fusion aciklama raporlari uretilmez.
+- Sonuclar ana aciklama dokumaninda yorumlanir: `v2_docs/phase_8/phase_8_explaination_of_studies.md`
+
+### Test Sonucu
+
+Calistirilan komut:
+
+```powershell
+python -m unittest tests.test_graph_state_builder tests.test_graph_policy
+```
+
+Sonuc:
+
+```text
+Ran 9 tests in 0.621s
+OK
+```
+
+Ek smoke komutlari:
+
+```powershell
+python experiments\synthetic\run_graph_supervised_pretraining.py --fusion none
+python experiments\synthetic\run_graph_supervised_pretraining.py --fusion late
+python experiments\synthetic\run_graph_fusion_comparison.py --fusions none late
+```
+
+Not:
+
+- Komutlar basariyla tamamlandi.
+- Ortam, Hugging Face cache klasoru icin yazma uyarisi verdi: `C:\Users\BERAT\.cache\huggingface\hub`.
+- Bu uyari Faz 8.3 ciktilarini engellemedi; ileride gerekirse `TRANSFORMERS_CACHE` proje icindeki yazilabilir cache dizinine alinabilir.
+
+## 8.4 Final Policy Comparison
+
+### Yapilanlar
+
+Yeni kod:
+
+- `src/agents/graph_policy_evaluator.py`
+- `experiments/synthetic/run_phase8_policy_comparison.py`
+- `tests/test_phase8_evaluation_bridge.py`
+
+Guncellenen kod:
+
+- `src/core/evaluation.py`
+- `src/training/pretrain_graph_policy.py`
+- `configs/synthetic/graph_supervised_pretraining.yaml`
+
+Bu adimda graph policy'nin mevcut vector-state evaluator mantigina dogrudan baglanmasi saglandi.
+`GraphPolicyEnvAdapter`, `OffloadingEnv` icindeki canli `device/task/edge/cloud` durumundan tekrar `GraphState` kurup graph policy'ye aktarir.
+Boylece `MLP-PPO`, `Pretrained MLP-PPO`, `GraphPolicy none` ve `GraphPolicy late` ayni rollout mantigi ve ayni evaluator altinda yan yana karsilastirilabilir hale geldi.
+
+### Final Karsilastirma Protokolu
+
+Calistirilan komut:
+
+```powershell
+python experiments\synthetic\run_phase8_policy_comparison.py --seeds 42 43 44 --eval_episodes 10 --report phase_reports\Phase_8_policy_comparison.md
+```
+
+Not:
+
+- Ortak karsilastirma seed kumesi `42, 43, 44` olarak secildi.
+- Bunun nedeni, Faz 7'den gelen kanonik PPO artefaktlarinin ortak ve hazir karsilastirma kumesinin bu seed'lerde bulunmasidir.
+- Semantic fusion'in supervised graph warm-start tarafindaki profesyonel protokolu ayrica `42, 43, 44, 45, 46` seed'leriyle calistirildi ve asagida ayri yorumlandi.
+
+### Test Sonucu
+
+Calistirilan komut:
+
+```powershell
+python -m unittest tests.test_graph_state_builder tests.test_graph_policy tests.test_phase8_evaluation_bridge
+```
+
+Sonuc:
+
+```text
+Ran 11 tests
+OK
+```
+
+### Final Environment Sonucu
+
+| Model | Seeds | Success Mean | Success 95% CI | P95 Latency Mean | Avg Energy Mean | QoE Mean | Dominant Action |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `MLP-PPO` | 3 | 66.53% | +/- 0.47% | 3.617 | 0.1321 | 48.45 | `edge_75` |
+| `Pretrained MLP-PPO` | 3 | 75.40% | +/- 0.60% | 2.892 | 0.0702 | 60.94 | `edge_75` |
+| `GraphPolicy none` | 3 | 75.00% | +/- 3.77% | 2.529 | 0.0705 | 62.36 | `edge_75` |
+| `GraphPolicy late` | 3 | 74.87% | +/- 2.38% | 2.671 | 0.0694 | 61.51 | `edge_75` |
+
+### 8.3'ten Gelen 5-Seed Profesyonel Fusion Sonucu
+
+Semantic prior'in graph policy icindeki katkisini sadece final environment rollout'u ile degil, once teacher-label supervised graph warm-start tarafinda da ayri okuduk.
+Bu nedenle `none` vs `late` icin profesyonel 5-seed protokol ayrica calistirildi.
+
+Full protokol:
+
+- 60 episode
+- 50 step
+- 30 epoch
+- minimum 12 epoch before early stopping
+- 5 seed: `42, 43, 44, 45, 46`
+
+Sonuc:
+
+| Fusion | Seeds | Best Val Acc Mean | Test Acc Mean | Test Acc 95% CI | Diversity Mean | Diversity 95% CI |
+|---|---:|---:|---:|---:|---:|---:|
+| `none` | 5 | 75.38% | 74.04% | +/- 1.57% | 0.4609 | +/- 0.0673 |
+| `late` | 5 | 84.13% | 82.76% | +/- 2.15% | 0.4380 | +/- 0.0308 |
+
+Bu tablo, semantic prior'in supervised graph warm-start asamasinda ogrenmeyi belirgin bicimde iyilestirdigini gostermektedir.
+Ancak final environment evaluation'da ayni ustunluk `GraphPolicy late > GraphPolicy none` seklinde korunmamistir.
+
+### Dort Ana Sorunun Net Cevabi
+
+1. `MLP-PPO + semantic prior` iyi mi?
+
+Evet, ama Faz 8 sonunda en guclu yapi degil.
+`MLP-PPO`, semantic prior ile anlamli bir baseline saglasa da ortalama `66.53%` success ile hem graph varyantlarinin hem de `Pretrained MLP-PPO`nun gerisinde kaldi.
+
+2. `Graph policy + semantic prior` daha iyi mi?
+
+Klasik `MLP-PPO`ya gore evet; `Pretrained MLP-PPO`ya gore net olarak hayir diyemiyoruz.
+`GraphPolicy late`, `MLP-PPO`yu belirgin bicimde gecerken, `Pretrained MLP-PPO` ile neredeyse ayni banda geldi ama onu gecemedi.
+
+3. `Graph policy`, semantic prior olmadan ne yapiyor?
+
+Beklenenden daha guclu performans veriyor.
+`GraphPolicy none`, final env karsilastirmasinda graph varyantlari icinde en iyi ortalama success (`75.00%`), en iyi latency (`2.529 s`) ve en iyi QoE (`62.36`) degerini verdi.
+Bu da graph yapisinin tek basina ciddi bir karar sinyali tasidigini gosteriyor.
+
+4. `Semantic prior`, gercekten katki sagliyor mu?
+
+Evet, fakat katkisi asamaya bagli.
+Supervised graph warm-start tarafinda semantic prior acik fayda sagliyor (`late > none`).
+Ancak end-to-end environment karsilastirmasinda bu fayda henuz net ve tutarli bir ustunluge donusmus degil (`GraphPolicy late`, `GraphPolicy none`u ortalama olarak gecemedi).
+Bu nedenle Faz 8 sonu icin en dogru cikarim: semantic prior, graph policy icin guclu bir ogrenme rehberi; fakat nihai env performansina katkisi icin ek RL fine-tuning veya farkli fusion tasarimi gerekebilir.
+
+### Faz 8'in Nihai Cikarimi
+
+- Graph-aware temsil, klasik `MLP-PPO`ya gore acik kazanc sagladi.
+- `Pretrained MLP-PPO`, Faz 8 sonunda hala en guclu vector-state baseline olarak kaldi.
+- `GraphPolicy none`, graph yapisinin semantic prior olmadan bile cok guclu olabildigini gosterdi.
+- `GraphPolicy late`, supervised warm-start tarafinda semantic prior faydasini dogruladi; fakat bu fayda final env karsilastirmasinda ayni netlikle korunmadi.
+- Tum modellerde dominant aksiyonun `edge_75` kalmasi, Faz 7'den devreden `Edge %75` attractor probleminin tamamen kirilmadigini gosterdi.
+
+Bu nedenle Faz 8'in bilimsel cikarimi su sekilde yazilabilir:
+
+> Graph-aware policy, partial task offloading probleminde vector-state MLP tabanli baseline'a gore daha guclu bir temsil sunmakta ve semantic prior olmadan bile yuksek karar kalitesi uretebilmektedir. Semantic prior ise graph policy icin supervised ogrenme asamasinda faydali bir rehberdir; ancak end-to-end environment performansinda katkisinin daha ileri RL uyarlamasi olmadan otomatik olarak garanti oldugu henuz gosterilememistir.
+
+## Faz 9'a Devredilenler
+
+Siradaki adim:
+
+- Faz 9 kapsaminda daha zengin metrikler (`p99`, fairness, jitter, battery depletion, decision overhead) ile Faz 8 sonucunu derinlestirmek
+- Graph policy icin RL fine-tuning veya alternatif fusion stratejileriyle `semantic prior` katkisinin env seviyesinde guclenip guclenmedigini test etmek
+- `Edge %75` attractor problemini graph tarafinda da azaltmaya yonelik yeni egitim veya reward tasarimlari denemek
+
+Zorunlu kapanis notu:
+
+> Faz 8'in zorunlu kapanis kapisi olan `MLP-PPO / Pretrained MLP-PPO / GraphPolicy none / GraphPolicy late` karsilastirmasi tamamlanmistir.
+
+Faz 8 sonunda kullanilacak hikaye formatli kapanis sablonu:
+
+- `v2_docs/phase_8/phase_8_explaination_of_studies.md`

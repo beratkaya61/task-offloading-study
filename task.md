@@ -68,10 +68,11 @@ Not:
 - Faz 8'e gecis oncesi Faz 7'den kalan ana izleme notu, kanonik pretrained policy'nin `Edge %75` agirlikli kalmasidir. `Full Cloud` collapse kirilmis olsa da tam context-sensitive action diversity henuz nihai olarak cozulmus sayilmaz; Faz 8 boyunca bu davranissal sinir izlenecektir.
 - Faz 8 baslangic plani `v2_docs/phase_8/phase_8_Graph_Aware_Policy_Upgrade_plan.md` icinde tutuluyor. Ilk uygulama sirasi: graph-state sozlesmesi, graph env/wrapper, GNN policy forward path, semantic prior fusion ve MLP-PPO vs graph-aware policy karsilastirmasidir.
 - Faz 8'i hic bilmeyen biri icin "neden graph-aware policy, ne elde edecegiz, bize katkisi ne?" aciklamasi `v2_docs/phase_8/phase_8_explaination_of_studies.md` icinde tutuluyor. Faz 8 dokumanlarini okurken once bu aciklama, sonra teknik plan okunmalidir.
-- [x] 8.1 Graph state node and edge features [`src/env/graph_state_builder.py`, `tests/test_graph_state_builder.py`, `v2_docs/phase_8/graph_state_builder_contract.md`; unit test: `python -m unittest tests.test_graph_state_builder` OK]
+- Faz 8 zorunlu kapanis kapisi: `MLP-PPO`, `Pretrained MLP-PPO`, `GraphPolicy none`, `GraphPolicy late` ayni evaluator altinda karsilastirilmadan Faz 8 kapanmis sayilmayacak. Faz sonunda hikaye formatli kapanis ve fusion karsilastirma anlatimi ana aciklama dosyasinda tutulacak: `v2_docs/phase_8/phase_8_explaination_of_studies.md`.
+- [x] 8.1 Graph state node and edge features [`src/env/graph_state_builder.py`, `tests/test_graph_state_builder.py`; GraphState sozlesmesi `v2_docs/phase_8/phase_8_explaination_of_studies.md` icine tasindi; unit test: `python -m unittest tests.test_graph_state_builder` OK]
 - [x] 8.2 GNN policy implementation [PyTorch-only initial graph-aware policy forward path `src/agents/graph_policy.py` ile eklendi; `tests/test_graph_policy.py`; combined unit test: `python -m unittest tests.test_graph_state_builder tests.test_graph_policy` OK]
-- [ ] 8.3 Semantic prior fusion
-- [ ] 8.4 Phase 8 test and commit
+- [x] 8.3 Semantic prior fusion [Graph policy fusion modes `none`, `input`, `late`, `input_late` olarak ayrildi; supervised graph warm-start hatti `src/training/pretrain_graph_policy.py` ile eklendi. Ilk `none` vs `late` sonucu sadece smoke/diagnostic bulgu olarak isaretlendi; final bilimsel iddia icin tek kanonik config `configs/synthetic/graph_supervised_pretraining.yaml` ve 5-seed mean/std/95% CI destekli `experiments/synthetic/run_graph_fusion_comparison.py` protokolu eklendi. Rapor kalabaligini onlemek icin fusion anlatimi ana aciklama dosyasinda tutulacak: `v2_docs/phase_8/phase_8_explaination_of_studies.md`]
+- [x] 8.4 Phase 8 test and commit [Graph-vs-MLP evaluator koprusu `src/agents/graph_policy_evaluator.py` ile eklendi; `experiments/synthetic/run_phase8_policy_comparison.py` ile `MLP-PPO`, `Pretrained MLP-PPO`, `GraphPolicy none`, `GraphPolicy late` ayni evaluator mantiginda karsilastirildi. Final env sonucu: `MLP-PPO=66.53%`, `Pretrained MLP-PPO=75.40%`, `GraphPolicy none=75.00%`, `GraphPolicy late=74.87%`. 5-seed supervised fusion protokolunde `late` fusion, `none`a gore teacher-imitation accuracy kazanci gosterdi (`82.76%` vs `74.04%`), ancak bu ustunluk final env kosusunda `GraphPolicy late > GraphPolicy none` seklinde korunmadi. Faz 8 kapanis raporu `phase_reports/Phase_8_Report.md` ve `v2_docs/phase_8/phase_8_explaination_of_studies.md` icine islendi; manual commit user tarafinda]
 
 ## Faz 9 - Advanced Metrics, Statistical Analysis and GUI
 Not:
@@ -104,10 +105,3 @@ Not:
 
 - Trace-to-task ceviri varsayimlari v2_docs/trace_mapping_assumptions.md icinde merkezi olarak belgelendi.
 - Domain-shift akisi experiments/trace/evaluate_domain_shift.py ve configs/trace/domain_shift_evaluation.yaml uzerinden calistirildi; guncel tablo v2_docs/phase_6/trace_domain_shift_report.md icinde tutuluyor.
-
-
-
-
-
-
-

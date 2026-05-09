@@ -37,8 +37,7 @@ class GraphPolicyNetwork(nn.Module):
         super().__init__()
         if message_passing_steps < 1:
             raise ValueError("message_passing_steps must be >= 1")
-        if semantic_prior_fusion not in {"none", "late"}:
-            raise ValueError("semantic_prior_fusion must be 'none' or 'late'")
+        semantic_prior_fusion = _normalize_semantic_fusion_mode(semantic_prior_fusion)
 
         self.hidden_dim = int(hidden_dim)
         self.message_passing_steps = int(message_passing_steps)
@@ -126,9 +125,10 @@ class GraphPolicyNetwork(nn.Module):
         graph_embedding = torch.mean(node_hidden, dim=0, keepdim=True)
         global_embedding = self.global_encoder(tensors["global_features"].unsqueeze(0))
         prior = tensors["action_prior"].unsqueeze(0)
-        logits = self.policy_head(torch.cat([graph_embedding, global_embedding, prior], dim=-1))
+        head_prior = prior if self.semantic_prior_fusion in {"input", "input_late"} else torch.zeros_like(prior)
+        logits = self.policy_head(torch.cat([graph_embedding, global_embedding, head_prior], dim=-1))
 
-        if self.semantic_prior_fusion == "late":
+        if self.semantic_prior_fusion in {"late", "input_late"}:
             logits = fuse_semantic_prior_logits(logits, prior, self.semantic_prior_weight)
 
         return logits.squeeze(0), graph_embedding.squeeze(0)
@@ -162,6 +162,23 @@ def fuse_semantic_prior_logits(logits: torch.Tensor, action_prior: torch.Tensor,
     safe_prior = action_prior.clamp_min(1e-6)
     prior_logits = torch.log(safe_prior)
     return logits + float(weight) * prior_logits
+
+
+def _normalize_semantic_fusion_mode(mode: str) -> str:
+    aliases = {
+        "early": "input",
+        "node": "input",
+        "node_feature": "input",
+        "input": "input",
+        "none": "none",
+        "late": "late",
+        "input_late": "input_late",
+        "early_late": "input_late",
+    }
+    normalized = aliases.get(str(mode).lower())
+    if normalized is None:
+        raise ValueError("semantic_prior_fusion must be one of: none, input, late, input_late")
+    return normalized
 
 
 def build_graph_policy_from_state(

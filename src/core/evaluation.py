@@ -140,9 +140,6 @@ def evaluate_policy(
     unique_actions = sum(1 for count in action_counts.values() if count > 0)
     dominant_action = max(action_counts, key=action_counts.get) if action_counts else -1
 
-    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
-    normalize_experiment_csv(csv_path)
-
     log_entry = {
         "run_id": str(uuid.uuid4())[:8],
         "timestamp": datetime.now().isoformat(),
@@ -164,11 +161,14 @@ def evaluate_policy(
     if extra_fields:
         log_entry.update(extra_fields)
 
-    df = pd.DataFrame([log_entry], columns=EXPERIMENT_LOG_COLUMNS)
-    if not os.path.exists(csv_path):
-        df.to_csv(csv_path, index=False)
-    else:
-        df.to_csv(csv_path, mode="a", header=False, index=False)
+    if csv_path:
+        os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
+        normalize_experiment_csv(csv_path)
+        df = pd.DataFrame([log_entry], columns=EXPERIMENT_LOG_COLUMNS)
+        if not os.path.exists(csv_path):
+            df.to_csv(csv_path, index=False)
+        else:
+            df.to_csv(csv_path, mode="a", header=False, index=False)
 
     print(
         f"[EVAL] {run_name} evaluated. Average success: {avg_success:.2%}, "
