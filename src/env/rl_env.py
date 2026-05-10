@@ -243,6 +243,7 @@ class OffloadingEnv(gym.Env):
                 edge_energy_ratio=edge_energy_ratio,
                 edge_energy_cost=edge_energy_cost,
                 success_bonus=self.success_bonus,
+                use_confidence_weighting=not self.ablation_flags.get("disable_confidence_weighting", False),
             )
             if not self.ablation_flags.get("disable_mobility_features", False) and action != 0:
                 reward -= (1.0 - link_quality_factor) * 10.0

@@ -9,12 +9,13 @@ Bu klasor faz bazli duzenlenmistir.
   - sentetik policy evaluation
   - sentetik ablation
   - sentetik RL retraining
+  - gercek veri omurgasinda Faz 5 ablation yeniden kosusu
 
 - `phase_6/`
-  - synthetic-trace PPO egitimi
+  - synthetic-trace RL egitimi
   - synthetic-trace domain-shift / holdout evaluation
   - real-data manifest
-  - real-composite-trace PPO config
+  - real-composite-trace RL training config
 
 - `phase_7/`
   - oracle labeling
@@ -27,6 +28,7 @@ Bu klasor faz bazli duzenlenmistir.
 
 Isim kurali:
 - `synthetic_*` = yalnizca sentetik ortam
-- `synthetic_trace_*` = sentetikten turetilmis trace-inspired akıs
-- `real_composite_trace_*` = ham gercek kaynaklardan birlestirilmis egitim/evaluation akisi
+- `synthetic_trace_*` = sentetikten turetilmis trace-inspired akis
+- `real_data_*` = Faz 5 icinde sentetik deneylerin gercek veri karsiliklari
+- `real_composite_trace_*` = ham gercek kaynaklardan birlestirilmis trace omurgasi
 - `raw_real_data_manifest.yaml` = ham gercek veri kaynaklari envanteri

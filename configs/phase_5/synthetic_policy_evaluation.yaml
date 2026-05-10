@@ -15,19 +15,19 @@ policies:
     - GreedyLatency
     - GeneticAlgorithm
   rl:
-    - PPO_v2
-    - DQN_v2
-    - A2C_v2
+    - PPO
+    - DQN
+    - A2C
 
 rl_models:
   checkpoint_family: "synthetic_rl_retraining"
   training_seed: 42
   checkpoints:
     synthetic_rl_retraining:
-      PPO_v2: "models/ppo/synthetic_rl_retraining/seed{seed}.zip"
-      DQN_v2: "models/dqn/synthetic_rl_retraining/seed{seed}.zip"
-      A2C_v2: "models/a2c/synthetic_rl_retraining/seed{seed}.zip"
+      PPO: "models/ppo/synthetic_rl_retraining/seed{seed}.zip"
+      DQN: "models/dqn/synthetic_rl_retraining/seed{seed}.zip"
+      A2C: "models/a2c/synthetic_rl_retraining/seed{seed}.zip"
     single_run_synthetic:
-      PPO_v2: "models/ppo/single_run_synthetic/ppo_offloading_agent_v2.zip"
-      DQN_v2: "models/dqn/single_run_synthetic/dqn_offloading_agent_v2.zip"
-      A2C_v2: "models/a2c/single_run_synthetic/a2c_offloading_agent_v2.zip"
+      PPO: "models/ppo/single_run_synthetic/ppo_offloading_agent_v2.zip"
+      DQN: "models/dqn/single_run_synthetic/dqn_offloading_agent_v2.zip"
+      A2C: "models/a2c/single_run_synthetic/a2c_offloading_agent_v2.zip"

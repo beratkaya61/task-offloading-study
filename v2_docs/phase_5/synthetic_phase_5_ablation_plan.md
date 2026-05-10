@@ -1,10 +1,10 @@
-# Faz 5 - Sistematik Ablation Study Hazirlik Plani
+# Faz 5 - Sistematik Ablation Study Hazirlik Plani (Synthetic)
 
 ## Faz 5 Hedefi
 Semantik bilesenlerin (`LLM prior`, `reward shaping`, `confidence` vb.) task offloading sistemine katkisini sistematik olarak olcmek.
 
 Ana soru:
-`PPO_v2` basarisinin kaynagi nedir ve semantic bilesenlerin toplam katkisi ne kadardir?
+`PPO` basarisinin kaynagi nedir ve semantic bilesenlerin toplam katkisi ne kadardir?
 
 ---
 
@@ -57,7 +57,7 @@ Planlanan metrikler:
 
 ### Adim 5: Sonuclari Analiz Etme
 Beklenen ciktillar:
-- [ ] `v2_docs/phase_5/offloading_experiment_report.md`
+- [ ] `v2_docs/phase_5/synthetic_phase_5_report.md`
 - [ ] `results/phase_5/figures/synthetic/ablation/synthetic_ablation_<algorithm>_<scope>_success_rate.png`
 - [ ] `results/phase_5/metrics/synthetic/ablation/ablation_experiments.csv`
 
@@ -105,7 +105,10 @@ Evet. Ama amac, RL politikasinin semantic bilesenlere ne kadar bagimli oldugunu 
 ---
 
 ## Not
-Bu dosya Faz 5 baslamadan onceki plan notunu temsil eder. Faz 5'in gercek kapanis sonucu icin kanonik dokuman su dosyadir:
-- `v2_docs/phase_5/offloading_experiment_report.md`
+Bu dosya Faz 5'in `synthetic` kolu icin baslangic plan notunu temsil eder.
+
+Kanonik raporlar:
+- `synthetic`: `v2_docs/phase_5/synthetic_phase_5_report.md`
+- `real_data`: `v2_docs/phase_5/real_data_phase_5_report.md`
 
 

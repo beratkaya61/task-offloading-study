@@ -1,4 +1,4 @@
-﻿def calculate_reward(
+def calculate_reward(
     action,
     delay,
     energy,
@@ -8,6 +8,7 @@
     edge_energy_ratio=None,
     edge_energy_cost=0.0,
     success_bonus=0.0,
+    use_confidence_weighting=True,
 ):
     """
     Calculates the reward (or penalty) for an offloading decision made by the RL Agent.
@@ -15,42 +16,43 @@
     """
     base_reward = 100.0
     reward = base_reward
-    
+
     # 1. Core Objectives: Minimize Delay and Energy (Strengthened based on Phase 5)
-    # Increased weights to ensure physical reality isn't ignored without shaping
-    reward -= (delay * 35.0)
-    reward -= (energy * 5.0)
+    reward -= delay * 35.0
+    reward -= energy * 5.0
     reward -= edge_energy_cost * 1.5
-    
-    # 2. LLM Semantic Alignment Bonus (With Confidence Thresholding)
+
+    # 2. LLM Semantic Alignment Bonus
     semantic = task.semantic_analysis
-    llm_rec = semantic.get('recommended_target', 'edge') if semantic else 'edge'
-    llm_confidence = semantic.get('confidence', 0.5) if semantic else 0.5
-    
-    # Apply thresholding: if LLM is not sure (< 0.7), lower the bonus impact
-    conf_factor = llm_confidence if llm_confidence > 0.7 else llm_confidence * 0.4
-    
-    if llm_rec == 'local' and action == 0:
+    llm_rec = semantic.get("recommended_target", "edge") if semantic else "edge"
+    llm_confidence = semantic.get("confidence", 0.5) if semantic else 0.5
+
+    if use_confidence_weighting:
+        conf_factor = llm_confidence if llm_confidence > 0.7 else llm_confidence * 0.4
+    else:
+        conf_factor = 1.0
+
+    if llm_rec == "local" and action == 0:
         reward += 20.0 * conf_factor
-    elif llm_rec == 'edge' and 1 <= action <= 4:
+    elif llm_rec == "edge" and 1 <= action <= 4:
         reward += 15.0 * conf_factor
-    elif llm_rec == 'cloud' and action == 5:
+    elif llm_rec == "cloud" and action == 5:
         reward += 15.0 * conf_factor
     else:
-        reward -= 12.0 * conf_factor # Slightly higher penalty for disobeying high-conf rec
-        
-    priority_score = semantic.get('priority_score', 0.5) if semantic else 0.5
-    size_norm = min(1.0, getattr(task, 'size_bits', 0.0) / 1e7)
+        reward -= 12.0 * conf_factor
+
+    priority_score = semantic.get("priority_score", 0.5) if semantic else 0.5
+    size_norm = min(1.0, getattr(task, "size_bits", 0.0) / 1e7)
 
     # 3. Penalize Cloud Cost
     cloud_cost = 30.0 + 18.0 * size_norm
     if action == 5:
         reward -= cloud_cost
-        if llm_rec == 'edge':
+        if llm_rec == "edge":
             reward -= (14.0 + 8.0 * size_norm) * conf_factor
     partial_preference = 0.35 + 0.35 * size_norm + 0.30 * priority_score
-    
-    # 4. Deadline Miss Penalty (Normalized by priority)
+
+    # 4. Deadline Miss Penalty
     deadline = max(0.1, task.deadline)
     task_success = delay <= deadline
     if not task_success:
@@ -59,23 +61,21 @@
         slack_ratio = max(0.0, (deadline - delay) / deadline)
         reward += 18.0 * slack_ratio * priority_score
         reward += float(success_bonus)
-        
-    # 5. Battery Awareness (Exponential Penalty - Calibrated Phase 5)
-    battery_pct = (device.battery / 10000.0) * 100.0 if hasattr(device, 'battery') else 100.0
-    
+
+    # 5. Battery Awareness
+    battery_pct = (device.battery / 10000.0) * 100.0 if hasattr(device, "battery") else 100.0
     if battery_pct < 25.0:
-        # Exponential growth for penalty as battery approaches zero
         severity = (25.0 - battery_pct) / 25.0
-        if action != 0: # Penalize offloading when battery is critical
+        if action != 0:
             reward -= 40.0 * (severity ** 2)
         else:
-            reward += 10.0 * severity # Reward local conservation
+            reward += 10.0 * severity
 
     if 1 <= action <= 4 and edge_energy_ratio is not None and edge_energy_ratio < 0.25:
         severity = (0.25 - edge_energy_ratio) / 0.25
         reward -= 35.0 * (severity ** 2)
-            
-    # 6. Granular Partial Offloading Utilities (Awareness of splits)
+
+    # 6. Granular Partial Offloading Utilities
     if 1 <= action <= 4:
         local_delay_only = task.cpu_cycles / 1e9
         if delay < local_delay_only:
@@ -83,8 +83,7 @@
 
         reward += 5.0 * (1.0 - energy / max(1e-5, local_energy_pred))
 
-        # Structural incentive: preserve semantically aligned split-edge behaviour.
-        if llm_rec == 'edge':
+        if llm_rec == "edge":
             if action in (1, 2, 3):
                 reward += 10.0 * conf_factor * partial_preference
                 if task_success:
@@ -97,8 +96,5 @@
 
     if action == 0 and delay <= deadline:
         reward += 4.0
-        
+
     return reward
-
-
-

@@ -179,7 +179,7 @@ def evaluate_policy(
 
 def summarize_logs(
     results_dir="results/phase_5/metrics",
-    output_table="v2_docs/phase_5/offloading_experiment_report.md",
+    output_table="v2_docs/phase_5/synthetic_phase_5_report.md",
     figure_path="results/phase_5/figures/ablation_impact.png",
 ):
     if not os.path.exists(results_dir):

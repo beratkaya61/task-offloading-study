@@ -104,7 +104,7 @@ data:
 logging:
   log_dir: "results/phase_6/metrics/synthetic_trace/training"
   tensorboard: true
-  checkpoint_dir: "models/ppo/trace_training"
+  checkpoint_dir: "models/trace_rl/synthetic_trace_training"
   report_path: "phase_reports/Phase_6_Report.md"
   
 device:

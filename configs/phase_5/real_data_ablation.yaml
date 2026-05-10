@@ -1,0 +1,140 @@
+# Faz 5 - Real Data Ablation
+
+ablation_studies:
+  full_model:
+    name: "Full Model (with all semantic features)"
+    enabled_features:
+      semantics: true
+      reward_shaping: true
+      semantic_prior: true
+      confidence_weighting: true
+      partial_offloading: true
+      battery_awareness: true
+      queue_awareness: true
+      mobility_features: true
+
+  w_o_semantics:
+    name: "Without LLM Semantic Analysis"
+    enabled_features:
+      semantics: false
+      reward_shaping: true
+      semantic_prior: false
+      confidence_weighting: false
+      partial_offloading: true
+      battery_awareness: true
+      queue_awareness: true
+      mobility_features: true
+
+  w_o_reward_shaping:
+    name: "Without Semantic Reward Shaping"
+    enabled_features:
+      semantics: true
+      reward_shaping: false
+      semantic_prior: true
+      confidence_weighting: true
+      partial_offloading: true
+      battery_awareness: true
+      queue_awareness: true
+      mobility_features: true
+
+  w_o_semantic_prior:
+    name: "Without Semantic Prior (Policy Bias)"
+    enabled_features:
+      semantics: true
+      reward_shaping: true
+      semantic_prior: false
+      confidence_weighting: true
+      partial_offloading: true
+      battery_awareness: true
+      queue_awareness: true
+      mobility_features: true
+
+  w_o_confidence:
+    name: "Without LLM Confidence Weighting"
+    enabled_features:
+      semantics: true
+      reward_shaping: true
+      semantic_prior: true
+      confidence_weighting: false
+      partial_offloading: true
+      battery_awareness: true
+      queue_awareness: true
+      mobility_features: true
+
+  w_o_partial_offloading:
+    name: "Without Partial Offloading (Local/Edge/Cloud only)"
+    enabled_features:
+      semantics: true
+      reward_shaping: true
+      semantic_prior: true
+      confidence_weighting: true
+      partial_offloading: false
+      battery_awareness: true
+      queue_awareness: true
+      mobility_features: true
+
+  w_o_battery_awareness:
+    name: "Without Battery Awareness"
+    enabled_features:
+      semantics: true
+      reward_shaping: true
+      semantic_prior: true
+      confidence_weighting: true
+      partial_offloading: true
+      battery_awareness: false
+      queue_awareness: true
+      mobility_features: true
+
+  w_o_queue_awareness:
+    name: "Without Server Queue Awareness"
+    enabled_features:
+      semantics: true
+      reward_shaping: true
+      semantic_prior: true
+      confidence_weighting: true
+      partial_offloading: true
+      battery_awareness: true
+      queue_awareness: false
+      mobility_features: true
+
+  w_o_mobility_features:
+    name: "Without Mobility & Distance Features"
+    enabled_features:
+      semantics: true
+      reward_shaping: true
+      semantic_prior: true
+      confidence_weighting: true
+      partial_offloading: true
+      battery_awareness: true
+      queue_awareness: true
+      mobility_features: false
+
+experiment:
+  mode: "evaluation"
+  algorithm: "ppo"
+  num_episodes_per_ablation: 25
+  seed: 42
+  seeds: [42, 43, 44]
+  evaluation_split: "test"
+  evaluation_model_path_template: "models/{algorithm}/real_data_ablation/{variant}/seed{seed}/{algorithm}_ablation_best.zip"
+  deterministic: true
+  confidence_interval: 0.95
+
+retraining:
+  algorithms: ["ppo", "dqn", "a2c"]
+  algorithm: "ppo"
+  base_config: "configs/phase_5/real_data_rl_training.yaml"
+  seeds: [42, 43, 44]
+  total_timesteps: 30000
+  max_episodes: 250
+  eval_episodes: 10
+  n_steps: 1024
+  batch_size: 64
+  n_epochs: 10
+  model_root: "models/{algorithm}/real_data_ablation"
+
+output:
+  results_dir: "results/phase_5/metrics/real_data/ablation"
+  table_path: "v2_docs/phase_5/real_data_phase_5_report.md"
+  plot_path_template: "results/phase_5/figures/real_data/ablation/real_data_ablation_{algorithm}_{scope}_success_rate.png"
+  csv_path_template: "results/phase_5/metrics/real_data/ablation/real_data_ablation_{algorithm}_{scope}.csv"

@@ -29,7 +29,7 @@ ablation_studies:
       battery_awareness: true
       queue_awareness: true
       mobility_features: true
-    description: "PPO_v2 without LLM semantic input, prior, or confidence"
+    description: "PPO without LLM semantic input, prior, or confidence"
     expected_drop: "~5-15% (LLM contribution)"
 
   # Without Reward Shaping - Reward ÅŸekillendirmesi olmadan
@@ -160,7 +160,7 @@ retraining:
 # Output configuration
 output:
   results_dir: "results/ablation"
-  table_path: "v2_docs/phase_5/offloading_experiment_report.md"
+  table_path: "v2_docs/phase_5/synthetic_phase_5_report.md"
   plot_path_template: "results/phase_5/figures/synthetic/ablation/synthetic_ablation_{algorithm}_{scope}_success_rate.png"
   csv_path_template: "results/phase_5/metrics/synthetic/ablation/synthetic_ablation_{algorithm}_{scope}.csv"
 

@@ -19,7 +19,7 @@ Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 ## Config ve Experiment Duzeni Notu (2026-05-10)
 - `configs/` ve `experiments/` klasorleri artik veri-tipine gore degil, faz bazli okunacak sekilde duzenlenmistir.
 - Ana klasorler: `phase_5`, `phase_6`, `phase_7`, `phase_8`.
-- Veri rejimi farki dosya isimlerinde acikca yazilir: `synthetic_*`, `synthetic_trace_*`, `real_composite_trace_*`.
+- Veri rejimi farki dosya isimlerinde acikca yazilir: `synthetic_*`, `synthetic_trace_*`, `real_data_*`, `real_composite_trace_*`.
 - `configs/README.md` ve `experiments/README.md` bu duzenin kisa haritasini verir.
 
 ## Results ve Test Duzeni Notu (2026-05-10)
@@ -62,7 +62,9 @@ Based on `TODO_ANTIGRAVITY_TASK_OFFLOADING_UPGRADE.md` and `AgentVNE`.
 - [x] 5.4 Scientific Seal: Visuals (plots), Variance (StdDev) & State Pruning (noise reduction)
 - [x] 5.5 Phase 5 final report update (Sealed with real metrics)
 Not:
-- Faz 5 sentetik ortamda kapatildi; gercek veri omurgasi uzerindeki zorunlu spot-check takibi `6R.5` maddesi altinda yapilacaktir.
+- Faz 5 sentetik ortamda kapatildi; gercek veri omurgasi uzerinde ayni ablation deneyleri tekrar kosularak dogrulanacaktir.
+- Bu tekrar kosunun sonuclari, sentetik Faz 5 sonuclariyla karismamasi icin `results/phase_5/metrics/real_data/` altinda tutulacaktir.
+- Faz 5 gercek veri kolunun kanonik yapisal ozet raporu `v2_docs/phase_5/real_data_phase_5_report.md` icinde tutulur.
 
 ## Faz 6 - Trace Pipeline / Synthetic-Didi Validation
 - [x] 6.1 `trace_loader.py` implemented and wired into the trace pipeline
@@ -76,7 +78,7 @@ Not:
 - 2026-05-09 kapsam duzeltmesi: Faz 6 teknik trace pipeline'i dogruladi, fakat mevcut lokal repo durumunda raw real dataset uzerinde nihai dogrulama yapilmis sayilmaz.
 - `data/synthetic_trace/` altindaki mevcut splitler materyalize episode JSON dosyalaridir; trace isimleri `synthetic_didi` ailesinden geldigi icin bu sonuc real-data validated iddia olarak kullanilmayacaktir.
 - `src/core/trace_loader.py` artik raw trace CSV ve kaydedilmis train/val/test episode split JSON dosyalarini yukleyebiliyor.
-- Mevcut Faz 6 orchestrator'u (`experiments/phase_6/train_synthetic_trace_ppo.py`) trace hazirlama icin artik once `TraceLoader`, sonra `TraceProcessor` kullaniyor.
+- Mevcut Faz 6 orchestrator'u (`experiments/phase_6/train_trace_rl.py`) trace hazirlama icin artik once `TraceLoader`, sonra `TraceProcessor` kullaniyor.
 - `data/synthetic_trace/` altindaki episode JSON dosyalari yeniden kullanilabiliyor; raw trace yoksa processor tarafindaki fallback akisiyla yeni splitler uretilebiliyor.
 - Trace config tarafinda `use_success_bonus: true` ve `success_bonus: 100.0` ile Faz 6 sparse success reward entegrasyonu acildi.
 - `rl_env.py` icinde task boyutu, link kalitesi ve onceki aksiyon degisimine bagli dinamik `switching_overhead` eklendi.
@@ -89,15 +91,26 @@ Not:
 - Kod tarafinda ilk guard eklendi: real-data mode acildiginda manifest okunacak ve sentetik fallback yerine sert hata verilecektir. Ancak veri kaynaklari henuz lokal olarak mevcut olmadigi icin 6R maddeleri tamamlandi sayilmaz.
 - Guncel inventory notu: `Glasgow MEC`, `UCI MEC execution-times` ve `Alibaba Cluster Trace` lokal olarak alindi ve temiz klasor yapisina indirildi. Opsiyonel tarafta `Google Cluster Trace` icin secondary-validation core subset, `Didi Gaia` icin ise sample-day mobility CSV'leri indirildi. Veri klasorlerinde yalnizca tutulacak veri dosyalari birakildi; zip ve gecici repo klasorleri temizlendi.
 - Lokal veri profili artik `v2_docs/phase_6/real_data_inventory_report.md` icinde mevcut; bir sonraki teknik adim bu gozlenen kolonlardan real-data split builder cikarmaktir.
-- Ilk real-data composite split builder artik calisiyor: `5000` task kaydi uretildi, `80/10/10` train/val/test splitleri `data/real_composite_trace/` altina yazildi ve `configs/phase_6/real_composite_trace_ppo_training.yaml` ile smoke-load dogrulandi.
+- Ilk real-data composite split builder artik calisiyor: `5000` task kaydi uretildi, `80/10/10` train/val/test splitleri `data/real_composite_trace/` altina yazildi ve `configs/phase_6/real_composite_trace_rl_training.yaml` ile smoke-load dogrulandi.
 - Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real dataset okuyuculari `src/core/dataset_loader.py` icinde toplandi; `src/core/trace_loader.py` yalnizca materialized episode split / raw trace IO sorumlulugunu tasiyor. Real-data inventory ve readiness kontrolu de `experiments/phase_6/inspect_raw_real_datasets.py` altinda birlestirildi.
 
 - [x] 6R.1 Real-data manifest ve lokal dataset envanteri olusturulsun
 - [x] 6R.2 Real mode icin sessiz synthetic fallback kapatilsin
 - [x] 6R.3 Secilen real-data kaynaklari ingest edilsin
 - [x] 6R.4 Real-data train/val/test splitleri yeniden uretulsun ve trace mapping dokumani guncellensin
-- [ ] 6R.5 Faz 5R real-data ablation spot-check yapilsin
-  Faz 5 sentetik ortamda kapanmis olsa da, ana mekanizma bulgulari bilimsel gerceklik icin gercek veri omurgasi uzerinde en az spot-check seviyesinde yeniden sinanacaktir.
+- [ ] 6R.5 Faz 5 ablation deneyleri gercek veri omurgasinda yeniden kosulsun
+  Faz 5 sentetik ortamda kapanmis olsa da, ayni ablation varyantlari gercek veri omurgasi uzerinde `PPO`, `DQN`, `A2C` ve coklu seed ile yeniden sinanacaktir.
+  Kanonik config/script ciftleri: `configs/phase_5/real_data_ablation.yaml` ve `experiments/phase_5/run_real_data_ablation_study.py`.
+  Durum notu (2026-05-10): `PPO` icin `multi_seed_retraining` ve `multi_seed_evaluation` kosulari tekrar uretildi; kanonik CSV yapisi sentetik Faz 5 artefaktlariyla ayni kolon sozlesmesine hizalandi.
+  Artefaktlar:
+  - `results/phase_5/metrics/real_data/rl_retraining/real_data_rl_retraining.csv`
+  - `results/phase_5/metrics/real_data/policy_evaluation/real_data_policy_evaluation.csv`
+  - `results/phase_5/metrics/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining.csv`
+  - `results/phase_5/metrics/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation.csv`
+  - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining_success_rate.png`
+  - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation_success_rate.png`
+  Ek not: `real_data_rl_retraining` artik sentetik Faz 5 ile ayni kanonik ham log sozlesmesini kullanan tek CSV dosyasi olarak uretiliyor; `real_data_policy_evaluation` tarafinda da `config_batch_id` alani dolduruluyor.
+  Acik kalan kisim: ayni kanonik akis `DQN` ve `A2C` icin de tekrar uretilmelidir.
 - [ ] 6R.6 Faz 7R real-trace staged-training yeniden kosulsun
 - [ ] 6R.7 Faz 8 real-trace graph-vs-MLP karsilastirmasi yeniden kosulsun
 - [ ] 6R.8 Phase raporlari guncellensin ve eski sentetik sonuclar ayri etiketle tutulsun

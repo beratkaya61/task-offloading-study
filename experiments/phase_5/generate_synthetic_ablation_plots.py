@@ -231,10 +231,10 @@ def generate_ablation_visuals(config_path="configs/phase_5/synthetic_ablation.ya
     print(f"[INFO] Plot generated at {plot_path}")
     summarize_logs(
         results_dir="results/phase_5/metrics",
-        output_table="v2_docs/phase_5/offloading_experiment_report.md",
+        output_table="v2_docs/phase_5/synthetic_phase_5_report.md",
         figure_path=plot_path,
     )
-    print("[INFO] Canonical report refreshed: v2_docs/phase_5/offloading_experiment_report.md")
+    print("[INFO] Canonical report refreshed: v2_docs/phase_5/synthetic_phase_5_report.md")
     return plot_path
 
 

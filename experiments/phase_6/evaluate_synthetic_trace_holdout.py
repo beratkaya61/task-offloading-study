@@ -20,7 +20,7 @@ REPO_ROOT = SCRIPT_DIR.parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from experiments.phase_6.train_synthetic_trace_ppo import TraceTrainingOrchestrator
+from experiments.phase_6.train_trace_rl import TraceTrainingOrchestrator
 
 DEFAULT_CONFIG = REPO_ROOT / "configs" / "phase_6" / "synthetic_trace_holdout_evaluation.yaml"
 CSV_COLUMNS = [
@@ -130,7 +130,7 @@ def write_report(report_path: Path, rows: list[dict]) -> None:
 
 def main(config_path: Path = DEFAULT_CONFIG) -> None:
     config = load_config(config_path)
-    training_config = REPO_ROOT / config.get("training_config", "configs/phase_6/synthetic_trace_ppo_training.yaml")
+    training_config = REPO_ROOT / config.get("training_config", "configs/phase_6/synthetic_trace_rl_training.yaml")
     checkpoint_path = REPO_ROOT / config.get("checkpoint_path", "models/ppo/trace_training/ppo_v3_trace_best.zip")
     csv_path = REPO_ROOT / config.get("output", {}).get("csv_path", "results/phase_6/metrics/synthetic_trace/holdout/trace_holdout_evaluation.csv")
     report_path = REPO_ROOT / config.get("output", {}).get("report_path", "v2_docs/phase_6/trace_holdout_test_report.md")

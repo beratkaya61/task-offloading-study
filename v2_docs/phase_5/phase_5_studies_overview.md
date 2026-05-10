@@ -4,7 +4,7 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 
 ## Bu Dokuman Neden Var
 
-Bu dokumanin amaci, Faz 5'te yapilan "Sistematik Ablation (Ablasyon) Calismasi"ni hic bilmeyen birinin bile rahatlikla anlayabilecegi sekilde anlatmaktir. 
+Bu dokuman Faz 5'in once `synthetic` kolunu, sonra da onun `real_data` koluna neden genisletildigini aciklar. Yani burada hem Faz 5'in sentetik mantigi hem de gercek veri tarafina neden ayni deney ailesinin tasindigi anlatilir.
 
 Faz 1'den Faz 4'e kadar sistemimize bircok yeni ozellik ekledik: LLM'in anlamsal cikarimlari (semantics), odul sekillendirme (reward shaping), kismen gorev gonderme (partial offloading), cihaz hareketliligi (mobility), batarya farkindaligi vb. Sistem calisti ve belli bir basari elde etti. 
 
@@ -13,6 +13,14 @@ Fakat bilimsel bir calismada "Sistemimiz iyi calisiyor" demek yetmez. Akademik h
 Iste Faz 5, bu zorlu ve elestirel soruya bilimsel ve sayisal bir cevap vermek icin kurgulanmistir.
 
 ---
+
+## Veri Rejimi Notu
+
+Faz 5 icin iki ayri rapor hatti vardir:
+- `synthetic`: `v2_docs/phase_5/synthetic_phase_5_report.md`
+- `real_data`: `v2_docs/phase_5/real_data_phase_5_report.md`
+
+Bu aciklama dosyasi iki kolun ortak hikayesini anlatir; sayisal sonuclar ise kendi veri rejimi raporunda tutulur.
 
 ## 1. Faz 5'e Gelmeden Once Sistem Ne Durumdaydi?
 
@@ -105,7 +113,7 @@ Elimizde su an:
 Ama Faz 5'te gorduk ki yapay (sentetik) veriler artik bizim modelimizin potansiyelini gormeye yetmiyor. 
 
 Iste Faz 6 tam olarak bunun icin basliyor: **Trace-Driven Pipeline (Gercek Veri Izleri)**.
-Artik sistemi Alibaba sunucularinin gercek yogunluk verileriyle, Roma'daki taksilerin gercek hareket rotalariyla zorlayacagiz. Faz 5'te kurdugumuz bu mukemmel test mekanizmasi (Ablation study), Faz 6'da gercek veriler uzerinde kosulacak ve "Gercek dunya verilerinde de gercekten basarili miyiz?" sorusunu yanitlayacak. (Buna da `Faz 5R - Real Data Ablation Spot-check` diyoruz).
+Artik sistemi Alibaba sunucularinin gercek yogunluk verileriyle, Roma'daki taksilerin gercek hareket rotalariyla zorlayacagiz. Faz 5'te kurdugumuz bu mukemmel test mekanizmasi (Ablation study), Faz 6'da gercek veriler uzerinde kosulacak ve "Gercek dunya verilerinde de gercekten basarili miyiz?" sorusunu yanitlayacak. (Bunun karsiligi artik Faz 5'in `real_data` koludur; yani sentetikte kosulan ayni deney ailesinin gercek veri omurgasinda yeniden kosulmasidir).
 
 ## Ozetle
 Faz 5, projenin "kendi kendini sorguladigi", icindeki her bir parcanin hakkini verip vermedigini yuzlestigi ve gercek dunyaya (Faz 6) cikmadan onceki en sert antrenmanidir.

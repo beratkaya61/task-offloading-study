@@ -10,7 +10,9 @@ Bu klasor de config yapisiyla ayni mantikta faz bazli duzenlenmistir.
   - sentetik ablation kosulari ve plot uretimi
 
 - `phase_6/`
-  - synthetic-trace PPO egitimi
+  - ortak trace RL egitim orkestrasyonu
+  - trace RL kosu giris noktasi
+  - real-composite-trace ablation runner'i
   - synthetic-trace domain-shift / holdout evaluation
   - ham gercek veri envanter denetimi
   - real composite trace build
@@ -30,4 +32,4 @@ Bu klasor de config yapisiyla ayni mantikta faz bazli duzenlenmistir.
 
 Kisa okuma:
 - once faz klasorune bak
-- sonra script adindaki `synthetic`, `synthetic_trace` veya `real_composite_trace` etiketinden veri rejimini oku
+- sonra script adindaki `synthetic`, `synthetic_trace` veya `real_data` etiketinden veri rejimini oku

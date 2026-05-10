@@ -1,5 +1,5 @@
-checkpoint_path: "models/ppo/trace_training/ppo_v3_trace_best.zip"
-training_config: "configs/phase_6/synthetic_trace_ppo_training.yaml"
+checkpoint_path: "models/trace_rl/synthetic_trace_training/ppo_trace_best.zip"
+training_config: "configs/phase_6/synthetic_trace_rl_training.yaml"
 
 evaluation:
   seed: 42

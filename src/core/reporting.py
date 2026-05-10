@@ -331,9 +331,9 @@ def _build_workflow_map():
         "- Sentetik RL retraining scripti: `experiments/phase_5/run_synthetic_rl_retraining.py`",
         "- Sentetik policy evaluation scripti: `experiments/phase_5/run_synthetic_policy_evaluation.py`",
         "- Sentetik ablation scripti: `experiments/phase_5/run_synthetic_ablation_study.py`",
-        "- Sentetik-trace PPO egitim configi: `configs/phase_6/synthetic_trace_ppo_training.yaml`",
-        "- Trace PPO egitim scripti: `experiments/phase_6/train_synthetic_trace_ppo.py`",
-        "- Kanonik rapor: `v2_docs/phase_5/offloading_experiment_report.md`",
+        "- Sentetik-trace RL egitim configi: `configs/phase_6/synthetic_trace_rl_training.yaml`",
+        "- Trace RL egitim scripti: `experiments/phase_6/run_trace_training.py`",
+        "- Kanonik rapor: `v2_docs/phase_5/synthetic_phase_5_report.md`",
         "",
         "Model ciktilari agent bazli klasorlerde tutulur:",
         "- PPO single-run sentetik checkpointleri: `models/ppo/single_run_synthetic/`",
@@ -612,7 +612,7 @@ def _build_ablation_retraining_section(df):
 
 def write_experiment_report(
     csv_path="results/phase_5/metrics",
-    output_path="v2_docs/phase_5/offloading_experiment_report.md",
+    output_path="v2_docs/phase_5/synthetic_phase_5_report.md",
     figure_path="results/phase_5/figures/ablation_impact.png",
 ):
     df = _load_experiment_df(csv_path)
@@ -639,7 +639,7 @@ def write_experiment_report(
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as handle:
-        handle.write("# Task Offloading Experiment Report\n\n")
+        handle.write("# Task Offloading Experiment Report - Synthetic Phase 5\n\n")
         handle.write(
             "Bu dosya Faz 5 icin tek kanonik okuma noktasi olarak uretilir. "
             "Ham veri workflow bazli CSV dosyalari halinde `results/phase_*/metrics/` altinda tutulur.\n\n"
@@ -649,7 +649,7 @@ def write_experiment_report(
             "- `models/`: egitilmis ajanlar\n"
             "- `experiments/`: deneyleri kosan script'ler\n"
             "- `results/phase_*/metrics/`: kaynaga en yakin deney loglari\n"
-            "- `v2_docs/phase_5/offloading_experiment_report.md`: insanlar icin tek ozet rapor\n"
+            "- `v2_docs/phase_5/synthetic_phase_5_report.md`: insanlar icin tek ozet rapor\n"
             "- `results/phase_*/figures/`: gorseller\n\n"
         )
         handle.write(

@@ -19,9 +19,9 @@ from src.training.train_agent import train_single_agent
 
 
 RUN_LABELS = {
-    "ppo": "PPO_v2",
-    "dqn": "DQN_v2",
-    "a2c": "A2C_v2",
+    "ppo": "PPO",
+    "dqn": "DQN",
+    "a2c": "A2C",
 }
 
 
@@ -42,7 +42,7 @@ def run_synthetic_rl_retraining(config_path="configs/phase_5/synthetic_rl_retrai
     train_config_path = training_cfg.get("base_config", "configs/phase_5/synthetic_rl_training.yaml")
     model_root = output_cfg.get("model_root", "models")
     csv_path = output_cfg.get("csv_path", "results/phase_5/metrics/synthetic/rl_retraining/synthetic_rl_retraining.csv")
-    report_path = output_cfg.get("report_path", "v2_docs/phase_5/offloading_experiment_report.md")
+    report_path = output_cfg.get("report_path", "v2_docs/phase_5/synthetic_phase_5_report.md")
     batch_id = datetime.now().strftime("synthetic_retrain_%Y%m%d_%H%M%S")
 
     print("=" * 80)

@@ -204,9 +204,9 @@ Glasgow MEC, UCI MEC execution-time, Alibaba Cluster Trace ve opsiyonel Didi/Goo
 Ham veri yoksa deney durmali, synthetic episode uretimi otomatik olarak devreye girmemelidir.
 
 3. Faz 5 bulgularinin real-data tarafindaki dogrulamasi henuz yapilmamistir.
-Su an sadece hizli ablation spot-check vardir. Gerekirse trace tarafinda daha sistematik semantic/partial/mobility karsilastirmasi eklenebilir.
+Gercek veri omurgasinda Faz 5'in tam ablation yeniden kosusu henuz tamamlanmamistir. Semantic/partial/mobility aileleri gercek veri tarafinda coklu algoritma ve coklu seed ile yeniden kosulmalidir.
 
-4. `experiments/phase_6/train_synthetic_trace_ppo.py` icindeki otomatik rapor yazimi bir onceki kosuda encoding bozulmasi uretmisti.
+4. `experiments/phase_6/train_trace_rl.py` icindeki otomatik rapor yazimi bir onceki kosuda encoding bozulmasi uretmisti.
 Bu rapor temizlenmis son surumdur; ileride script raporu tekrar overwrite edecekse encoding akisinin sabitlenmesi gerekir.
 
 ---

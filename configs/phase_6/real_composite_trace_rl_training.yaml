@@ -47,7 +47,7 @@ data:
 logging:
   log_dir: "results/phase_6/metrics/real_composite_trace/training"
   tensorboard: true
-  checkpoint_dir: "models/ppo/real_composite_training"
+  checkpoint_dir: "models/trace_rl/real_composite_trace_training"
   report_path: "phase_reports/Phase_6R_Report.md"
 
 device:

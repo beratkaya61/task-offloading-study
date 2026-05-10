@@ -6,7 +6,9 @@ Bu klasor deney artefaktlarini faz bazli tutar.
 
 - `phase_5/`
   - `metrics/synthetic/`: sentetik RL retraining, policy evaluation ve ablation CSV'leri
+  - `metrics/real_data/`: gercek veri RL retraining, policy evaluation ve ablation CSV'leri
   - `figures/synthetic/`: sentetik ablation gorselleri
+  - `figures/real_data/`: gercek veri ablation gorselleri
 
 - `phase_6/`
   - `metrics/synthetic_trace/`: synthetic-trace training, domain-shift ve holdout CSV'leri
@@ -23,4 +25,4 @@ Bu klasor deney artefaktlarini faz bazli tutar.
 Okuma kurali:
 - once `phase_*` klasorune bak
 - sonra `metrics` veya `figures` ayrimini oku
-- veri rejimini `synthetic`, `synthetic_trace` veya `real_composite_trace` dizin adindan takip et
+- veri rejimini `synthetic`, `synthetic_trace` veya `real_data` dizin adindan takip et

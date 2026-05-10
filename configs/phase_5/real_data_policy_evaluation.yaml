@@ -1,0 +1,34 @@
+evaluation:
+  num_episodes: 10
+  seeds: [42, 43, 44]
+  max_steps: 50
+
+output:
+  csv_path: "results/phase_5/metrics/real_data/policy_evaluation/real_data_policy_evaluation.csv"
+  report_path: "v2_docs/phase_5/real_data_phase_5_report.md"
+
+policies:
+  heuristic:
+    - LocalOnly
+    - EdgeOnly
+    - CloudOnly
+    - Random
+    - GreedyLatency
+    - GeneticAlgorithm
+  rl:
+    - PPO
+    - DQN
+    - A2C
+
+rl_models:
+  checkpoint_family: "real_data_rl_retraining"
+  training_seed: 42
+  checkpoints:
+    real_data_rl_retraining:
+      PPO: "models/ppo/real_data_rl_retraining/seed{seed}/ppo_retraining_best.zip"
+      DQN: "models/dqn/real_data_rl_retraining/seed{seed}/dqn_retraining_best.zip"
+      A2C: "models/a2c/real_data_rl_retraining/seed{seed}/a2c_retraining_best.zip"
+
+trace_backbone:
+  training_config: "configs/phase_5/real_data_rl_training.yaml"
+  evaluation_split: "test"

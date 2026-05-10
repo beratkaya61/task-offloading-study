@@ -5,7 +5,7 @@ Bkz. ortak kavram sozlugu: v2_docs/project_concepts_glossary.md
 > Guncel durum notu (2026-04-02):
 > Faz 1-5 tamamlandi ve Faz 5 sentetik taraf donduruldu.
 > Faz 6 aktif asamadadir.
-> `src/core/trace_loader.py` implement edildi ve `experiments/phase_6/train_synthetic_trace_ppo.py` akisina baglandi.
+> `src/core/trace_loader.py` implement edildi ve `experiments/phase_6/train_trace_rl.py` akisina baglandi.
 > Faz 6'da acik kalan ana maddeler artik `Success Bonus`, switching overhead, domain-shift analizi ve final trace artefaktlaridir.
 > Faz numaralari konusunda not: bu dosya ana master-roadmap gibi korunmustur; fiili uygulama sirasi `task.md` icinde izlenmektedir.
 > Bu nedenle bu dosyadaki `Gelismis Metrik ve Istatistiksel Analiz` bolumu eski numaralandirmada Faz 7, `task.md` icinde ise Faz 9 olarak takip edilmektedir. Ayrintili kapsam notu bu dosyanin ilgili bolumune eklenmistir.
@@ -130,7 +130,7 @@ Projeyi â€œÃ§alÄ±ÅŸÄ±yor seviyesinden â€œtekrarlanabilir araÅŸ
   - [ ] `configs/phase_5/synthetic_rl_training.yaml`
   - [ ] `configs/phase_5/synthetic_policy_evaluation.yaml`
   - [ ] `configs/phase_5/synthetic_ablation.yaml`
-  - [ ] `configs/phase_6/synthetic_trace_ppo_training.yaml`
+  - [ ] `configs/phase_6/synthetic_trace_rl_training.yaml`
 - [ ] `results/` klasÃ¶rÃ¼ oluÅŸtur:
   - [ ] `results/phase_5/`
   - [ ] `results/phase_6/`
@@ -355,7 +355,9 @@ KatkÄ±nÄ±n nereden geldiÄŸini gÃ¶stermek.
 ## Done kriteri
 
 - [ ] Her ana tasarÄ±m kararÄ±nÄ±n katkÄ±sÄ± tablo ve grafikle ayrÄ±ÅŸtÄ±rÄ±labiliyor.
-- [ ] Sentetik Faz 5 bulgularinin gercek veri omurgasi uzerindeki minimum teyidi `Faz 5R` / Faz 6 recovery paketi icinde ayrica izleniyor.
+- [ ] Sentetik Faz 5 bulgularinin gercek veri omurgasi uzerindeki yeniden kosusu Faz 6 recovery paketi icinde ayrica izleniyor.
+  - [ ] Gercek veri ablation sonuc artefaktlari `results/phase_5/metrics/real_data/` altinda sentetik Faz 5 ciktisindan ayri tutulacak.
+  - [ ] Yapisal eslesme ve kanonik rapor `v2_docs/phase_5/real_data_phase_5_report.md` icinde tutulacak.
 
 ---
 
@@ -384,7 +386,7 @@ Veri seti rolleri ve indirme/envanter ayrintisi bu faz altinda ve `v2_docs/real_
 Ilk uygulama notu: kod tarafinda real-data mode icin manifest tabanli guard baslatildi; veri eksiginde sentetik fallback yerine sert hata verilmesi hedefleniyor. Ham veri henuz lokal olarak olmadigi icin bu faz tamamlandi sayilmaz.
 Guncel inventory notu: `Glasgow MEC`, `UCI MEC execution-times` ve `Alibaba Cluster Trace` lokal olarak indirildi ve temiz klasor yapisina getirildi. Opsiyonel tarafta `Google Cluster Trace` icin secondary-validation core subset, `Didi Gaia` icin ise sample-day mobility CSV'leri alindi. Klasorlerde yalnizca tutulacak veri dosyalari birakildi; zip ve gecici repo klasorleri temizlendi.
 Lokal veri profili `v2_docs/phase_6/real_data_inventory_report.md` icine yazildi; siradaki teknik adim bu gozlenen kolonlardan real-data split builder cikarmaktir.
-Ilk real-data composite split builder calistirildi; `5000` task kaydi ve `80/10/10` spliti `data/real_composite_trace/` altina yazildi. Smoke-load config'i: `configs/phase_6/real_composite_trace_ppo_training.yaml`.
+Ilk real-data composite split builder calistirildi; `5000` task kaydi ve `80/10/10` spliti `data/real_composite_trace/` altina yazildi. Smoke-load config'i: `configs/phase_6/real_composite_trace_rl_training.yaml`.
 Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real dataset okuyuculari `src/core/dataset_loader.py` icinde toplandi; `src/core/trace_loader.py` yalnizca materialized episode split / raw trace IO sorumlulugunu tasiyor. Real-data inventory ve readiness kontrolu de `experiments/phase_6/inspect_raw_real_datasets.py` altinda birlestirildi.
 
 ## YapÄ±lacaklar
@@ -438,8 +440,19 @@ Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real da
 - [ ] Syntheticâ€™te eÄŸit, traceâ€™de test et.
 - [ ] Traceâ€™de eÄŸit, syntheticâ€™te test et.
 - [ ] Real-data uzerinde egit/test splitleriyle nihai dogrulama yap.
-- [ ] Faz 5'in ana ablation bulgularini real-data omurgasi uzerinde en az spot-check seviyesinde yeniden sinayarak `Faz 5R` notunu kapat.
+- [ ] Faz 5'in sentetikte kosulan ablation deneylerini real-data omurgasi uzerinde ayni kapsamla yeniden kos.
+  - [ ] Kanonik runner: `experiments/phase_5/run_real_data_ablation_study.py`
+  - [ ] Kanonik config: `configs/phase_5/real_data_ablation.yaml`
 - [ ] Generalization tablosu oluÅŸtur.
+- [ ] Durum notu (2026-05-10): `PPO` icin `multi_seed_retraining` ve `multi_seed_evaluation` artefaktlari yeniden uretildi ve sentetik Faz 5 CSV sozlesmesiyle hizalandi.
+  - [ ] `results/phase_5/metrics/real_data/rl_retraining/real_data_rl_retraining.csv`
+  - [ ] `results/phase_5/metrics/real_data/policy_evaluation/real_data_policy_evaluation.csv`
+  - [ ] `results/phase_5/metrics/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining.csv`
+  - [ ] `results/phase_5/metrics/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation.csv`
+  - [ ] `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining_success_rate.png`
+  - [ ] `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation_success_rate.png`
+  - [ ] `real_data_rl_retraining` tek kanonik CSV'ye indirildi; `real_data_policy_evaluation` tarafinda `config_batch_id` bos kalmayacak sekilde duzeltildi.
+- [ ] Acik kalan kisim: ayni kanonik ablation akisinin `DQN` ve `A2C` icin de tekrar uretilmesi.
 
 ## Done kriteri
 

@@ -1,0 +1,15 @@
+training:
+  base_config: "configs/phase_5/real_data_rl_training.yaml"
+  algorithms: ["ppo", "dqn", "a2c"]
+  seeds: [42, 43, 44]
+  total_timesteps: 30000
+  max_episodes: 250
+  eval_episodes: 10
+  n_steps: 1024
+  batch_size: 64
+  n_epochs: 10
+
+output:
+  model_root: "models"
+  csv_path: "results/phase_5/metrics/real_data/rl_retraining/real_data_rl_retraining.csv"
+  report_path: "v2_docs/phase_5/real_data_phase_5_report.md"

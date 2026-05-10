@@ -161,8 +161,8 @@ def run_evaluation_mode(config):
                 },
             )
 
-    summarize_logs(results_dir="results/phase_5/metrics", output_table="v2_docs/phase_5/offloading_experiment_report.md")
-    print("[INFO] Canonical report refreshed: v2_docs/phase_5/offloading_experiment_report.md")
+    summarize_logs(results_dir="results/phase_5/metrics", output_table="v2_docs/phase_5/synthetic_phase_5_report.md")
+    print("[INFO] Canonical report refreshed: v2_docs/phase_5/synthetic_phase_5_report.md")
 
 
 def run_retraining_mode(config):
@@ -212,8 +212,8 @@ def run_retraining_mode(config):
                 },
             )
 
-    summarize_logs(results_dir="results/phase_5/metrics", output_table="v2_docs/phase_5/offloading_experiment_report.md")
-    print("[INFO] Canonical report refreshed: v2_docs/phase_5/offloading_experiment_report.md")
+    summarize_logs(results_dir="results/phase_5/metrics", output_table="v2_docs/phase_5/synthetic_phase_5_report.md")
+    print("[INFO] Canonical report refreshed: v2_docs/phase_5/synthetic_phase_5_report.md")
 
 
 def main():

@@ -8,6 +8,6 @@ training:
 output:
   model_root: "models"
   csv_path: "results/phase_5/metrics/synthetic/rl_retraining/synthetic_rl_retraining.csv"
-  report_path: "v2_docs/phase_5/offloading_experiment_report.md"
+  report_path: "v2_docs/phase_5/synthetic_phase_5_report.md"
 
 

@@ -18,18 +18,27 @@ Bu fazda elde edilen bulgular:
 Bu nedenle Faz 5 kapanmis olsa da su adim atlanmayacaktir:
 
 ```text
-Faz 5R - real-data ablation spot-check
+Faz 5 - real-composite-trace ablation yeniden kosusu
 ```
 
-Bu spot-check'in amaci, sentetik ortamda guclu gorunen ana bilesenlerin gercek veri omurgasi uzerinde de ayni yonde sinyal verip vermedigini kontrol etmektir.
-Minimum tekrar paketi:
-
-- `full_model`
-- `w/o semantic prior`
-- `w/o reward shaping`
-- `w/o partial offloading`
+Bu tekrar kosunun amaci, sentetik ortamda kosulan Faz 5 ablation setini gercek veri omurgasi uzerinde de ayni kapsamla dogrulamaktir.
+Yani sadece dar bir teyit degil, `PPO`, `DQN`, `A2C`, coklu seed ve Faz 5'in ana ablation varyantlari gercek veri tarafinda da yeniden kosulacaktir.
 
 Bu not, Faz 5'in degerini dusurmez; sadece bilimsel kapsamini dogru sinirlar.
+
+2026-05-10 ilerleme notu:
+- `real_data` kolunda `PPO` icin `rl_retraining` artefakti artik `results/phase_5/metrics/real_data/rl_retraining/real_data_rl_retraining.csv` dosyasinda sentetik Faz 5 ile ayni kanonik ham log sozlesmesiyle tutuluyor.
+- `real_data_policy_evaluation.csv` tarafinda da `config_batch_id` doldurularak sentetik policy-evaluation mantigiyla hizalama yapildi.
+- `real_data` kolunda `PPO` icin `multi_seed_retraining` ve `multi_seed_evaluation` ablation artefaktlari yeniden uretildi.
+- Bu artefaktlar artik sentetik Faz 5 CSV sozlesmesiyle ayni kolon yapisini kullaniyor.
+- Kanonik dosyalar:
+  - `results/phase_5/metrics/real_data/rl_retraining/real_data_rl_retraining.csv`
+  - `results/phase_5/metrics/real_data/policy_evaluation/real_data_policy_evaluation.csv`
+  - `results/phase_5/metrics/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining.csv`
+  - `results/phase_5/metrics/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation.csv`
+  - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining_success_rate.png`
+  - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation_success_rate.png`
+- `DQN` ve `A2C` icin ayni yeniden-kosu paketi henuz beklemededir.
 
 ---
 
@@ -166,7 +175,7 @@ Bu nedenle Faz 5'in kapanis cumlesi su sekilde okunmalidir:
 ## Artefaktlar
 
 Kanonik synthetic rapor:
-- [offloading_experiment_report.md](C:/Users/BERAT/Desktop/task-offloading-study/v2_docs/phase_5/offloading_experiment_report.md)
+- [synthetic_phase_5_report.md](D:/task-offloading-study/v2_docs/phase_5/synthetic_phase_5_report.md)
 
 Temel figure'lar:
 - [synthetic_ablation_ppo_multi_seed_retraining_success_rate.png](C:/Users/BERAT/Desktop/task-offloading-study/results/phase_5/figures/synthetic/ablation/synthetic_ablation_ppo_multi_seed_retraining_success_rate.png)
@@ -188,7 +197,3 @@ Bu karar, sentetik tarafta her sorunun tamamen cozuldugu anlamina gelmiyor. Anla
 - Faz 5'in cevapladigi soru artik yeterince net,
 - Faz 6'ya gecmek icin gereken sentetik taban yeterince olgun,
 - geri kalan belirsizliklerin dogru adresi artik trace-driven asama.
-
-
-
-

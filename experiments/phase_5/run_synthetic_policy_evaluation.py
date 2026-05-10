@@ -2,13 +2,16 @@ import os
 import random
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import simpy
 import yaml
 from stable_baselines3 import A2C, DQN, PPO
 
-sys.path.append(os.path.join(os.getcwd(), "src"))
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(REPO_ROOT))
+sys.path.append(str(REPO_ROOT / "src"))
 
 from agents.baselines import (
     CloudOnlyPolicy,
@@ -24,9 +27,15 @@ from env.simulation_env import CloudServer, EdgeServer, IoTDevice, WirelessChann
 
 
 RL_MODEL_CLASSES = {
-    "PPO_v2": PPO,
-    "DQN_v2": DQN,
-    "A2C_v2": A2C,
+    "PPO": PPO,
+    "DQN": DQN,
+    "A2C": A2C,
+}
+
+RL_POLICY_ALIASES = {
+    "PPO_v2": "PPO",
+    "DQN_v2": "DQN",
+    "A2C_v2": "A2C",
 }
 
 
@@ -75,17 +84,21 @@ def make_env(seed, max_steps=50):
 
 
 def resolve_rl_checkpoint(policy_name, config):
+    normalized_policy = RL_POLICY_ALIASES.get(policy_name, policy_name)
     rl_cfg = config.get("rl_models", {})
     family = rl_cfg.get("checkpoint_family", "synthetic_rl_retraining")
     training_seed = rl_cfg.get("training_seed", 42)
     family_map = rl_cfg.get("checkpoints", {})
     family_paths = family_map.get(family, {})
-    if policy_name not in family_paths:
-        raise KeyError(f"{policy_name} not configured under checkpoint family: {family}")
-    return family_paths[policy_name].format(seed=training_seed)
+    if normalized_policy in family_paths:
+        return family_paths[normalized_policy].format(seed=training_seed)
+    if policy_name in family_paths:
+        return family_paths[policy_name].format(seed=training_seed)
+    raise KeyError(f"{policy_name} not configured under checkpoint family: {family}")
 
 
 def load_policy(policy_name, eval_env, config):
+    normalized_policy = RL_POLICY_ALIASES.get(policy_name, policy_name)
     heuristic_policies = {
         "LocalOnly": LocalOnlyPolicy,
         "EdgeOnly": EdgeOnlyPolicy,
@@ -99,9 +112,9 @@ def load_policy(policy_name, eval_env, config):
         ctor = heuristic_policies[policy_name]
         return ctor() if callable(ctor) else ctor
 
-    if policy_name in RL_MODEL_CLASSES:
+    if normalized_policy in RL_MODEL_CLASSES:
         path = resolve_rl_checkpoint(policy_name, config)
-        model_class = RL_MODEL_CLASSES[policy_name]
+        model_class = RL_MODEL_CLASSES[normalized_policy]
         if os.path.exists(path):
             print(f"[INIT] {policy_name} modeli yukleniyor: {path}")
             return model_class.load(path, env=eval_env)
@@ -149,7 +162,7 @@ def run_policy_evaluation():
 
     summarize_logs()
     print("\n[FINISH] Tum synthetic policies multi-seed olarak degerlendirildi.")
-    print("[INFO] Ana rapor: v2_docs/phase_5/offloading_experiment_report.md")
+    print("[INFO] Ana rapor: v2_docs/phase_5/synthetic_phase_5_report.md")
 
 
 if __name__ == "__main__":

@@ -29,6 +29,13 @@ def build_state(device, task, edge_servers, channel, ablation_flags=None):
     battery_norm = min(1.0, max(0.0, getattr(device, 'battery', 10000.0) / 10000.0))
     load_norm = min(1.0, getattr(closest_edge, 'current_load', 0.0) / 10.0) if closest_edge else 0.0
 
+    if ablation_flags.get('disable_battery_awareness', False):
+        battery_norm = 1.0
+    if ablation_flags.get('disable_queue_awareness', False):
+        load_norm = 0.0
+    if ablation_flags.get('disable_mobility_features', False):
+        snr_norm = 0.5
+
     if closest_edge:
         edge_energy_budget = max(1e-6, float(getattr(closest_edge, 'energy_budget', 5000.0)))
         edge_remaining_energy = float(getattr(closest_edge, 'remaining_energy', edge_energy_budget))
@@ -36,7 +43,7 @@ def build_state(device, task, edge_servers, channel, ablation_flags=None):
     else:
         edge_energy_norm = 1.0
 
-    if not ablation_flags.get('disable_semantics', False):
+    if not ablation_flags.get('disable_semantics', False) and not ablation_flags.get('disable_semantic_prior', False):
         from src.agents.semantic_prior import generate_action_prior
         prior_vector = generate_action_prior(task.semantic_analysis)
     else:
