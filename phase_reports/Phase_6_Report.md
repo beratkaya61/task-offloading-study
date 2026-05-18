@@ -30,6 +30,63 @@ Kullanilacak real-data omurgasi:
 - Google Cluster Trace: opsiyonel workload cross-check
 - Didi Gaia: opsiyonel ikinci mobility/domain validation
 
+## 2026-05-10 Feasibility Audit ve Kalibrasyon Guncellemesi
+
+Faz 6R altinda olusturulan ilk `real_composite_trace` benchmark'i once fiziksellik acisindan denetlenmis, sonra builder yeniden kalibre edilmis ve audit tekrar kosturulmustur:
+
+- ilk audit ve sorun tespiti: `v2_docs/phase_6/real_composite_feasibility_audit.md`
+- duzeltme karari: `v2_docs/phase_6/real_composite_calibration_plan.md`
+- guncel build ozetleri: `v2_docs/phase_6/real_composite_build_report.md`
+
+Guncel benchmark ana bulgulari:
+- medyan `cpu_cycles`: yaklasik `1.60B`
+- medyan deadline penceresi: yaklasik `0.69 s`
+- medyan best-case delay: yaklasik `0.60 s`
+- lower-bound feasibility: `81.74%`
+- `cpu_norm` saturasyon orani: `0.00%`
+- `size_norm` saturasyon orani: `4.20%`
+
+Bu tablo su anlama geliyor:
+- onceki `veri fizigi bozuk` sorunu belirgin sekilde toparlandi
+- benchmark artik MEC task offloading icin anlamli bir rejime cekildi
+- sonraki dogru adim, PPO'yu bu yeni benchmark uzerinde yeniden kosup performansi tekrar okumaktir
+
+## 2026-05-10 Benchmark Sanity-Check ve Env-Contract Guncellemesi
+
+Kalibrasyon sonrasi benchmark'in environment icinde de anlamli kalip kalmadigini ayirmak icin ek bir sanity-check protokolu kosturuldu:
+
+- config: `configs/phase_6/real_data_benchmark_sanity_check.yaml`
+- script: `experiments/phase_6/run_real_data_benchmark_sanity_check.py`
+- artefaktlar:
+  - `results/phase_6/metrics/real_data/benchmark_sanity/real_data_benchmark_sanity.csv`
+  - `v2_docs/phase_6/real_data_benchmark_sanity_check.md`
+
+Bu turda iki kritik contract duzeltmesi yapildi:
+- trace location'lar artik env koordinat duzlemine projekte ediliyor
+- edge server yerlesimi random degil, trace konum dagilimindan turetilen deterministic centroid'lerle kuruluyor
+
+Heuristic ortalama sonuclari:
+
+| Policy | Mean Success | Mean P95 Latency | Dominant Action |
+|---|---:|---:|---:|
+| `GeneticAlgorithm` | 48.73% | 1.4505 s | 5 |
+| `GreedyLatency` | 42.40% | 1.4497 s | 5 |
+| `CloudOnly` | 38.80% | 1.4713 s | 5 |
+| `Random` | 24.93% | 3.3610 s | degisken |
+| `EdgeOnly` | 12.20% | 2.6865 s | 4 |
+| `LocalOnly` | 0.40% | 5.1387 s | 0 |
+
+Mevcut PPO retraining referansi:
+- seed `42`: `42.00%`, dominant action `3`
+- seed `43`: `42.00%`, dominant action `3`
+- seed `44`: `42.00%`, dominant action `3`
+- PPO ortalamasi: `42.00%`
+
+Bu tablo Faz 6R icin cok kritik bir ayrim sagladi:
+- benchmark tamamen fiziksel olarak bozuk degil; cunku heuristic aile tutarli ve anlamli ayrisiyor
+- ama PPO tarafinda yeni problem `seed-varyansi` degil, `action=3` etrafinda sabitlenen zayif local optimum`
+- dolayisiyla bundan sonraki asil mudahale noktasi `benchmark'i tekrar bozmak` degil, `reward geometry`, `semantic prior bias` ve `PPO aksiyon kilitlenmesi` tarafidir
+
 ---
 
 ## Ozet

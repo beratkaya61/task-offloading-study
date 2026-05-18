@@ -28,6 +28,28 @@ Ilk composite split build ciktilari:
 - `v2_docs/phase_6/real_composite_build_report.md`
 - `configs/phase_6/real_composite_trace_ppo_training.yaml`
 
+Ilk fiziksellik denetimi:
+
+- `v2_docs/phase_6/real_composite_feasibility_audit.md`
+
+Bu audit, ilk kompozit benchmark'in teknik olarak uretildigini ama MEC task offloading problemi icin henuz dogru kalibre edilmedigini gostermisti.
+Ozellikle:
+- medyan `cpu_cycles` yaklasik `100B`
+- medyan deadline penceresi yaklasik `2.1 s`
+- medyan en iyi cloud alt siniri yaklasik `20.1 s`
+- en iyimser alt sinirda bile feasibility orani yalnizca `3.28%`
+
+Bu nedenle ilk kompozit build, nihai real-data benchmark olarak degil, `ilk kalibrasyonsuz kompozit deneme` olarak okunmustur.
+
+Sonraki duzeltme:
+
+- `v2_docs/phase_6/real_composite_calibration_plan.md`
+
+Bu plan uygulanmis ve builder yeniden kalibre edilmistir.
+Guncel benchmark durumu artik yeni audit raporunda tutulur:
+
+- `v2_docs/phase_6/real_composite_feasibility_audit.md`
+
 Bu iki artefakt, ilk gercek veri kompozitinin hangi kaynaklardan beslendigini, hangi alanlarin proxy oldugunu ve train/val/test splitlerinin hangi dizine yazildigini sabitler.
 
 Bu dokuman iki isi birden yapar:
@@ -108,6 +130,10 @@ Raw real-data mapping icin kaynak rolleri ayrica `v2_docs/real_data_strategy.md`
 
 ## 4. Bugun Kullandigimiz Temel Varsayimlar
 
+Not:
+Asagidaki varsayimlar ilk builder ile guncel kalibre builder arasindaki evrimi aciklar.
+Ozellikle `cpu_cycles`, `deadline` ve state normalization alanlari yeni builder surumunde yeniden kurulmustur.
+
 ### 4.1 Data size -> size_bits
 Trace tarafinda data_size KB cinsinden geliyor. Env tarafi ise transmission ve enerji hesabini bit cinsinden yaptigi icin su donusum kullaniliyor:
 size_bits = data_size * 8 * 1024
@@ -117,6 +143,9 @@ Trace kaydindaki deadline degeri dogrudan gorev bitis zamani gibi yorumlaniyor. 
 relative_deadline = max(0.1, deadline - arrival_time)
 
 Buradaki 0.1 tabani, sifir veya negatif deadline degerlerinin env'i bozmasini engelleyen guvenlik katmanidir.
+
+Ilk real-composite builder'da `deadline` alani dogrudan kaynak veriden gelmedigi icin UCI execution-time uzerinden turetilmis kisa proxy pencere kullanilmisti.
+Yeni builder surumunde deadline, task-specific best-case lower bound uzerine kurulan compute-proportional pencere olarak yeniden tasarlandi.
 
 ### 4.3 Priority -> semantic recommendation
 Trace veri seti semantic analyzer cikisi vermedigi icin Faz 6'da gecici bir heuristic kullaniyoruz:
@@ -128,6 +157,14 @@ Bu, nihai semantic model degil; trace-driven egitim sirasinda semantic kanalin t
 
 ### 4.4 Missing task_type
 Trace tarafinda gorev tipi birebir yoksa TaskType enum icinden rastgele seciliyor. Bu bugun icin kabul edilebilir bir placeholder, ama Faz 6 kapanisinda sinir olarak not edilmelidir.
+
+### 4.5 CPU cycles ve observation saturation siniri
+Ilk real-composite builder'da `cpu_cycles = plan_cpu * 1e9` varsayimi kullanildi.
+Bu secim state tarafinda `cpu_norm` saturasyonunu yaklasik `97.32%` seviyesine tasimisti.
+Yeni builder surumunde:
+- `cpu_cycles`, Alibaba difficulty ranking + UCI execution-time olcegi ile MEC kapasitesine kalibre edildi
+- `cpu_norm` ve `size_norm` icin log/quantile tabanli hint'ler eklendi
+- guncel audit sonucunda `cpu_norm` saturasyon orani `0.00%`, `size_norm` saturasyon orani `4.20%` seviyesine indi
 
 ## 5. Bu Varsayimlarin Sonuclara Etkisi Nedir?
 

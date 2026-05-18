@@ -66,6 +66,7 @@ class OffloadingEnv(gym.Env):
         self.current_device = None
         self.task_queue = deque()
         self.trace_mode = False
+        self.device_lookup = {}
 
         self.max_steps = max_steps
         self.current_step = 0
@@ -79,6 +80,10 @@ class OffloadingEnv(gym.Env):
         self.previous_action = None
         self.task_queue = deque(episode_tasks) if episode_tasks else deque()
         self.trace_mode = bool(self.task_queue)
+        self.device_lookup = {
+            int(getattr(device, "id", index)): device
+            for index, device in enumerate(self.devices)
+        }
 
         for edge in self.edge_servers:
             edge.current_load = 0.0
@@ -88,7 +93,15 @@ class OffloadingEnv(gym.Env):
             self.cloud_server.current_load = 0.0
             self.cloud_server.queue_length = 0
 
-        if not self.devices:
+        if self.trace_mode:
+            for device in self.devices:
+                device.battery = getattr(device, "battery_capacity", 10000.0)
+                if not hasattr(device, "location"):
+                    device.location = [500.0, 500.0]
+                if not hasattr(device, "velocity"):
+                    device.velocity = [0.0, 0.0]
+            self.current_device = None
+        elif not self.devices:
             self.current_device = type(
                 "MockDevice",
                 (),
@@ -113,6 +126,10 @@ class OffloadingEnv(gym.Env):
 
         if self.trace_mode and self.task_queue:
             trace_task = self.task_queue.popleft()
+            trace_device = self._resolve_trace_device(trace_task)
+            self.current_device = trace_device
+            self.current_device.location = [float(trace_task.location[0]), float(trace_task.location[1])]
+            self.current_device.velocity = [0.0, 0.0]
             size_bits = getattr(trace_task, "data_size", 0) * 8 * 1024
             deadline_abs = getattr(trace_task, "deadline", 1.0)
             arrival_time = getattr(trace_task, "arrival_time", 0.0)
@@ -126,6 +143,11 @@ class OffloadingEnv(gym.Env):
                 task_type=random.choice(list(TaskType)),
                 deadline=deadline,
                 semantic_analysis={},
+                cpu_norm_hint=getattr(trace_task, "cpu_norm_hint", None),
+                size_norm_hint=getattr(trace_task, "size_norm_hint", None),
+                server_id=getattr(trace_task, "server_id", None),
+                server_cpu_utilization=getattr(trace_task, "server_cpu_utilization", None),
+                server_mem_utilization=getattr(trace_task, "server_mem_utilization", None),
             )
 
             priority = int(getattr(trace_task, "priority", 1))
@@ -274,6 +296,7 @@ class OffloadingEnv(gym.Env):
             hasattr(self.current_device, "location")
             and hasattr(self.current_device, "velocity")
             and not self.ablation_flags.get("disable_mobility_features", False)
+            and not self.trace_mode
         ):
             self.current_device.location[0] = (self.current_device.location[0] + self.current_device.velocity[0]) % 1000
             self.current_device.location[1] = (self.current_device.location[1] + self.current_device.velocity[1]) % 1000
@@ -306,6 +329,28 @@ class OffloadingEnv(gym.Env):
             self._generate_next_task()
 
         return self._get_obs(), reward, done, False, info
+
+    def _resolve_trace_device(self, trace_task):
+        if not self.devices:
+            return type(
+                "TraceDevice",
+                (),
+                {
+                    "id": int(getattr(trace_task, "device_id", 0)),
+                    "battery": 10000.0,
+                    "battery_capacity": 10000.0,
+                    "location": [float(trace_task.location[0]), float(trace_task.location[1])],
+                    "velocity": [0.0, 0.0],
+                },
+            )()
+
+        device_id = int(getattr(trace_task, "device_id", 0))
+        device = self.device_lookup.get(device_id)
+        if device is not None:
+            return device
+
+        fallback_index = device_id % len(self.devices)
+        return self.devices[fallback_index]
 
     def _get_obs(self):
         full_state = build_state(

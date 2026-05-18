@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parents[2]
+REPO_ROOT = SCRIPT_DIR.parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -29,8 +29,13 @@ def main() -> None:
     builder = RealCompositeTraceBuilder(data_root=REPO_ROOT / "data" / "raw_real_datasets", seed=config.seed)
     records_df = builder.build_task_records(config)
     splits = builder.build_episode_splits(records_df, config)
+    normalization_meta = records_df.attrs.get("state_normalization", {})
 
     builder.save_records(records_df, PROCESSED_DIR / "composite_task_records.csv")
+    (PROCESSED_DIR / "calibration_metadata.json").write_text(
+        json.dumps(normalization_meta, indent=2),
+        encoding="utf-8",
+    )
     for split_name, episodes in splits.items():
         builder.save_episode_split(
             episodes,
@@ -41,6 +46,7 @@ def main() -> None:
                 "seed": config.seed,
                 "split": split_name,
                 "field_policy": "mixed_direct_and_proxy_documented",
+                "calibration_policy": "difficulty_rank_to_mec_scale_v2",
             },
         )
 
@@ -55,6 +61,9 @@ def main() -> None:
         "priority_distribution": {
             str(key): int(value) for key, value in records_df["priority"].value_counts().sort_index().items()
         },
+        "cpu_cycles_median": float(records_df["cpu_cycles"].median()),
+        "deadline_window_median_s": float((records_df["deadline"] - records_df["arrival_time"]).median()),
+        "reference_best_case_delay_median_s": float(records_df["reference_best_case_delay_s"].median()),
     }
 
     report_lines = [
@@ -62,7 +71,7 @@ def main() -> None:
         "",
         "# Real Composite Build Report",
         "",
-        "Bu rapor, Faz 6R.4 kapsaminda lokal gercek veri kaynaklarindan olusturulan ilk kompozit MEC task kayitlarini ve episode splitlerini ozetler.",
+        "Bu rapor, Faz 6R.4 kapsaminda lokal gercek veri kaynaklarindan olusturulan guncel kompozit MEC task kayitlarini ve episode splitlerini ozetler.",
         "",
         "## Build Summary",
         "",
@@ -75,17 +84,25 @@ def main() -> None:
         "",
         "## Source Composition",
         "",
-        "- `arrival_time`, workload identity ve raw duration: Alibaba `batch_task.csv`",
-        "- `location`, `device_id`, `server context`: Glasgow MEC dataset",
+        "- `arrival_time`, workload identity ve difficulty ranking: Alibaba `batch_task.csv`",
+        "- `location`, `device_id`: Glasgow MEC dataset",
+        "- `server context`: Alibaba `machine_usage.csv` + `machine_meta.csv`",
         "- `execution_time_s`: UCI MEC execution-time dataset",
-        "- `Google Cluster Trace` ve `Didi Gaia`: bu ilk buildde cekirdek split icin zorunlu degil; secondary validation / cross-check havuzunda tutuluyor",
+        "- `Google Cluster Trace` ve `Didi Gaia`: bu buildde cekirdek split icin zorunlu degil; secondary validation / cross-check havuzunda tutuluyor",
         "",
-        "## Proxy Fields",
+        "## Calibrated Proxy Fields",
         "",
-        "- `deadline`: UCI execution time tabanli design proxy",
-        "- `data_size`: Alibaba `plan_mem` tabanli proxy",
-        "- `cpu_cycles`: Alibaba `plan_cpu` tabanli proxy",
-        "- `priority`: execution-time quantile tabanli proxy",
+        "- `cpu_cycles`: Alibaba difficulty ranking + UCI MEC execution-time olcegi ile MEC kapasitesine kalibre edilmis proxy",
+        "- `data_size`: Alibaba `plan_mem` ranking'i ile MEC payload bandina map edilmis proxy",
+        "- `deadline`: task-specific best-case lower bound uzerinden kurulan compute-proportional proxy",
+        "- `priority`: deadline tightness / urgency proxy",
+        "",
+        "## Calibration Summary",
+        "",
+        f"- median cpu_cycles: `{summary['cpu_cycles_median']:.0f}`",
+        f"- median deadline window: `{summary['deadline_window_median_s']:.3f} s`",
+        f"- median reference best-case delay: `{summary['reference_best_case_delay_median_s']:.3f} s`",
+        f"- state normalization metadata: `{(PROCESSED_DIR / 'calibration_metadata.json').as_posix()}`",
         "",
         "## Priority Distribution",
         "",
@@ -99,6 +116,7 @@ def main() -> None:
             "## Outputs",
             "",
             f"- records csv: `{(PROCESSED_DIR / 'composite_task_records.csv').as_posix()}`",
+            f"- calibration metadata: `{(PROCESSED_DIR / 'calibration_metadata.json').as_posix()}`",
             f"- train split: `{(SPLIT_DIR / 'train_episodes.json').as_posix()}`",
             f"- val split: `{(SPLIT_DIR / 'val_episodes.json').as_posix()}`",
             f"- test split: `{(SPLIT_DIR / 'test_episodes.json').as_posix()}`",

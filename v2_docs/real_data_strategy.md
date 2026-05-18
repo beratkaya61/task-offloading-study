@@ -83,6 +83,15 @@ Asagidaki durumda ise zayif olur:
 - bu alanlarin etkisi ayrica test edilmezse
 - sonuclar tek bir "gercek veri" etiketiyle fazla iddiali sunulursa
 
+Ek zorunlu kosul:
+
+- birlestirilen alanlarin MEC task offloading fizigiyle tutarli oldugu feasibility audit ile gosterilmelidir
+
+Bu kosul artik teorik degil, pratiktir.
+Ilk audit, ilk kompozit benchmark'in bu kapidan gecemedigini gostermisti.
+Sonrasinda builder kalibre edildi ve audit tekrar kosturuldu.
+Guncel audit, benchmark'in MEC task offloading fizigine anlamli bicimde yaklastigini gostermektedir.
+
 ## Secilen Veri Setleri
 
 | Veri seti | Kaynak | Projedeki rol | Sagladigi alanlar | Sinirlar |
@@ -139,12 +148,34 @@ secondary-validation amacli hafifletilmis kapsamla lokal workspace icine alinmis
 
 Bu bilincli bir karardir; amac, ilk birlesik benchmark icin gerekli cekirdegi tutup gereksiz veri kalabaligi olusturmamaktir.
 
+## Guncel Kalibrasyon Durumu
+
+Ilk composite build teknik olarak basariyla uretilmis, sonra feasibility audit ile denetlenmis ve ardindan yeniden kalibre edilmistir.
+
+Guncel audit tablosu:
+
+- `v2_docs/phase_6/real_composite_feasibility_audit.md`
+
+Guncel ana bulgular:
+- medyan `cpu_cycles`: yaklasik `1.60B`
+- medyan deadline penceresi: yaklasik `0.69 s`
+- medyan best-case delay: yaklasik `0.60 s`
+- lower-bound feasibility: `81.74%`
+- `cpu_norm` saturasyon orani: `0.00%`
+- `size_norm` saturasyon orani: `4.20%`
+
+Bu nedenle guncel yorum su olacak:
+
+> Real-composite benchmark artik MEC task offloading icin fiziksel olarak anlamli bir rejime cekilmistir; bir sonraki dogru adim PPO'yu bu benchmark uzerinde yeniden kosup performansi yeniden yorumlamaktir.
+
 ## Tekrar Edilecek Fazlar
 
 ### Faz 6R - Real Data Recovery
 
 Zorunlu.
 Gercek veri kaynaklari indirilecek, `configs/phase_6/raw_real_data_manifest.yaml` ile kayit altina alinacak, fallback kapatilacak ve trace/real-data episode splitleri yeniden uretilecek.
+Bu recovery yalnizca veri indirme degil, benchmark kalibrasyon duzeltmesini de kapsiyordu.
+Bu kalibrasyon adimi tamamlandi; simdi siradaki kapÄ± PPO'nun guncel benchmark uzerinde yeniden kosulmasidir.
 
 ### Faz 5R - Real-Data Ablation Spot Check
 

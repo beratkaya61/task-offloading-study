@@ -1,0 +1,7 @@
+run_id,timestamp,config_seed,config_model_type,config_semantic_mode,config_total_tasks,metric_success_rate,metric_avg_reward,metric_p95_latency,metric_avg_energy,metric_qoe,metric_unique_actions,metric_action_0_rate,metric_action_1_rate,metric_action_2_rate,metric_action_3_rate,metric_action_4_rate,metric_action_5_rate,metric_dominant_action,config_batch_id,config_eval_group
+994905cc,2026-05-10T23:28:10.120838,42,LocalOnly,benchmark_sanity,500,0.004,-816.15,5.1387,0.2128,-25.29,1,1.0,0.0,0.0,0.0,0.0,0.0,0,sanity_tmp,benchmark_sanity
+2aa5dde3,2026-05-10T23:28:10.924226,42,EdgeOnly,benchmark_sanity,500,0.042,1101.22,2.7615,0.0154,-9.61,1,0.0,0.0,0.0,0.0,1.0,0.0,4,sanity_tmp,benchmark_sanity
+e159cb7c,2026-05-10T23:28:11.826452,42,CloudOnly,benchmark_sanity,500,0.366,1087.2,1.489,0.015,29.16,1,0.0,0.0,0.0,0.0,0.0,1.0,5,sanity_tmp,benchmark_sanity
+32aff9c3,2026-05-10T23:28:12.576076,42,Random,benchmark_sanity,500,0.236,1948.4,3.4923,0.0903,6.14,6,0.14,0.138,0.172,0.172,0.186,0.192,5,sanity_tmp,benchmark_sanity
+50169e65,2026-05-10T23:28:13.340477,42,GreedyLatency,benchmark_sanity,500,0.398,1613.27,1.4646,0.0173,32.48,3,0.082,0.0,0.0,0.0,0.016,0.902,5,sanity_tmp,benchmark_sanity
+2c952417,2026-05-10T23:28:14.858031,42,GeneticAlgorithm,benchmark_sanity,500,0.458,2253.47,1.4662,0.0196,38.47,6,0.04,0.012,0.066,0.042,0.006,0.834,5,sanity_tmp,benchmark_sanity

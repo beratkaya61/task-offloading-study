@@ -1,0 +1,23 @@
+evaluation:
+  seeds: [42, 43, 44]
+  num_episodes: 10
+  split: "test"
+
+output:
+  csv_path: "results/phase_6/metrics/real_data/benchmark_sanity/real_data_benchmark_sanity.csv"
+  report_path: "v2_docs/phase_6/real_data_benchmark_sanity_check.md"
+
+policies:
+  heuristic:
+    - LocalOnly
+    - EdgeOnly
+    - CloudOnly
+    - Random
+    - GreedyLatency
+    - GeneticAlgorithm
+
+trace_backbone:
+  training_config: "configs/phase_5/real_data_rl_training.yaml"
+
+ppo_reference:
+  csv_path: "results/phase_5/metrics/real_data/rl_retraining/real_data_rl_retraining.csv"

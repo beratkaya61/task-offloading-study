@@ -37,9 +37,14 @@ class TraceTask:
     cpu_cycles: int
     priority: int  # 0-3 (0=low, 3=high)
     location: Tuple[float, float]  # (x, y) coordinates
+    server_id: Optional[int] = None
+    server_cpu_utilization: Optional[float] = None
+    server_mem_utilization: Optional[float] = None
+    cpu_norm_hint: Optional[float] = None
+    size_norm_hint: Optional[float] = None
     
     def to_dict(self):
-        return {
+        payload = {
             'task_id': self.task_id,
             'device_id': self.device_id,
             'arrival_time': self.arrival_time,
@@ -49,6 +54,17 @@ class TraceTask:
             'priority': self.priority,
             'location': self.location
         }
+        if self.server_id is not None:
+            payload['server_id'] = self.server_id
+        if self.server_cpu_utilization is not None:
+            payload['server_cpu_utilization'] = self.server_cpu_utilization
+        if self.server_mem_utilization is not None:
+            payload['server_mem_utilization'] = self.server_mem_utilization
+        if self.cpu_norm_hint is not None:
+            payload['cpu_norm_hint'] = self.cpu_norm_hint
+        if self.size_norm_hint is not None:
+            payload['size_norm_hint'] = self.size_norm_hint
+        return payload
 
 
 @dataclass

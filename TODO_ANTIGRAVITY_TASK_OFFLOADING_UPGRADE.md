@@ -388,6 +388,7 @@ Guncel inventory notu: `Glasgow MEC`, `UCI MEC execution-times` ve `Alibaba Clus
 Lokal veri profili `v2_docs/phase_6/real_data_inventory_report.md` icine yazildi; siradaki teknik adim bu gozlenen kolonlardan real-data split builder cikarmaktir.
 Ilk real-data composite split builder calistirildi; `5000` task kaydi ve `80/10/10` spliti `data/real_composite_trace/` altina yazildi. Smoke-load config'i: `configs/phase_6/real_composite_trace_rl_training.yaml`.
 Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real dataset okuyuculari `src/core/dataset_loader.py` icinde toplandi; `src/core/trace_loader.py` yalnizca materialized episode split / raw trace IO sorumlulugunu tasiyor. Real-data inventory ve readiness kontrolu de `experiments/phase_6/inspect_raw_real_datasets.py` altinda birlestirildi.
+Kalibrasyon notu (2026-05-10): `real_composite_trace` builder'i MEC olcegine gore yeniden kalibre edildi ve audit tekrar kosturuldu. Guncel audit tablosu `v2_docs/phase_6/real_composite_feasibility_audit.md` icinde tutuluyor. Yeni benchmark'ta medyan `cpu_cycles` yaklasik `1.60B`, medyan deadline penceresi yaklasik `0.69 s`, medyan best-case delay yaklasik `0.60 s`, lower-bound feasibility ise `81.74%` oldu. `cpu_norm` saturasyon orani `0.00%`, `size_norm` saturasyon orani `4.20%` seviyesine indi. Bu nedenle PPO artik yeni benchmark uzerinde tekrar okunmaya hazirdir.
 
 ## YapÄ±lacaklar
 
@@ -427,6 +428,16 @@ Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real da
   - [ ] `deadline` yoksa design parameter veya trace-derived proxy olarak etiketlensin
   - [ ] `task_type` yoksa semantic ablation icin proxy oldugu yazilsin
   - [ ] `semantic priority` yoksa real-data ana deneyde kapatilsin veya proxy ablation olarak ayrilsin
+- [x] Mevcut composite benchmark icin MEC feasibility audit bulgularina gore kalibrasyon yap:
+  - [x] `cpu_cycles` mapping'i Alibaba `plan_cpu * 1e9` varsayimindan cikarildi
+  - [x] `deadline` alani UCI execution-time ile task zorlugu arasinda tutarli sekilde yeniden turetildi
+  - [x] `cpu_cycles` ve `size_bits` icin observation normalization'i saturasyon yaratmayacak sekilde guncellendi
+  - [x] Yeni benchmark uretildi, feasibility audit tekrar kosturuldu ve PPO yeniden kosuya hazir hale geldi
+  - [x] Trace location bilgisi env koordinat sistemine projekte edildi ve trace cihazlari env icinde gercek task konumlariyla kullanilmaya baslandi
+  - [x] Edge topology random kurulumdan cikarilip trace dagilimindan turetilen deterministic centroid'lere baglandi
+  - [x] Kalibre benchmark icin heuristic sanity-check tekrar kosturuldu; en iyi heuristic ortalamasi `GeneticAlgorithm=48.73%`, `GreedyLatency=42.40%`, `CloudOnly=38.80%`
+  - [x] PPO referans retraining yeni contract uzerinde tekrar kosturuldu ve tum seedlerde `42.00%` seviyesinde `action=3` baskinligina sabitlendi
+  - [x] Bu nedenle acik sorun benchmark'in ilk bozuk halinden ziyade PPO tarafindaki semantic/reward kaynakli aksiyon kilitlenmesi olarak yeniden sinirlandi
 
 ### 8.3. Ä°ki deney modu oluÅŸtur
 
@@ -452,7 +463,9 @@ Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real da
   - [ ] `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining_success_rate.png`
   - [ ] `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation_success_rate.png`
   - [ ] `real_data_rl_retraining` tek kanonik CSV'ye indirildi; `real_data_policy_evaluation` tarafinda `config_batch_id` bos kalmayacak sekilde duzeltildi.
-- [ ] Acik kalan kisim: ayni kanonik ablation akisinin `DQN` ve `A2C` icin de tekrar uretilmesi.
+- [ ] Acik kalan kisim:
+  - [ ] ayni kanonik ablation akisinin `DQN` ve `A2C` icin de tekrar uretilmesi
+  - [ ] bundan once PPO'nun neden `action=3` moduna kilitlendigini teknik olarak giderecek reward/prior duzeltmesinin yapilmasi
 
 ## Done kriteri
 

@@ -1,5 +1,12 @@
-﻿import math
+import math
+
 import numpy as np
+
+
+def _resolve_norm(value, hint, fallback_cap):
+    if hint is not None:
+        return float(np.clip(hint, 0.0, 1.0))
+    return min(1.0, value / fallback_cap)
 
 
 def build_state(device, task, edge_servers, channel, ablation_flags=None):
@@ -24,27 +31,28 @@ def build_state(device, task, edge_servers, channel, ablation_flags=None):
         datarate = 10e6
 
     snr_norm = min(1.0, datarate / 50e6)
-    size_norm = min(1.0, task.size_bits / 10e6)
-    cpu_norm = min(1.0, task.cpu_cycles / 1e10)
-    battery_norm = min(1.0, max(0.0, getattr(device, 'battery', 10000.0) / 10000.0))
-    load_norm = min(1.0, getattr(closest_edge, 'current_load', 0.0) / 10.0) if closest_edge else 0.0
+    size_norm = _resolve_norm(task.size_bits, getattr(task, "size_norm_hint", None), 10e6)
+    cpu_norm = _resolve_norm(task.cpu_cycles, getattr(task, "cpu_norm_hint", None), 1e10)
+    battery_norm = min(1.0, max(0.0, getattr(device, "battery", 10000.0) / 10000.0))
+    load_norm = min(1.0, getattr(closest_edge, "current_load", 0.0) / 10.0) if closest_edge else 0.0
 
-    if ablation_flags.get('disable_battery_awareness', False):
+    if ablation_flags.get("disable_battery_awareness", False):
         battery_norm = 1.0
-    if ablation_flags.get('disable_queue_awareness', False):
+    if ablation_flags.get("disable_queue_awareness", False):
         load_norm = 0.0
-    if ablation_flags.get('disable_mobility_features', False):
+    if ablation_flags.get("disable_mobility_features", False):
         snr_norm = 0.5
 
     if closest_edge:
-        edge_energy_budget = max(1e-6, float(getattr(closest_edge, 'energy_budget', 5000.0)))
-        edge_remaining_energy = float(getattr(closest_edge, 'remaining_energy', edge_energy_budget))
+        edge_energy_budget = max(1e-6, float(getattr(closest_edge, "energy_budget", 5000.0)))
+        edge_remaining_energy = float(getattr(closest_edge, "remaining_energy", edge_energy_budget))
         edge_energy_norm = min(1.0, max(0.0, edge_remaining_energy / edge_energy_budget))
     else:
         edge_energy_norm = 1.0
 
-    if not ablation_flags.get('disable_semantics', False) and not ablation_flags.get('disable_semantic_prior', False):
+    if not ablation_flags.get("disable_semantics", False) and not ablation_flags.get("disable_semantic_prior", False):
         from src.agents.semantic_prior import generate_action_prior
+
         prior_vector = generate_action_prior(task.semantic_analysis)
     else:
         prior_vector = np.zeros((6,), dtype=np.float32)

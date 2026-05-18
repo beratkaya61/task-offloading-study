@@ -77,6 +77,19 @@ class TraceLoader:
                     cpu_cycles=int(task["cpu_cycles"]),
                     priority=int(task["priority"]),
                     location=tuple(task["location"]),
+                    server_id=int(task["server_id"]) if task.get("server_id") is not None else None,
+                    server_cpu_utilization=(
+                        float(task["server_cpu_utilization"])
+                        if task.get("server_cpu_utilization") is not None
+                        else None
+                    ),
+                    server_mem_utilization=(
+                        float(task["server_mem_utilization"])
+                        if task.get("server_mem_utilization") is not None
+                        else None
+                    ),
+                    cpu_norm_hint=float(task["cpu_norm_hint"]) if task.get("cpu_norm_hint") is not None else None,
+                    size_norm_hint=float(task["size_norm_hint"]) if task.get("size_norm_hint") is not None else None,
                 )
                 for task in episode_data.get("tasks", [])
             ]

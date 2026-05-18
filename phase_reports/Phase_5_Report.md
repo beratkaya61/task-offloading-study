@@ -39,6 +39,13 @@ Bu not, Faz 5'in degerini dusurmez; sadece bilimsel kapsamini dogru sinirlar.
   - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining_success_rate.png`
   - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation_success_rate.png`
 - `DQN` ve `A2C` icin ayni yeniden-kosu paketi henuz beklemededir.
+- Env-contract duzeltmesi sonrasi PPO real-data retraining yeniden kosturuldu:
+  - `seed42 = 42.00%`
+  - `seed43 = 42.00%`
+  - `seed44 = 42.00%`
+  - ortalama `42.00%`
+- Faz 6 benchmark sanity-check tablosu, cloud agirlikli heuristic politikalarin `38% - 49%` bandina cikabildigini gosterdi.
+- Bu nedenle acik sorun artik benchmark'in tamamen copmesi degil; PPO'nun tum seedlerde `action=3` etrafinda sabitlenen zayif bir local optimuma kilitlenmesidir.
 
 ---
 

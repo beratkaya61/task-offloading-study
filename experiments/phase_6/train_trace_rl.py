@@ -16,6 +16,7 @@ import sys
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -270,8 +271,9 @@ class TraceTrainingOrchestrator:
         channel = WirelessChannel()
         cloud = CloudServer(env_sim)
         num_edge_servers = self.config_dict["environment"].get("n_edge_servers", 3)
+        edge_locations = self._derive_edge_locations(num_edge_servers)
         edge_servers = [
-            EdgeServer(env_sim, i + 1, (np.random.uniform(0, 1000), np.random.uniform(0, 1000)), 2e9)
+            EdgeServer(env_sim, i + 1, edge_locations[i], 2e9)
             for i in range(num_edge_servers)
         ]
         num_devices = self.config_dict["environment"]["n_devices"]
@@ -286,7 +288,37 @@ class TraceTrainingOrchestrator:
             )
             for i in range(num_devices)
         ]
+        for device in devices:
+            device.velocity = [0.0, 0.0]
         return devices, edge_servers, cloud, channel
+
+    def _derive_edge_locations(self, num_edge_servers: int) -> List[Tuple[float, float]]:
+        trace_dir = Path(self.config_dict["data"]["trace_dir"])
+        records_path = trace_dir.parent / "records" / "composite_task_records.csv"
+        if records_path.exists():
+            records = pd.read_csv(records_path, usecols=["location_x", "location_y"])
+            coords = records[["location_x", "location_y"]].dropna().to_numpy(dtype=float)
+        else:
+            coords = np.empty((0, 2), dtype=float)
+
+        if len(coords) == 0:
+            return [
+                (200.0, 200.0),
+                (800.0, 200.0),
+                (500.0, 800.0),
+            ][:num_edge_servers]
+
+        order = np.argsort(coords[:, 0])
+        sorted_coords = coords[order]
+        chunks = np.array_split(sorted_coords, num_edge_servers)
+        centroids: List[Tuple[float, float]] = []
+        for index, chunk in enumerate(chunks):
+            if len(chunk) == 0:
+                centroids.append((150.0 + index * 300.0, 500.0))
+                continue
+            centroid = chunk.mean(axis=0)
+            centroids.append((float(centroid[0]), float(centroid[1])))
+        return centroids
 
     def _build_trace_env(
         self,

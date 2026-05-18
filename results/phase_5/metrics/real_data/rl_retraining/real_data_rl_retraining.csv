@@ -1,4 +1,4 @@
 run_id,timestamp,config_seed,config_model_type,config_semantic_mode,config_total_tasks,metric_success_rate,metric_avg_reward,metric_p95_latency,metric_avg_energy,metric_qoe,metric_unique_actions,metric_action_0_rate,metric_action_1_rate,metric_action_2_rate,metric_action_3_rate,metric_action_4_rate,metric_action_5_rate,metric_dominant_action,config_batch_id,config_eval_group
-7ac18816,2026-05-10T22:13:52.744405,42,PPO,action_prior,500,0.024,-27390.09,31.5798,0.008,-155.5,1,0.0,0.0,0.0,0.0,0.0,1.0,5,real_data_rl_retraining_20260510_221348,real_data_rl_retraining
-1d05bcc4,2026-05-10T22:13:55.648739,43,PPO,action_prior,500,0.024,-27397.05,31.5964,0.0099,-155.58,1,0.0,0.0,0.0,0.0,0.0,1.0,5,real_data_rl_retraining_20260510_221348,real_data_rl_retraining
-057a880f,2026-05-10T22:13:58.587841,44,PPO,action_prior,500,0.024,-27385.63,31.5745,0.0068,-155.47,1,0.0,0.0,0.0,0.0,0.0,1.0,5,real_data_rl_retraining_20260510_221348,real_data_rl_retraining
+bb944081,2026-05-10T23:48:09.297123,42,PPO,action_prior,500,0.42,4275.56,2.0395,0.0594,31.8,1,0.0,0.0,0.0,1.0,0.0,0.0,3,real_data_rl_retraining_20260510_234418,real_data_rl_retraining
+538421e3,2026-05-10T23:51:32.488598,43,PPO,action_prior,500,0.42,4275.42,2.0393,0.0594,31.8,1,0.0,0.0,0.0,1.0,0.0,0.0,3,real_data_rl_retraining_20260510_234418,real_data_rl_retraining
+ce319d99,2026-05-10T23:54:34.510275,44,PPO,action_prior,500,0.42,4275.59,2.0397,0.0594,31.8,1,0.0,0.0,0.0,1.0,0.0,0.0,3,real_data_rl_retraining_20260510_234418,real_data_rl_retraining

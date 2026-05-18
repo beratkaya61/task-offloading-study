@@ -93,11 +93,25 @@ Not:
 - Lokal veri profili artik `v2_docs/phase_6/real_data_inventory_report.md` icinde mevcut; bir sonraki teknik adim bu gozlenen kolonlardan real-data split builder cikarmaktir.
 - Ilk real-data composite split builder artik calisiyor: `5000` task kaydi uretildi, `80/10/10` train/val/test splitleri `data/real_composite_trace/` altina yazildi ve `configs/phase_6/real_composite_trace_rl_training.yaml` ile smoke-load dogrulandi.
 - Kod mimarisi sadeleştirme notu: debug/synthetic kaynak yardimcilari ile real dataset okuyuculari `src/core/dataset_loader.py` icinde toplandi; `src/core/trace_loader.py` yalnizca materialized episode split / raw trace IO sorumlulugunu tasiyor. Real-data inventory ve readiness kontrolu de `experiments/phase_6/inspect_raw_real_datasets.py` altinda birlestirildi.
+- Kalibrasyon notu (2026-05-10): `real_composite_trace` builder'i MEC olcegine gore yeniden kalibre edildi. Yeni benchmark audit sonucu `v2_docs/phase_6/real_composite_feasibility_audit.md` icinde tutuluyor. Guncel tabloda medyan `cpu_cycles` yaklasik `1.60B`, medyan deadline penceresi yaklasik `0.69 s`, medyan best-case delay yaklasik `0.60 s`, lower-bound feasibility ise `81.74%` oldu. `cpu_norm` saturasyon orani `0.00%`, `size_norm` saturasyon orani `4.20%` seviyesine indi. Yani benchmark artik `veri fizigi bozuk` seviyesinden cikti; bir sonraki dogru adim PPO'yu bu yeni omurga uzerinde yeniden kosmaktir.
 
 - [x] 6R.1 Real-data manifest ve lokal dataset envanteri olusturulsun
 - [x] 6R.2 Real mode icin sessiz synthetic fallback kapatilsin
 - [x] 6R.3 Secilen real-data kaynaklari ingest edilsin
 - [x] 6R.4 Real-data train/val/test splitleri yeniden uretulsun ve trace mapping dokumani guncellensin
+- [x] 6R.4.a Real-composite benchmark icin MEC feasibility audit ve kalibrasyon duzeltmesi yapilsin
+  Tamamlandi:
+  - `cpu_cycles` mapping'i Alibaba difficulty ranking + UCI MEC execution-time olcegi ile yeniden kuruldu
+  - `deadline` task-specific best-case lower bound uzerinden yeniden turetildi
+  - `cpu_cycles` ve `size_bits` icin log/quantile tabanli state hint'leri eklendi
+  - yeni `real_composite_trace` kayitlari ve splitleri yeniden uretildi
+  - feasibility audit tekrar kosturuldu ve benchmark'in MEC fizigiyle belirgin sekilde toparlandigi goruldu
+  - trace location bilgisi env koordinat sistemine projekte edildi; trace cihazlari env icinde artik gercek task konumlariyla kullaniliyor
+  - edge server yerlesimi artik random degil; trace-location dagilimindan turetilen deterministic centroid'lerle kuruluyor
+  - env-faithful feasibility audit tekrar kosturuldu; builder-referans feasibility `%55.12`, env-faithful lower-bound feasibility `%97.40` olarak olculdu
+  - benchmark sanity-check tekrar kosturuldu; heuristic tabloda `GeneticAlgorithm=48.73%`, `GreedyLatency=42.40%`, `CloudOnly=38.80%`, `EdgeOnly=12.20%` goruldu
+  - PPO real-data retraining yeni contract uzerinde tekrar kosturuldu; tum seedlerde `42.00%` ve dominant action `3` cikti
+  - sonuc: benchmark ilk bozuk haline gore belirgin sekilde toparlandi, fakat PPO artik yuksek varyanstan cok `action=3` etrafinda sabitlenen zayif bir local optimum sorunu gosteriyor
 - [ ] 6R.5 Faz 5 ablation deneyleri gercek veri omurgasinda yeniden kosulsun
   Faz 5 sentetik ortamda kapanmis olsa da, ayni ablation varyantlari gercek veri omurgasi uzerinde `PPO`, `DQN`, `A2C` ve coklu seed ile yeniden sinanacaktir.
   Kanonik config/script ciftleri: `configs/phase_5/real_data_ablation.yaml` ve `experiments/phase_5/run_real_data_ablation_study.py`.
@@ -110,7 +124,9 @@ Not:
   - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_retraining_success_rate.png`
   - `results/phase_5/figures/real_data/ablation/real_data_ablation_ppo_multi_seed_evaluation_success_rate.png`
   Ek not: `real_data_rl_retraining` artik sentetik Faz 5 ile ayni kanonik ham log sozlesmesini kullanan tek CSV dosyasi olarak uretiliyor; `real_data_policy_evaluation` tarafinda da `config_batch_id` alani dolduruluyor.
-  Acik kalan kisim: ayni kanonik akis `DQN` ve `A2C` icin de tekrar uretilmelidir.
+  Acik kalan kisim:
+  - ayni kanonik akis `DQN` ve `A2C` icin de tekrar uretilmelidir
+  - ancak bundan once PPO tarafindaki `action=3` kilitlenmesi giderilmeli; aksi halde ayni yapisal sorun diger algoritmalarin yorumunu da bulandirabilir
 - [ ] 6R.6 Faz 7R real-trace staged-training yeniden kosulsun
 - [ ] 6R.7 Faz 8 real-trace graph-vs-MLP karsilastirmasi yeniden kosulsun
 - [ ] 6R.8 Phase raporlari guncellensin ve eski sentetik sonuclar ayri etiketle tutulsun
