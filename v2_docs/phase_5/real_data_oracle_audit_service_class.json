@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-18T08:35:03.223801",
+  "timestamp": "2026-05-18T15:40:48.830501",
   "benchmark_name": "real-world trace-driven hybrid benchmark",
   "config_path": "configs\\phase_5\\real_data_rl_training_service_class.yaml",
   "split": "test",
@@ -8,7 +8,7 @@
   "oracle_success_rate": 0.918,
   "impossible_task_ratio": 0.08199999999999996,
   "dominant_oracle_action": "edge_75",
-  "dominant_oracle_action_share": 0.718,
+  "dominant_oracle_action_share": 0.716,
   "status": "usable",
   "action_summary": [
     {
@@ -36,22 +36,22 @@
       "action": 3,
       "action_name": "edge_75",
       "feasible_rate": 0.88,
-      "avg_delay_s": 0.5495282003634582,
-      "p95_delay_s": 1.410710023010641
+      "avg_delay_s": 0.5495231671714926,
+      "p95_delay_s": 1.4106942194994714
     },
     {
       "action": 4,
       "action_name": "edge_100",
       "feasible_rate": 0.494,
-      "avg_delay_s": 0.7050220339612929,
-      "p95_delay_s": 1.8447562422273558
+      "avg_delay_s": 0.705077636533734,
+      "p95_delay_s": 1.8480279481541666
     },
     {
       "action": 5,
       "action_name": "cloud",
-      "feasible_rate": 0.392,
-      "avg_delay_s": 0.649183374159305,
-      "p95_delay_s": 1.1218115487658569
+      "feasible_rate": 0.394,
+      "avg_delay_s": 0.6491695958230206,
+      "p95_delay_s": 1.1202335741271612
     }
   ],
   "deadline_window_summary": {
@@ -63,12 +63,12 @@
     "max": 6.7481381461257115
   },
   "deadline_tightness_summary": {
-    "mean": 0.7012502149787886,
-    "std": 0.263438163651267,
-    "min": 0.2021898233816549,
-    "p50": 0.7776344020733971,
-    "p95": 1.0325896762728901,
-    "max": 1.1756197647784887
+    "mean": 0.7013845195596443,
+    "std": 0.2636128197725145,
+    "min": 0.20222515007477349,
+    "p50": 0.7764404302831236,
+    "p95": 1.0338263095686444,
+    "max": 1.1753943655570267
   },
   "cpu_cycles_summary": {
     "mean": 1319474179.428,
@@ -86,6 +86,6 @@
     "p95": 2893.0,
     "max": 4039.0
   },
-  "detail_csv": "results\\phase_5\\metrics\\real_data\\oracle\\service_class_oracle_action_audit.csv",
-  "trace_dir": "data/real_composite_trace_correlation_aware_edge_balanced_mec_mixed/splits"
+  "detail_csv": "results\\phase_5\\metrics\\real_data\\oracle\\real_data_oracle_audit_service_class.csv",
+  "trace_dir": "data\\real_composite_trace_correlation_aware_edge_balanced_mec_mixed\\splits"
 }

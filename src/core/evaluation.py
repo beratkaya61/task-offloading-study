@@ -21,21 +21,32 @@ EXPERIMENT_LOG_COLUMNS = [
     "metric_avg_latency",
     "metric_p95_latency",
     "metric_p99_latency",
+    "metric_cvar95_latency",
     "metric_avg_energy",
     "metric_energy_per_success",
     "metric_jitter",
+    "metric_avg_deadline_slack",
+    "metric_avg_deadline_overrun",
     "metric_avg_queue_delay",
     "metric_battery_depletion_rate",
     "metric_partial_offload_ratio",
     "metric_decision_overhead_ms",
     "metric_qoe",
     "metric_unique_actions",
+    "metric_action_entropy",
+    "metric_action_jain_fairness",
     "metric_action_0_rate",
     "metric_action_1_rate",
     "metric_action_2_rate",
     "metric_action_3_rate",
     "metric_action_4_rate",
     "metric_action_5_rate",
+    "metric_action_0_success_rate",
+    "metric_action_1_success_rate",
+    "metric_action_2_success_rate",
+    "metric_action_3_success_rate",
+    "metric_action_4_success_rate",
+    "metric_action_5_success_rate",
     "metric_dominant_action",
     "config_batch_id",
     "config_eval_group",
@@ -54,10 +65,36 @@ def _mean(values):
     return float(np.mean(values)) if values else 0.0
 
 
+def _cvar(values, percentile):
+    if not values:
+        return 0.0
+    threshold = np.percentile(values, percentile)
+    tail = [value for value in values if value >= threshold]
+    return _mean(tail)
+
+
+def _normalized_entropy(counts):
+    total = float(sum(counts))
+    if total <= 0:
+        return 0.0
+    probabilities = [count / total for count in counts if count > 0]
+    entropy = -sum(prob * np.log(prob) for prob in probabilities)
+    return float(entropy / np.log(len(counts))) if len(counts) > 1 else 0.0
+
+
+def _jain_fairness(counts):
+    values = np.asarray(counts, dtype=float)
+    denominator = len(values) * float(np.sum(values ** 2))
+    if denominator <= 0:
+        return 0.0
+    return float((np.sum(values) ** 2) / denominator)
+
+
 def summarize_step_logs(step_logs, total_reward, action_counts, reward_denominator=None):
     total_tasks = len(step_logs)
     successes = [row["success"] for row in step_logs]
     latencies = [row["delay"] for row in step_logs]
+    deadlines = [row.get("deadline", 0.0) for row in step_logs]
     energies = [row["energy"] for row in step_logs]
     queue_delays = [row["queue_delay"] for row in step_logs]
     decision_overheads = [row["decision_overhead_ms"] for row in step_logs]
@@ -69,10 +106,23 @@ def summarize_step_logs(step_logs, total_reward, action_counts, reward_denominat
     avg_latency = _mean(latencies)
     p95_latency = _percentile(latencies, 95)
     p99_latency = _percentile(latencies, 99)
+    cvar95_latency = _cvar(latencies, 95)
     avg_energy = _mean(energies)
     energy_per_success = float(sum(energies) / success_count) if success_count > 0 else 0.0
     jitter = float(np.std(latencies)) if len(latencies) > 1 else 0.0
     deadline_miss_ratio = 1.0 - success_rate if total_tasks > 0 else 0.0
+    deadline_slacks = [
+        max(0.0, deadline - delay)
+        for delay, deadline in zip(latencies, deadlines)
+        if deadline > 0
+    ]
+    deadline_overruns = [
+        max(0.0, delay - deadline) / deadline
+        for delay, deadline in zip(latencies, deadlines)
+        if deadline > 0
+    ]
+    avg_deadline_slack = _mean(deadline_slacks)
+    avg_deadline_overrun = _mean(deadline_overruns)
     avg_queue_delay = _mean(queue_delays)
     battery_depletion_rate = _mean(battery_empty)
     partial_offload_ratio = _mean(partial_flags)
@@ -85,8 +135,15 @@ def summarize_step_logs(step_logs, total_reward, action_counts, reward_denominat
         f"metric_action_{index}_rate": round(action_counts.get(index, 0) / total_actions, 4)
         for index in range(6)
     }
+    action_success_rates = {}
+    for index in range(6):
+        action_rows = [row for row in step_logs if int(row.get("action", -1)) == index]
+        action_success_rates[f"metric_action_{index}_success_rate"] = round(
+            _mean([row["success"] for row in action_rows]), 4
+        )
     unique_actions = sum(1 for count in action_counts.values() if count > 0)
     dominant_action = max(action_counts, key=action_counts.get) if action_counts else -1
+    ordered_action_counts = [action_counts.get(index, 0) for index in range(6)]
 
     summary = {
         "config_total_tasks": int(total_tasks),
@@ -96,18 +153,24 @@ def summarize_step_logs(step_logs, total_reward, action_counts, reward_denominat
         "metric_avg_latency": round(avg_latency, 4),
         "metric_p95_latency": round(p95_latency, 4),
         "metric_p99_latency": round(p99_latency, 4),
+        "metric_cvar95_latency": round(cvar95_latency, 4),
         "metric_avg_energy": round(avg_energy, 6),
         "metric_energy_per_success": round(energy_per_success, 6),
         "metric_jitter": round(jitter, 4),
+        "metric_avg_deadline_slack": round(avg_deadline_slack, 4),
+        "metric_avg_deadline_overrun": round(avg_deadline_overrun, 4),
         "metric_avg_queue_delay": round(avg_queue_delay, 4),
         "metric_battery_depletion_rate": round(battery_depletion_rate, 4),
         "metric_partial_offload_ratio": round(partial_offload_ratio, 4),
         "metric_decision_overhead_ms": round(decision_overhead_ms, 4),
         "metric_qoe": round(qoe, 4),
         "metric_unique_actions": unique_actions,
+        "metric_action_entropy": round(_normalized_entropy(ordered_action_counts), 4),
+        "metric_action_jain_fairness": round(_jain_fairness(ordered_action_counts), 4),
         "metric_dominant_action": dominant_action,
     }
     summary.update(action_rates)
+    summary.update(action_success_rates)
     return summary
 
 
@@ -225,10 +288,12 @@ def evaluate_policy(
                 {
                     "success": bool(info.get("task_success", False)),
                     "delay": float(info.get("delay", 0.0)),
+                    "deadline": float(info.get("deadline", 0.0)),
                     "energy": float(info.get("energy", 0.0)),
                     "queue_delay": float(info.get("queue_delay", 0.0)),
                     "battery_empty": bool(info.get("battery_empty", False)),
                     "partial_offload": bool(info.get("partial_offload", 1 <= int(action) <= 3)),
+                    "action": int(action),
                     "decision_overhead_ms": float(decision_overhead_ms),
                 }
             )

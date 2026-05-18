@@ -27,6 +27,7 @@ class TinyEnv:
         info = {
             "task_success": success,
             "delay": 0.2 if success else 0.8,
+            "deadline": 0.5,
             "energy": 1.0 if success else 3.0,
             "queue_delay": 0.01,
             "battery_empty": False,
@@ -50,19 +51,23 @@ class ExtendedEvaluationMetricsTest(unittest.TestCase):
             {
                 "success": True,
                 "delay": 0.2,
+                "deadline": 0.5,
                 "energy": 1.0,
                 "queue_delay": 0.01,
                 "battery_empty": False,
                 "partial_offload": True,
+                "action": 1,
                 "decision_overhead_ms": 2.0,
             },
             {
                 "success": False,
                 "delay": 0.8,
+                "deadline": 0.5,
                 "energy": 3.0,
                 "queue_delay": 0.03,
                 "battery_empty": True,
                 "partial_offload": False,
+                "action": 0,
                 "decision_overhead_ms": 4.0,
             },
         ]
@@ -75,6 +80,13 @@ class ExtendedEvaluationMetricsTest(unittest.TestCase):
         self.assertEqual(summary["metric_avg_latency"], 0.5)
         self.assertEqual(summary["metric_avg_energy"], 2.0)
         self.assertEqual(summary["metric_energy_per_success"], 4.0)
+        self.assertEqual(summary["metric_cvar95_latency"], 0.8)
+        self.assertEqual(summary["metric_avg_deadline_slack"], 0.15)
+        self.assertEqual(summary["metric_avg_deadline_overrun"], 0.3)
+        self.assertEqual(summary["metric_action_0_success_rate"], 0.0)
+        self.assertEqual(summary["metric_action_1_success_rate"], 1.0)
+        self.assertGreater(summary["metric_action_entropy"], 0.0)
+        self.assertGreater(summary["metric_action_jain_fairness"], 0.0)
         self.assertEqual(summary["metric_battery_depletion_rate"], 0.5)
         self.assertEqual(summary["metric_partial_offload_ratio"], 0.5)
         self.assertEqual(summary["metric_decision_overhead_ms"], 3.0)

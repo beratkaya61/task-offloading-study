@@ -50,6 +50,7 @@ def run_real_data_rl_retraining(
     if algorithm_override:
         algorithms = [algorithm_override]
     seeds = training_cfg.get("seeds", [42, 43, 44])
+    force_retrain = bool(training_cfg.get("force_retrain", False))
     overrides = {
         "max_episodes": int(training_cfg.get("max_episodes", base_config.get("experiment", {}).get("max_episodes", 500))),
         "episodes_per_eval": int(training_cfg.get("eval_episodes", base_config.get("experiment", {}).get("episodes_per_eval", 10))),
@@ -100,7 +101,7 @@ def run_real_data_rl_retraining(
             checkpoint_path = Path(orchestrator.checkpoint_dir) / checkpoint_name
             metrics_name = "training_metrics.csv"
 
-            if not checkpoint_path.exists():
+            if force_retrain or not checkpoint_path.exists():
                 orchestrator.train_model(
                     train_eps,
                     checkpoint_name=checkpoint_name,

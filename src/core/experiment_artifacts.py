@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
 from pathlib import Path
@@ -147,12 +147,21 @@ def refresh_real_data_phase5_report(
         "",
     ]
 
-    oracle_report = Path("v2_docs/phase_5/real_data_oracle_audit.md")
-    if oracle_report.exists():
+    oracle_report_candidates = [
+        Path("v2_docs/phase_5/real_data_oracle_audit_service_class.md"),
+        Path("v2_docs/phase_5/real_data_oracle_audit.md"),
+    ]
+    validity_report_candidates = [
+        Path("v2_docs/phase_5/benchmark_validity_service_class.md"),
+        Path("v2_docs/phase_5/benchmark_validity.md"),
+    ]
+    oracle_report = next((path for path in oracle_report_candidates if path.exists()), None)
+    validity_report = next((path for path in validity_report_candidates if path.exists()), None)
+    if oracle_report:
         lines.extend(
             [
                 "Oracle/feasibility gate raporu mevcut:",
-                "- `v2_docs/phase_5/real_data_oracle_audit.md`",
+                f"- `{oracle_report.as_posix()}`",
                 "",
             ]
         )
@@ -161,6 +170,14 @@ def refresh_real_data_phase5_report(
             [
                 "Oracle/feasibility gate raporu henuz uretilmedi.",
                 "Ilk kosulacak komut: `python experiments/phase_5/run_real_data_oracle_audit.py --split test`",
+                "",
+            ]
+        )
+    if validity_report:
+        lines.extend(
+            [
+                "Benchmark validity diagnostic raporu mevcut:",
+                f"- `{validity_report.as_posix()}`",
                 "",
             ]
         )
@@ -278,3 +295,4 @@ def refresh_real_data_phase5_report(
         lines.extend(["## Ablation", "", "Henuz ablation sonucu uretilmedi.", ""])
 
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Benchmark validity diagnostics for Phase 5R real-data fusion experiments."""
 
 from __future__ import annotations
@@ -277,9 +277,10 @@ def write_report(payload: dict[str, object], report_path: Path) -> None:
             "",
             "## Interpretation",
             "",
-            "- `needs_revision` sonucu model basarisizligi degil, benchmark-policy hizalama kapisinin gecilmedigi anlamina gelir.",
-            "- Cloud dominance yuksekse benchmark zengin offloading karar probleminden cok cloud-agirlikli probleme donusmus olabilir.",
-            "- Workload-server-location korelasyonlari zayifsa hibrit pairing dogal korelasyonlari korumuyor demektir.",
+            "- `pass` sonucu benchmark'in Faz 5R policy ve ablation yorumlari icin cozulur-zor bir rejim sundugunu gosterir.",
+            "- Oracle ceiling yuksek ama PPO/DQN/A2C dusuk veya tek aksiyona cokuyorsa sorun benchmark'tan once policy hizalama, reward/state temsil veya action-collapse tarafinda aranir.",
+            "- Sabit LocalOnly/EdgeOnly/CloudOnly baselines dusuk kalirsa bu beklenen bir kontrol sonucudur; env-aware heuristics ile RL/MLP modelleri asil rekabetci karsilastirma grubudur.",
+            "- `needs_revision` sonucu gorulurse bu model basarisizligi degil, benchmark-policy hizalama kapisinin gecilmedigi anlamina gelir.",
         ]
     )
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -307,3 +308,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

@@ -1,4 +1,4 @@
-# Faz 5 - Real Data Ablation
+﻿# Faz 5 - Real Data Ablation
 
 ablation_studies:
   full_model:
@@ -123,7 +123,7 @@ experiment:
 retraining:
   algorithms: ["ppo", "dqn", "a2c"]
   algorithm: "ppo"
-  base_config: "configs/phase_5/real_data_rl_training.yaml"
+  base_config: "configs/phase_5/real_data_rl_training_service_class.yaml"
   seeds: [42, 43, 44]
   total_timesteps: 30000
   max_episodes: 250
@@ -138,3 +138,4 @@ output:
   table_path: "v2_docs/phase_5/real_data_phase_5_report.md"
   plot_path_template: "results/phase_5/figures/real_data/ablation/real_data_ablation_{algorithm}_{scope}_success_rate.png"
   csv_path_template: "results/phase_5/metrics/real_data/ablation/real_data_ablation_{algorithm}_{scope}.csv"
+

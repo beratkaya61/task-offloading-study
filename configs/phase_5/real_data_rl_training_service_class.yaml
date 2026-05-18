@@ -1,4 +1,4 @@
-experiment:
+﻿experiment:
   seed: 42
   semantic_mode: "action_prior"
   total_timesteps: 30000
@@ -16,7 +16,8 @@ env:
   use_confidence_weighting: false
   use_battery_awareness: true
   use_mobility_features: true
-  use_queue_awareness: false
+  use_queue_awareness: true
+  use_deadline_features: true
   use_success_bonus: true
   success_bonus: 100.0
   cloud_fixed_latency: 0.35
@@ -38,6 +39,7 @@ ppo:
   batch_size: 64
   n_epochs: 10
   gamma: 0.99
+  ent_coef: 0.03
 
 dqn:
   learning_rate: 0.0001
@@ -52,6 +54,7 @@ a2c:
   learning_rate: 0.0007
   n_steps: 5
   gamma: 0.99
+  ent_coef: 0.03
 
 logging:
   log_dir: "results/phase_5/metrics/real_data/rl_training"
@@ -59,5 +62,6 @@ logging:
   report_path: "phase_reports/Phase_5R_Service_Class_Report.md"
 
 device:
-  cuda: true
+  cuda: false
   device_id: 0
+

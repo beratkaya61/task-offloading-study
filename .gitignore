@@ -179,3 +179,5 @@ models/tmp/
 results/tmp/
 results/phase_5/metrics/real_data/
 data.zip
+models/*/real_data_ablation/
+models/*/real_data_rl_retraining/*/training/

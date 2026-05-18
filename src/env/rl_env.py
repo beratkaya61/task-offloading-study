@@ -376,7 +376,8 @@ class OffloadingEnv(gym.Env):
             self.ablation_flags,
         )
         if self.ablation_flags.get("disable_semantics", False):
-            full_state[6:12] = 0.0
+            semantic_start = len(full_state) - 6
+            full_state[semantic_start:] = 0.0
         return full_state.astype(np.float32)
 
 

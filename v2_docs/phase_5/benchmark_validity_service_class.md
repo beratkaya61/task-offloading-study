@@ -35,7 +35,7 @@ Bu rapor, hibrit trace-driven benchmark'in dogal korelasyonlari ne kadar korudug
 | edge_50 | 52.20% | 0.688 |
 | edge_75 | 88.00% | 0.550 |
 | edge_100 | 49.40% | 0.705 |
-| cloud | 39.20% | 0.649 |
+| cloud | 39.40% | 0.649 |
 
 ## Priority / Proxy Summary
 
@@ -48,10 +48,22 @@ Bu rapor, hibrit trace-driven benchmark'in dogal korelasyonlari ne kadar korudug
 
 ## Policy Snapshot
 
-Policy evaluation CSV bulunmadigi icin model snapshot okunmadi.
+| Model | Success Mean | P95 Mean | Partial Ratio | Cloud Rate |
+|---|---:|---:|---:|---:|
+| DeadlineAwareGreedy | 76.53% | 1.236 | 68.00% | 12.40% |
+| GreedyLatency | 76.27% | 1.234 | 68.93% | 12.07% |
+| GeneticAlgorithm | 75.47% | 1.234 | 68.47% | 13.00% |
+| A2C | 66.40% | 1.494 | 100.00% | 0.00% |
+| PPO | 66.27% | 1.494 | 100.00% | 0.00% |
+| DQN | 46.53% | 1.754 | 66.67% | 0.00% |
+| Random | 34.33% | 2.284 | 49.80% | 18.33% |
+| EdgeOnly | 24.00% | 1.946 | 0.00% | 0.00% |
+| LocalOnly | 21.00% | 3.558 | 0.00% | 0.00% |
+| CloudOnly | 8.00% | 1.463 | 0.00% | 100.00% |
 
 ## Interpretation
 
-- `needs_revision` sonucu model basarisizligi degil, benchmark-policy hizalama kapisinin gecilmedigi anlamina gelir.
-- Cloud dominance yuksekse benchmark zengin offloading karar probleminden cok cloud-agirlikli probleme donusmus olabilir.
-- Workload-server-location korelasyonlari zayifsa hibrit pairing dogal korelasyonlari korumuyor demektir.
+- `pass` sonucu benchmark'in Faz 5R policy ve ablation yorumlari icin cozulur-zor bir rejim sundugunu gosterir.
+- Oracle ceiling yuksek ama PPO/DQN/A2C dusuk veya tek aksiyona cokuyorsa sorun benchmark'tan once policy hizalama, reward/state temsil veya action-collapse tarafinda aranir.
+- Sabit LocalOnly/EdgeOnly/CloudOnly baselines dusuk kalirsa bu beklenen bir kontrol sonucudur; env-aware heuristics ile RL/MLP modelleri asil rekabetci karsilastirma grubudur.
+- `needs_revision` sonucu gorulurse bu model basarisizligi degil, benchmark-policy hizalama kapisinin gecilmedigi anlamina gelir.

@@ -250,25 +250,107 @@
         "action": 3,
         "action_name": "edge_75",
         "feasible_rate": 0.88,
-        "avg_delay_s": 0.5495282003634582
+        "avg_delay_s": 0.5495231671714925
       },
       {
         "action": 4,
         "action_name": "edge_100",
         "feasible_rate": 0.494,
-        "avg_delay_s": 0.7050220339612929
+        "avg_delay_s": 0.7050776365337341
       },
       {
         "action": 5,
         "action_name": "cloud",
-        "feasible_rate": 0.392,
-        "avg_delay_s": 0.6491833741593052
+        "feasible_rate": 0.394,
+        "avg_delay_s": 0.6491695958230206
       }
     ],
     "action_diversity": 3
   },
   "policy": {
-    "available": false
+    "available": true,
+    "rows": [
+      {
+        "config_model_type": "DeadlineAwareGreedy",
+        "success_mean": 0.7653333333333334,
+        "success_std": 0.0011547005383792605,
+        "p95_latency_mean": 1.2364666666666666,
+        "partial_ratio": 0.68,
+        "action_5_rate": 0.124
+      },
+      {
+        "config_model_type": "GreedyLatency",
+        "success_mean": 0.7626666666666667,
+        "success_std": 0.0011547005383792605,
+        "p95_latency_mean": 1.2335666666666667,
+        "partial_ratio": 0.6893333333333332,
+        "action_5_rate": 0.12066666666666666
+      },
+      {
+        "config_model_type": "GeneticAlgorithm",
+        "success_mean": 0.7546666666666667,
+        "success_std": 0.0050332229568471835,
+        "p95_latency_mean": 1.2339333333333333,
+        "partial_ratio": 0.6846666666666668,
+        "action_5_rate": 0.13
+      },
+      {
+        "config_model_type": "A2C",
+        "success_mean": 0.664,
+        "success_std": 0.0,
+        "p95_latency_mean": 1.4938,
+        "partial_ratio": 1.0,
+        "action_5_rate": 0.0
+      },
+      {
+        "config_model_type": "PPO",
+        "success_mean": 0.6626666666666666,
+        "success_std": 0.0011547005383792605,
+        "p95_latency_mean": 1.4937666666666667,
+        "partial_ratio": 1.0,
+        "action_5_rate": 0.0
+      },
+      {
+        "config_model_type": "DQN",
+        "success_mean": 0.4653333333333333,
+        "success_std": 0.2140685248543871,
+        "p95_latency_mean": 1.7536333333333332,
+        "partial_ratio": 0.6666666666666666,
+        "action_5_rate": 0.0
+      },
+      {
+        "config_model_type": "Random",
+        "success_mean": 0.3433333333333333,
+        "success_std": 0.006429100507328611,
+        "p95_latency_mean": 2.2837666666666667,
+        "partial_ratio": 0.498,
+        "action_5_rate": 0.18333333333333335
+      },
+      {
+        "config_model_type": "EdgeOnly",
+        "success_mean": 0.24,
+        "success_std": 0.0,
+        "p95_latency_mean": 1.9456666666666667,
+        "partial_ratio": 0.0,
+        "action_5_rate": 0.0
+      },
+      {
+        "config_model_type": "LocalOnly",
+        "success_mean": 0.21,
+        "success_std": 0.0,
+        "p95_latency_mean": 3.558,
+        "partial_ratio": 0.0,
+        "action_5_rate": 0.0
+      },
+      {
+        "config_model_type": "CloudOnly",
+        "success_mean": 0.08,
+        "success_std": 0.0,
+        "p95_latency_mean": 1.4626000000000001,
+        "partial_ratio": 0.0,
+        "action_5_rate": 1.0
+      }
+    ]
   },
   "gate": {
     "status": "pass",
