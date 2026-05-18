@@ -4,11 +4,8 @@
 from __future__ import annotations
 
 import argparse
-import uuid
 from datetime import datetime
 from pathlib import Path
-
-import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[1]
@@ -25,7 +22,7 @@ from src.core.experiment_artifacts import (
     read_last_train_success,
     write_csv,
 )
-from src.core.evaluation import EXPERIMENT_LOG_COLUMNS
+from src.core.evaluation import evaluate_policy
 from experiments.phase_6.train_trace_rl import TraceTrainingOrchestrator
 
 
@@ -67,85 +64,19 @@ def evaluate_trace_checkpoint_phase5(
 ) -> dict:
     env = orchestrator._build_trace_env(episodes, feature_overrides=feature_overrides)
     model = orchestrator._load_model(checkpoint_path, env=env)
-
-    results = []
-    action_counts = {index: 0 for index in range(6)}
-
-    for trace_ep in episodes:
-        obs, _ = env.reset(options={"episode_tasks": trace_ep.tasks} if False else None)
-        done = False
-        episode_reward = 0.0
-        step_count = 0
-        episode_latencies = []
-        episode_energies = []
-        episode_successes = 0
-
-        while not done:
-            action, _ = model.predict(obs, deterministic=True)
-            if hasattr(action, "item"):
-                action = int(action.item())
-            else:
-                action = int(action)
-            action_counts[action] = action_counts.get(action, 0) + 1
-
-            obs, reward, done, truncated, info = env.step(action)
-            done = done or truncated
-            episode_reward += reward
-            step_count += 1
-            episode_latencies.append(info.get("delay", 0.0))
-            episode_energies.append(info.get("energy", 0.0))
-            if info.get("task_success", False):
-                episode_successes += 1
-
-        p95_latency = float(pd.Series(episode_latencies).quantile(0.95)) if episode_latencies else 0.0
-        avg_energy = float(sum(episode_energies) / len(episode_energies)) if episode_energies else 0.0
-        success_rate = episode_successes / max(1, step_count)
-        qoe = 100.0 * success_rate - (p95_latency * 5.0)
-
-        results.append(
-            {
-                "reward": float(episode_reward),
-                "steps": step_count,
-                "success_rate": success_rate,
-                "p95_latency": p95_latency,
-                "avg_energy": avg_energy,
-                "qoe": float(qoe),
-            }
-        )
-
-    avg_reward = float(sum(row["reward"] for row in results) / len(results)) if results else 0.0
-    avg_success = float(sum(row["success_rate"] for row in results) / len(results)) if results else 0.0
-    avg_p95_latency = float(sum(row["p95_latency"] for row in results) / len(results)) if results else 0.0
-    avg_energy = float(sum(row["avg_energy"] for row in results) / len(results)) if results else 0.0
-    avg_qoe = float(sum(row["qoe"] for row in results) / len(results)) if results else 0.0
-    total_tasks = int(sum(row["steps"] for row in results))
-    total_actions = max(1, sum(action_counts.values()))
-    action_rates = {
-        f"metric_action_{index}_rate": round(action_counts.get(index, 0) / total_actions, 4)
-        for index in range(6)
-    }
-    unique_actions = sum(1 for count in action_counts.values() if count > 0)
-    dominant_action = max(action_counts, key=action_counts.get) if action_counts else -1
-
-    log_values = {
-        "run_id": str(uuid.uuid4())[:8],
-        "timestamp": datetime.now().isoformat(),
-        "config_seed": int(config_seed),
-        "config_model_type": run_name,
-        "config_semantic_mode": "action_prior",
-        "config_total_tasks": total_tasks,
-        "metric_success_rate": round(avg_success, 4),
-        "metric_avg_reward": round(avg_reward, 2),
-        "metric_p95_latency": round(avg_p95_latency, 4),
-        "metric_avg_energy": round(avg_energy, 4),
-        "metric_qoe": round(avg_qoe, 2),
-        "metric_unique_actions": unique_actions,
-        "metric_dominant_action": dominant_action,
-        "config_batch_id": batch_id,
-        "config_eval_group": eval_group,
-    }
-    log_values.update(action_rates)
-    return {column: log_values[column] for column in EXPERIMENT_LOG_COLUMNS}
+    return evaluate_policy(
+        env,
+        model,
+        num_episodes=len(episodes),
+        run_name=run_name,
+        semantic_mode="action_prior",
+        config_seed=int(config_seed),
+        csv_path=None,
+        extra_fields={
+            "config_batch_id": batch_id,
+            "config_eval_group": eval_group,
+        },
+    )
 
 
 def _prepare_trace_splits(base_config_path: str, base_config: dict, algorithm: str, seed: int, report_path: Path, overrides: dict):

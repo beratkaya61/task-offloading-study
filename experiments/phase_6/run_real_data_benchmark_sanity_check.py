@@ -19,6 +19,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from agents.baselines import (
     CloudOnlyPolicy,
+    DeadlineAwareGreedyPolicy,
     EdgeOnlyPolicy,
     GeneticAlgorithmPolicy,
     GreedyLatencyPolicy,
@@ -37,6 +38,7 @@ HEURISTIC_POLICIES = {
     "CloudOnly": lambda: CloudOnlyPolicy(),
     "Random": lambda: RandomPolicy(),
     "GreedyLatency": lambda: GreedyLatencyPolicy(),
+    "DeadlineAwareGreedy": lambda: DeadlineAwareGreedyPolicy(),
     "GeneticAlgorithm": lambda: GeneticAlgorithmPolicy(population_size=10, generations=5),
 }
 

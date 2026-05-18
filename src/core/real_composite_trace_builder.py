@@ -21,6 +21,9 @@ class RealCompositeBuildConfig:
     seed: int = 42
     reference_datarate_bps: float = 25e6
     max_server_context_rows: int = 50_000
+    fusion_mode: str = "random"
+    decision_balance: str = "standard"
+    service_class_mode: str = "none"
 
 
 class RealCompositeTraceBuilder:
@@ -45,6 +48,8 @@ class RealCompositeTraceBuilder:
                 "lat": consecutive["lat"],
                 "long": consecutive["long"],
                 "machine_name": consecutive["machine_name"],
+                "source_time": pd.to_numeric(consecutive.get("time (s)", 0.0), errors="coerce").fillna(0.0),
+                "source_kind": "glasgow_consecutive",
             }
         )
         random_pool = pd.DataFrame(
@@ -52,6 +57,8 @@ class RealCompositeTraceBuilder:
                 "lat": random_based["lat"],
                 "long": random_based["long"],
                 "machine_name": random_based["MachineName"],
+                "source_time": pd.to_numeric(random_based.get("time", 0.0), errors="coerce").fillna(0.0),
+                "source_kind": "glasgow_random",
             }
         )
 
@@ -59,7 +66,8 @@ class RealCompositeTraceBuilder:
         pooled = pooled.dropna(subset=["lat", "long", "machine_name"]).copy()
         pooled["device_id"] = pd.factorize(pooled["machine_name"])[0] + 1
         pooled = pooled[(pooled["device_id"] > 0) & pooled["lat"].notna() & pooled["long"].notna()]
-        pooled = pooled.reset_index(drop=True)
+        pooled = pooled.sort_values(["source_time", "machine_name"]).reset_index(drop=True)
+        pooled["mobility_rank"] = pooled.index / max(len(pooled) - 1, 1)
         pooled["raw_lat"] = pooled["lat"].astype(float)
         pooled["raw_long"] = pooled["long"].astype(float)
         pooled[["lat", "long"]] = self._project_geo_to_env_plane(
@@ -137,6 +145,11 @@ class RealCompositeTraceBuilder:
 
         pooled = pd.concat(chunks, ignore_index=True).reset_index(drop=True)
         pooled["server_id"] = pd.factorize(pooled["machine_id"])[0] + 1
+        pooled["server_load_score"] = (
+            0.65 * pooled["cpu_util_percent"].astype(float)
+            + 0.35 * pooled["mem_util_percent"].astype(float)
+        ) / 100.0
+        pooled = pooled.sort_values(["server_load_score", "server_id"]).reset_index(drop=True)
         return pooled
 
     def _execution_time_pool(self) -> np.ndarray:
@@ -145,7 +158,7 @@ class RealCompositeTraceBuilder:
         for frame in uci_frames.values():
             values.extend(frame["Execution Time"].astype(float).tolist())
         execution_times = np.asarray(values, dtype=float)
-        return execution_times[execution_times > 0.0]
+        return np.sort(execution_times[execution_times > 0.0])
 
     def _alibaba_task_sample(self, max_tasks: int) -> pd.DataFrame:
         csv_path = self.data_root / "alibaba_cluster_trace_2018" / "batch_task.csv"
@@ -202,20 +215,63 @@ class RealCompositeTraceBuilder:
         )
         return float(min(local_delay, edge_delay, cloud_delay, partial_delay))
 
+
+    def _assign_service_class(self, task_row: pd.Series, fusion_mode: str, service_class_mode: str) -> str:
+        if service_class_mode != "mec_mixed":
+            return "default"
+
+        difficulty = float(task_row["difficulty_score"])
+        mem_score = float(task_row["plan_mem_score"])
+        duration_score = float(task_row["duration_score"])
+        arrival_rank = float(task_row.get("arrival_rank", 0.0))
+        selector = (0.37 * difficulty + 0.31 * mem_score + 0.19 * duration_score + 0.13 * arrival_rank) % 1.0
+
+        if difficulty < 0.30 and mem_score < 0.35:
+            return "local_sensing"
+        if selector < 0.22:
+            return "local_sensing"
+        if selector < 0.48:
+            return "balanced_partial"
+        if selector < 0.76:
+            return "urgent_edge"
+        return "cloud_batch"
+
     def _calibrate_task_fields(
         self,
         task_row: pd.Series,
         execution_time_s: float,
         reference_datarate_bps: float,
+        decision_balance: str = "standard",
+        service_class: str = "default",
     ) -> dict:
         difficulty = float(task_row["difficulty_score"])
         plan_mem_score = float(task_row["plan_mem_score"])
 
         edge_execution_anchor_s = float(np.clip(execution_time_s, 0.08, 1.5))
-        target_edge_service_s = edge_execution_anchor_s * (1.35 + 1.7 * difficulty)
-        cpu_cycles = int(np.clip(target_edge_service_s * self.EDGE_CPU_HZ, 1.5e8, 9.5e9))
 
-        data_size_kb = int(np.clip(128 + (plan_mem_score ** 0.9) * (1280 - 128), 128, 1280))
+        if service_class == "local_sensing":
+            target_edge_service_s = edge_execution_anchor_s * (0.22 + 0.35 * difficulty)
+            cpu_cycles = int(np.clip(target_edge_service_s * self.LOCAL_CPU_HZ, 4.0e7, 6.5e8))
+            data_size_kb = int(np.clip(24 + (plan_mem_score ** 0.75) * (256 - 24), 24, 256))
+        elif service_class == "balanced_partial":
+            target_edge_service_s = edge_execution_anchor_s * (0.75 + 1.0 * difficulty)
+            cpu_cycles = int(np.clip(target_edge_service_s * self.EDGE_CPU_HZ, 2.0e8, 3.8e9))
+            data_size_kb = int(np.clip(128 + (plan_mem_score ** 0.85) * (1792 - 128), 128, 1792))
+        elif service_class == "urgent_edge":
+            target_edge_service_s = edge_execution_anchor_s * (1.0 + 1.25 * difficulty)
+            cpu_cycles = int(np.clip(target_edge_service_s * self.EDGE_CPU_HZ, 4.0e8, 5.5e9))
+            data_size_kb = int(np.clip(192 + (plan_mem_score ** 0.85) * (3072 - 192), 192, 3072))
+        elif service_class == "cloud_batch":
+            target_edge_service_s = edge_execution_anchor_s * (1.45 + 1.9 * difficulty)
+            cpu_cycles = int(np.clip(target_edge_service_s * self.EDGE_CPU_HZ, 1.0e9, 9.5e9))
+            data_size_kb = int(np.clip(768 + (plan_mem_score ** 0.9) * (4096 - 768), 768, 4096))
+        else:
+            target_edge_service_s = edge_execution_anchor_s * (1.35 + 1.7 * difficulty)
+            cpu_cycles = int(np.clip(target_edge_service_s * self.EDGE_CPU_HZ, 1.5e8, 9.5e9))
+            if decision_balance == "edge_balanced":
+                data_size_kb = int(np.clip(192 + (plan_mem_score ** 0.85) * (4096 - 192), 192, 4096))
+            else:
+                data_size_kb = int(np.clip(128 + (plan_mem_score ** 0.9) * (1280 - 128), 128, 1280))
         size_bits = float(data_size_kb * 8 * 1024)
 
         reference_best_case_delay_s = self._reference_best_case_delay(
@@ -223,9 +279,25 @@ class RealCompositeTraceBuilder:
             size_bits,
             reference_datarate_bps=reference_datarate_bps,
         )
-        deadline_slack = 0.72 + 0.35 * difficulty + 0.55 * float(self.rng.random())
-        deadline_window_s = max(0.15, reference_best_case_delay_s * deadline_slack)
-
+        if service_class == "local_sensing":
+            local_delay = cpu_cycles / self.LOCAL_CPU_HZ
+            deadline_slack = 1.15 + 0.55 * float(self.rng.random())
+            deadline_window_s = max(0.12, local_delay * deadline_slack)
+        elif service_class == "balanced_partial":
+            deadline_slack = 0.92 + 0.25 * difficulty + 0.45 * float(self.rng.random())
+            deadline_window_s = max(0.18, reference_best_case_delay_s * deadline_slack)
+        elif service_class == "urgent_edge":
+            deadline_slack = 0.58 + 0.20 * difficulty + 0.32 * float(self.rng.random())
+            deadline_window_s = max(0.16, reference_best_case_delay_s * deadline_slack)
+        elif service_class == "cloud_batch":
+            deadline_slack = 1.10 + 0.45 * difficulty + 0.80 * float(self.rng.random())
+            deadline_window_s = max(0.65, reference_best_case_delay_s * deadline_slack)
+        else:
+            if decision_balance == "edge_balanced":
+                deadline_slack = 0.62 + 0.28 * difficulty + 0.42 * float(self.rng.random())
+            else:
+                deadline_slack = 0.72 + 0.35 * difficulty + 0.55 * float(self.rng.random())
+            deadline_window_s = max(0.15, reference_best_case_delay_s * deadline_slack)
         urgency = reference_best_case_delay_s / max(deadline_window_s, 1e-6)
         if urgency >= 0.92:
             priority = 3
@@ -246,6 +318,7 @@ class RealCompositeTraceBuilder:
             "difficulty_score": difficulty,
             "edge_execution_anchor_s": edge_execution_anchor_s,
             "target_edge_service_s": target_edge_service_s,
+            "service_class": service_class,
         }
 
     @staticmethod
@@ -262,12 +335,56 @@ class RealCompositeTraceBuilder:
             "p95": q95,
         }
 
+
+    def _pair_source_indices(
+        self,
+        alibaba_tasks: pd.DataFrame,
+        mobility: pd.DataFrame,
+        server_context: pd.DataFrame,
+        execution_times: np.ndarray,
+        fusion_mode: str,
+    ) -> dict[str, np.ndarray]:
+        if fusion_mode == "random":
+            return {
+                "mobility": self.rng.integers(0, len(mobility), size=len(alibaba_tasks)),
+                "server": self.rng.integers(0, len(server_context), size=len(alibaba_tasks)),
+                "execution": self.rng.integers(0, len(execution_times), size=len(alibaba_tasks)),
+            }
+
+        if fusion_mode != "correlation_aware":
+            raise ValueError(f"Unsupported fusion_mode: {fusion_mode}")
+
+        # Preserve workload temporal order and map nearby task ranks to nearby mobility/server ranks.
+        temporal_rank = alibaba_tasks["arrival_rank"].to_numpy(dtype=float)
+        difficulty = alibaba_tasks["difficulty_score"].to_numpy(dtype=float)
+        mem_score = alibaba_tasks["plan_mem_score"].to_numpy(dtype=float)
+
+        mobility_noise = self.rng.normal(0.0, 0.035, size=len(alibaba_tasks))
+        mobility_rank = np.clip(0.78 * temporal_rank + 0.22 * mem_score + mobility_noise, 0.0, 1.0)
+        mobility_indices = np.clip(np.round(mobility_rank * (len(mobility) - 1)), 0, len(mobility) - 1).astype(int)
+
+        server_noise = self.rng.normal(0.0, 0.05, size=len(alibaba_tasks))
+        server_rank = np.clip(0.58 * temporal_rank + 0.42 * difficulty + server_noise, 0.0, 1.0)
+        server_indices = np.clip(np.round(server_rank * (len(server_context) - 1)), 0, len(server_context) - 1).astype(int)
+
+        exec_noise = self.rng.normal(0.0, 0.04, size=len(alibaba_tasks))
+        execution_rank = np.clip(0.72 * difficulty + 0.28 * mem_score + exec_noise, 0.0, 1.0)
+        execution_indices = np.clip(np.round(execution_rank * (len(execution_times) - 1)), 0, len(execution_times) - 1).astype(int)
+
+        return {
+            "mobility": mobility_indices,
+            "server": server_indices,
+            "execution": execution_indices,
+        }
+
     def build_task_records(self, config: RealCompositeBuildConfig) -> pd.DataFrame:
         mobility = self._mobility_pool()
         server_context = self._server_context_pool(config.max_server_context_rows)
         execution_times = self._execution_time_pool()
         alibaba_tasks = self._alibaba_task_sample(config.max_tasks)
 
+        alibaba_tasks = alibaba_tasks.sort_values(["start_time", "task_name"]).reset_index(drop=True)
+        alibaba_tasks["arrival_rank"] = alibaba_tasks.index / max(len(alibaba_tasks) - 1, 1)
         alibaba_tasks["duration_s"] = (alibaba_tasks["end_time"] - alibaba_tasks["start_time"]).clip(lower=1.0)
         alibaba_tasks["plan_cpu_score"] = self._rank_score(np.log1p(alibaba_tasks["plan_cpu"].astype(float)))
         alibaba_tasks["plan_mem_score"] = self._rank_score(np.log1p(alibaba_tasks["plan_mem"].astype(float)))
@@ -278,9 +395,16 @@ class RealCompositeTraceBuilder:
             + 0.15 * alibaba_tasks["duration_score"]
         ).clip(lower=0.0, upper=1.0)
 
-        mobility_indices = self.rng.integers(0, len(mobility), size=len(alibaba_tasks))
-        server_indices = self.rng.integers(0, len(server_context), size=len(alibaba_tasks))
-        execution_indices = self.rng.integers(0, len(execution_times), size=len(alibaba_tasks))
+        pairings = self._pair_source_indices(
+            alibaba_tasks,
+            mobility,
+            server_context,
+            execution_times,
+            fusion_mode=config.fusion_mode,
+        )
+        mobility_indices = pairings["mobility"]
+        server_indices = pairings["server"]
+        execution_indices = pairings["execution"]
 
         records: List[dict] = []
         for idx, task_row in alibaba_tasks.iterrows():
@@ -291,10 +415,13 @@ class RealCompositeTraceBuilder:
             end_time = float(task_row["end_time"])
             duration = max(end_time - start_time, 1.0)
 
+            service_class = self._assign_service_class(task_row, config.fusion_mode, config.service_class_mode)
             calibrated = self._calibrate_task_fields(
                 task_row,
                 execution_time_s=execution_time,
                 reference_datarate_bps=config.reference_datarate_bps,
+                decision_balance=config.decision_balance,
+                service_class=service_class,
             )
             deadline = start_time + calibrated["deadline_window_s"]
 
@@ -324,6 +451,7 @@ class RealCompositeTraceBuilder:
                     "task_name": str(task_row["task_name"]),
                     "job_name": str(task_row["job_name"]),
                     "task_type_raw": str(task_row["task_type"]),
+                    "service_class": str(calibrated["service_class"]),
                     "field_source_arrival_time": "alibaba_batch_task.start_time",
                     "field_source_location": "glasgow_mec.mobility",
                     "field_source_execution_time": "uci_execution_times",
@@ -333,6 +461,12 @@ class RealCompositeTraceBuilder:
                     "field_proxy_data_size": True,
                     "field_proxy_cpu_cycles": True,
                     "field_proxy_priority": True,
+                    "fusion_mode": str(config.fusion_mode),
+                    "decision_balance": str(config.decision_balance),
+                    "service_class_mode": str(config.service_class_mode),
+                    "arrival_rank": float(task_row["arrival_rank"]),
+                    "mobility_rank": float(mobility_row.get("mobility_rank", 0.0)),
+                    "server_load_score": float(server_row.get("server_load_score", 0.0)),
                 }
             )
 

@@ -13,15 +13,21 @@ def build_state(device, task, edge_servers, channel, ablation_flags=None):
     """
     Build the normalized state vector used by RL agents.
 
-    State layout:
+    Default layout:
     [snr, task_size, cpu_cycles, battery, edge_load, edge_energy, semantic_prior(6)]
-    = 12 dimensions total
+    = 12 dimensions total.
+
+    With deadline awareness enabled, three physical deadline features are appended:
+    [deadline_norm, local_delay/deadline, edge75_delay/deadline].
     """
     if ablation_flags is None:
         ablation_flags = {}
 
+    use_deadline_features = bool(ablation_flags.get("use_deadline_features", False))
+    state_dim = 15 if use_deadline_features else 12
+
     if not device or not task:
-        return np.zeros((12,), dtype=np.float32)
+        return np.zeros((state_dim,), dtype=np.float32)
 
     if edge_servers:
         closest_edge = min(edge_servers, key=lambda e: math.dist(device.location, e.location))
@@ -57,12 +63,30 @@ def build_state(device, task, edge_servers, channel, ablation_flags=None):
     else:
         prior_vector = np.zeros((6,), dtype=np.float32)
 
+    physical_features = [snr_norm, size_norm, cpu_norm, battery_norm, load_norm, edge_energy_norm]
+
+    if use_deadline_features:
+        deadline = max(0.1, float(getattr(task, "deadline", 1.0)))
+        local_delay = float(getattr(task, "cpu_cycles", 0.0)) / 1e9
+        if closest_edge is not None:
+            edge75_tx = 0.75 * float(getattr(task, "size_bits", 0.0)) / max(float(datarate), 1e-6)
+            edge75_comp = 0.75 * float(getattr(task, "cpu_cycles", 0.0)) / 2e9
+            edge75_queue = 0.015 * float(getattr(closest_edge, "queue_length", 0.0)) + 0.02 * float(getattr(closest_edge, "current_load", 0.0))
+            edge75_delay = max(0.25 * local_delay, edge75_tx + edge75_comp + edge75_queue)
+        else:
+            edge75_delay = local_delay
+
+        physical_features.extend(
+            [
+                min(1.0, deadline / 5.0),
+                min(1.0, local_delay / deadline),
+                min(1.0, edge75_delay / deadline),
+            ]
+        )
+
     state = np.concatenate(
         (
-            np.array(
-                [snr_norm, size_norm, cpu_norm, battery_norm, load_norm, edge_energy_norm],
-                dtype=np.float32,
-            ),
+            np.array(physical_features, dtype=np.float32),
             prior_vector,
         )
     ).astype(np.float32)

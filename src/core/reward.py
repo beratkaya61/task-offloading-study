@@ -83,13 +83,16 @@ def calculate_reward(
 
         reward += 5.0 * (1.0 - energy / max(1e-5, local_energy_pred))
 
+        # Avoid making one partial ratio a universal attractor; let deadline and energy decide.
+        if action in (1, 2, 3) and task_success:
+            deadline_tightness = min(1.0, delay / max(1e-5, deadline))
+            reward += 2.0 * (1.0 - deadline_tightness)
+
         if llm_rec == "edge":
             if action in (1, 2, 3):
                 reward += 10.0 * conf_factor * partial_preference
                 if task_success:
                     reward += 6.0 * partial_preference
-                if action == 3:
-                    reward += 2.5 * conf_factor
             elif action == 4:
                 reward += 4.0 * conf_factor * (0.4 + 0.6 * priority_score)
                 reward -= 2.0 * size_norm

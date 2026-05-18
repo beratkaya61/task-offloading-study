@@ -20,6 +20,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from agents.baselines import (
     CloudOnlyPolicy,
+    DeadlineAwareGreedyPolicy,
     EdgeOnlyPolicy,
     GeneticAlgorithmPolicy,
     GreedyLatencyPolicy,
@@ -46,6 +47,7 @@ def load_policy(policy_name: str, checkpoint_path: str | None, env):
         "CloudOnly": CloudOnlyPolicy,
         "Random": RandomPolicy,
         "GreedyLatency": GreedyLatencyPolicy,
+        "DeadlineAwareGreedy": DeadlineAwareGreedyPolicy,
         "GeneticAlgorithm": lambda: GeneticAlgorithmPolicy(population_size=10, generations=5),
     }
 
@@ -59,10 +61,16 @@ def load_policy(policy_name: str, checkpoint_path: str | None, env):
     return model_class.load(checkpoint_path, env=env)
 
 
-def resolve_rl_checkpoint(policy_name: str, config: dict) -> str | None:
+def resolve_rl_checkpoint(policy_name: str, config: dict, eval_seed: int | None = None) -> str | None:
     rl_cfg = config.get("rl_models", {})
     family = rl_cfg.get("checkpoint_family", "real_data_rl_retraining")
-    training_seed = int(rl_cfg.get("training_seed", 42))
+    training_seed_cfg = rl_cfg.get("training_seed", 42)
+    if isinstance(training_seed_cfg, str) and training_seed_cfg == "match_eval_seed":
+        if eval_seed is None:
+            raise ValueError("training_seed=match_eval_seed requires eval_seed")
+        training_seed = int(eval_seed)
+    else:
+        training_seed = int(training_seed_cfg)
     family_map = rl_cfg.get("checkpoints", {})
     family_paths = family_map.get(family, {})
     template = family_paths.get(policy_name)
@@ -110,7 +118,7 @@ def run_real_data_policy_evaluation(
         env = orchestrator._build_trace_env(split_map[split_name])
 
         for policy_name in policy_names:
-            checkpoint_path = resolve_rl_checkpoint(policy_name, config)
+            checkpoint_path = resolve_rl_checkpoint(policy_name, config, eval_seed=int(seed))
             policy = load_policy(policy_name, checkpoint_path, env)
             row = evaluate_policy(
                 env,

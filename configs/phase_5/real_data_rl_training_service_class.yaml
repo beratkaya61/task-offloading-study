@@ -1,0 +1,63 @@
+experiment:
+  seed: 42
+  semantic_mode: "action_prior"
+  total_timesteps: 30000
+  max_episodes: 500
+  episodes_per_eval: 10
+
+env:
+  max_steps: 50
+  num_edge_servers: 3
+  num_devices: 20
+  tasks_per_episode: 50
+  use_reward_shaping: true
+  use_partial_offloading: true
+  use_semantic_features: true
+  use_confidence_weighting: false
+  use_battery_awareness: true
+  use_mobility_features: true
+  use_queue_awareness: false
+  use_success_bonus: true
+  success_bonus: 100.0
+  cloud_fixed_latency: 0.35
+
+trace:
+  trace_source: "real_data"
+  real_data_mode: true
+  real_data_manifest: "configs/phase_6/raw_real_data_manifest.yaml"
+  trace_dir: "data/real_composite_trace_correlation_aware_edge_balanced_mec_mixed/splits"
+  train_episodes: 80
+  val_episodes: 10
+  test_episodes: 10
+  normalize_features: true
+  remove_outliers: true
+
+ppo:
+  learning_rate: 0.0003
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+
+dqn:
+  learning_rate: 0.0001
+  buffer_size: 10000
+  learning_starts: 1000
+  batch_size: 64
+  gamma: 0.99
+  train_freq: 4
+  target_update_interval: 500
+
+a2c:
+  learning_rate: 0.0007
+  n_steps: 5
+  gamma: 0.99
+
+logging:
+  log_dir: "results/phase_5/metrics/real_data/rl_training"
+  checkpoint_dir: "models/trace_rl/real_data_training"
+  report_path: "phase_reports/Phase_5R_Service_Class_Report.md"
+
+device:
+  cuda: true
+  device_id: 0

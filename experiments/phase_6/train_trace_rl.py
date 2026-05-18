@@ -223,6 +223,7 @@ class TraceTrainingOrchestrator:
                 n_steps=train_cfg.get("n_steps", defaults["n_steps"]),
                 batch_size=train_cfg.get("batch_size", defaults["batch_size"]),
                 n_epochs=train_cfg.get("n_epochs", defaults["n_epochs"]),
+                ent_coef=train_cfg.get("ent_coef", 0.0),
                 **common,
             )
 
@@ -244,6 +245,7 @@ class TraceTrainingOrchestrator:
             "MlpPolicy",
             env,
             n_steps=train_cfg.get("n_steps", defaults["n_steps"]),
+            ent_coef=train_cfg.get("ent_coef", 0.0),
             **common,
         )
 
@@ -261,6 +263,7 @@ class TraceTrainingOrchestrator:
             "battery_awareness": bool(env_cfg.get("use_battery_awareness", True)),
             "queue_awareness": bool(env_cfg.get("use_queue_awareness", False)),
             "mobility_features": bool(env_cfg.get("use_mobility_features", True)),
+            "deadline_features": bool(env_cfg.get("use_deadline_features", False)),
         }
         if feature_overrides:
             flags.update(feature_overrides)
@@ -341,7 +344,9 @@ class TraceTrainingOrchestrator:
             disable_battery_awareness=not flags["battery_awareness"],
             disable_queue_awareness=not flags["queue_awareness"],
             disable_mobility_features=not flags["mobility_features"],
+            use_deadline_features=flags["deadline_features"],
             success_bonus=self._success_bonus(),
+            cloud_fixed_latency=float(self.config_dict["environment"].get("cloud_fixed_latency", 0.1)),
         )
 
     def prepare_traces(self) -> Tuple[List[TraceEpisode], List[TraceEpisode], List[TraceEpisode]]:

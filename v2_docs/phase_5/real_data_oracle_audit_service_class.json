@@ -1,0 +1,91 @@
+{
+  "timestamp": "2026-05-18T08:35:03.223801",
+  "benchmark_name": "real-world trace-driven hybrid benchmark",
+  "config_path": "configs\\phase_5\\real_data_rl_training_service_class.yaml",
+  "split": "test",
+  "seed": 42,
+  "task_count": 500,
+  "oracle_success_rate": 0.918,
+  "impossible_task_ratio": 0.08199999999999996,
+  "dominant_oracle_action": "edge_75",
+  "dominant_oracle_action_share": 0.718,
+  "status": "usable",
+  "action_summary": [
+    {
+      "action": 0,
+      "action_name": "local",
+      "feasible_rate": 0.21,
+      "avg_delay_s": 1.319474179428,
+      "p95_delay_s": 3.5580318971999993
+    },
+    {
+      "action": 1,
+      "action_name": "edge_25",
+      "feasible_rate": 0.236,
+      "avg_delay_s": 1.017770211510779,
+      "p95_delay_s": 2.7140154682149746
+    },
+    {
+      "action": 2,
+      "action_name": "edge_50",
+      "feasible_rate": 0.522,
+      "avg_delay_s": 0.687901666653779,
+      "p95_delay_s": 1.8229272753731565
+    },
+    {
+      "action": 3,
+      "action_name": "edge_75",
+      "feasible_rate": 0.88,
+      "avg_delay_s": 0.5495282003634582,
+      "p95_delay_s": 1.410710023010641
+    },
+    {
+      "action": 4,
+      "action_name": "edge_100",
+      "feasible_rate": 0.494,
+      "avg_delay_s": 0.7050220339612929,
+      "p95_delay_s": 1.8447562422273558
+    },
+    {
+      "action": 5,
+      "action_name": "cloud",
+      "feasible_rate": 0.392,
+      "avg_delay_s": 0.649183374159305,
+      "p95_delay_s": 1.1218115487658569
+    }
+  ],
+  "deadline_window_summary": {
+    "mean": 0.7221585987872385,
+    "std": 0.8901390183162362,
+    "min": 0.11999999999534339,
+    "p50": 0.6025697743098135,
+    "p95": 1.4667643489890905,
+    "max": 6.7481381461257115
+  },
+  "deadline_tightness_summary": {
+    "mean": 0.7012502149787886,
+    "std": 0.263438163651267,
+    "min": 0.2021898233816549,
+    "p50": 0.7776344020733971,
+    "p95": 1.0325896762728901,
+    "max": 1.1756197647784887
+  },
+  "cpu_cycles_summary": {
+    "mean": 1319474179.428,
+    "std": 1348094457.3938005,
+    "min": 40000000.0,
+    "p50": 1155553979.5,
+    "p95": 3558031897.1999993,
+    "max": 9500000000.0
+  },
+  "data_size_kb_summary": {
+    "mean": 1489.896,
+    "std": 1082.1588870853464,
+    "min": 33.0,
+    "p50": 1755.0,
+    "p95": 2893.0,
+    "max": 4039.0
+  },
+  "detail_csv": "results\\phase_5\\metrics\\real_data\\oracle\\service_class_oracle_action_audit.csv",
+  "trace_dir": "data/real_composite_trace_correlation_aware_edge_balanced_mec_mixed/splits"
+}

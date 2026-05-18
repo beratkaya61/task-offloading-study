@@ -1,4 +1,4 @@
-﻿import math
+import math
 import random
 from collections import deque
 from types import SimpleNamespace
@@ -33,8 +33,10 @@ class OffloadingEnv(gym.Env):
         disable_battery_awareness=False,
         disable_queue_awareness=False,
         disable_mobility_features=False,
+        use_deadline_features=False,
         max_steps=50,
         success_bonus=0.0,
+        cloud_fixed_latency=0.1,
     ):
         super().__init__()
 
@@ -47,6 +49,7 @@ class OffloadingEnv(gym.Env):
             "disable_battery_awareness": disable_battery_awareness,
             "disable_queue_awareness": disable_queue_awareness,
             "disable_mobility_features": disable_mobility_features,
+            "use_deadline_features": use_deadline_features,
         }
 
         self.action_space = spaces.Discrete(6)
@@ -54,8 +57,9 @@ class OffloadingEnv(gym.Env):
         if disable_partial_offloading:
             self.valid_actions = [0, 4, 5]
 
-        # 6 physical features + 6 semantic prior features
-        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(12,), dtype=np.float32)
+        # 6 physical features + optional 3 deadline features + 6 semantic prior features
+        obs_dim = 15 if use_deadline_features else 12
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32)
 
         self.devices = devices or []
         self.edge_servers = edge_servers or []
@@ -71,6 +75,7 @@ class OffloadingEnv(gym.Env):
         self.max_steps = max_steps
         self.current_step = 0
         self.success_bonus = float(success_bonus)
+        self.cloud_fixed_latency = float(cloud_fixed_latency)
         self.previous_action = None
         self.edge_load_decay = 0.82
 
@@ -211,6 +216,8 @@ class OffloadingEnv(gym.Env):
         transmission_time_full = self.current_task.size_bits / max(datarate, 1e-6)
         tx_energy_pred_full = 0.5 * transmission_time_full
         local_comp_energy_pred_full = 1e-28 * (1e9 ** 2) * self.current_task.cpu_cycles
+        edge_queue_delay = 0.0
+        cloud_congestion_delay = 0.0
 
         edge_ratios = {0: 0.0, 1: 0.25, 2: 0.5, 3: 0.75, 4: 1.0, 5: 1.0}
         ratio = edge_ratios[action]
@@ -231,7 +238,7 @@ class OffloadingEnv(gym.Env):
             cloud_queue = float(getattr(self.cloud_server, 'queue_length', 0)) if self.cloud_server is not None else 0.0
             cloud_load = float(getattr(self.cloud_server, 'current_load', 0.0)) if self.cloud_server is not None else 0.0
             cloud_congestion_delay = 0.02 * cloud_queue + 0.03 * cloud_load
-            delay = transmission_time_full + 0.1 + (self.current_task.cpu_cycles / 5e9) + cloud_congestion_delay
+            delay = transmission_time_full + self.cloud_fixed_latency + (self.current_task.cpu_cycles / 5e9) + cloud_congestion_delay
             energy = tx_energy_pred_full
         else:
             local_part_lat = ((1 - ratio) * self.current_task.cpu_cycles) / 1e9
@@ -240,7 +247,6 @@ class OffloadingEnv(gym.Env):
             edge_comp_lat = (ratio * self.current_task.cpu_cycles) / 2e9
             edge_tx_en = 0.5 * edge_tx_lat
 
-            edge_queue_delay = 0.0
             if closest_edge is not None:
                 edge_queue_delay = 0.015 * float(getattr(closest_edge, 'queue_length', 0)) + 0.02 * float(getattr(closest_edge, 'current_load', 0.0))
             delay = max(local_part_lat, edge_tx_lat + edge_comp_lat + edge_queue_delay) + overhead
@@ -318,9 +324,18 @@ class OffloadingEnv(gym.Env):
             "task_success": success,
             "delay": delay,
             "energy": energy,
+            "deadline": getattr(self.current_task, "deadline", 1.0),
+            "action": action,
+            "offload_ratio": ratio,
+            "partial_offload": 1 <= action <= 3,
             "switching_overhead": overhead,
+            "edge_queue_delay": edge_queue_delay,
+            "cloud_queue_delay": cloud_congestion_delay,
+            "queue_delay": edge_queue_delay if 1 <= action <= 4 else cloud_congestion_delay,
             "edge_energy_cost": edge_energy_cost,
             "edge_energy_ratio": edge_energy_ratio if edge_energy_ratio is not None else 1.0,
+            "battery_empty": battery_empty,
+            "battery_level": getattr(self.current_device, "battery", 10000.0),
         }
 
         self.previous_action = action

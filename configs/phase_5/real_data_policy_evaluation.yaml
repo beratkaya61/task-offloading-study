@@ -14,6 +14,7 @@ policies:
     - CloudOnly
     - Random
     - GreedyLatency
+    - DeadlineAwareGreedy
     - GeneticAlgorithm
   rl:
     - PPO
@@ -22,7 +23,7 @@ policies:
 
 rl_models:
   checkpoint_family: "real_data_rl_retraining"
-  training_seed: 42
+  training_seed: "match_eval_seed"
   checkpoints:
     real_data_rl_retraining:
       PPO: "models/ppo/real_data_rl_retraining/seed{seed}/ppo_retraining_best.zip"
@@ -30,5 +31,5 @@ rl_models:
       A2C: "models/a2c/real_data_rl_retraining/seed{seed}/a2c_retraining_best.zip"
 
 trace_backbone:
-  training_config: "configs/phase_5/real_data_rl_training.yaml"
+  training_config: "configs/phase_5/real_data_rl_training_service_class.yaml"
   evaluation_split: "test"

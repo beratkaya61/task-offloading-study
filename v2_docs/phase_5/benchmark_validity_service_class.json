@@ -1,0 +1,277 @@
+{
+  "benchmark_label": "service_class_mec_mixed",
+  "records_path": "data\\real_composite_trace_correlation_aware_edge_balanced_mec_mixed\\records\\composite_task_records.csv",
+  "record_count": 5000,
+  "fusion_mode": "correlation_aware",
+  "key_correlations": {
+    "difficulty_vs_data_size": 0.8258,
+    "difficulty_vs_deadline": 0.6651,
+    "difficulty_vs_execution_time": 0.2863,
+    "difficulty_vs_server_load": 0.4434,
+    "arrival_vs_mobility_rank": 0.9524,
+    "arrival_vs_server_load": 0.807,
+    "location_x_vs_server_load": 0.0124
+  },
+  "correlation_matrix": {
+    "cpu_cycles": {
+      "cpu_cycles": 1.0,
+      "data_size": 0.8133,
+      "deadline_window_s": 0.9477,
+      "difficulty_score": 0.7905,
+      "execution_time_s": 0.5069,
+      "server_cpu_utilization": 0.4001,
+      "server_mem_utilization": 0.0909,
+      "server_load_score": 0.4172,
+      "location_x": -0.0193,
+      "location_y": -0.0543,
+      "arrival_rank": 0.0304,
+      "mobility_rank": 0.2194
+    },
+    "data_size": {
+      "cpu_cycles": 0.8133,
+      "data_size": 1.0,
+      "deadline_window_s": 0.7198,
+      "difficulty_score": 0.8258,
+      "execution_time_s": 0.2832,
+      "server_cpu_utilization": 0.3988,
+      "server_mem_utilization": 0.0938,
+      "server_load_score": 0.4167,
+      "location_x": -0.0234,
+      "location_y": -0.0443,
+      "arrival_rank": 0.0379,
+      "mobility_rank": 0.2908
+    },
+    "deadline_window_s": {
+      "cpu_cycles": 0.9477,
+      "data_size": 0.7198,
+      "deadline_window_s": 1.0,
+      "difficulty_score": 0.6651,
+      "execution_time_s": 0.4833,
+      "server_cpu_utilization": 0.3576,
+      "server_mem_utilization": 0.0818,
+      "server_load_score": 0.373,
+      "location_x": -0.0208,
+      "location_y": -0.0541,
+      "arrival_rank": 0.0471,
+      "mobility_rank": 0.2076
+    },
+    "difficulty_score": {
+      "cpu_cycles": 0.7905,
+      "data_size": 0.8258,
+      "deadline_window_s": 0.6651,
+      "difficulty_score": 1.0,
+      "execution_time_s": 0.2863,
+      "server_cpu_utilization": 0.4241,
+      "server_mem_utilization": 0.1008,
+      "server_load_score": 0.4434,
+      "location_x": -0.009,
+      "location_y": -0.0486,
+      "arrival_rank": -0.0223,
+      "mobility_rank": 0.1841
+    },
+    "execution_time_s": {
+      "cpu_cycles": 0.5069,
+      "data_size": 0.2832,
+      "deadline_window_s": 0.4833,
+      "difficulty_score": 0.2863,
+      "execution_time_s": 1.0,
+      "server_cpu_utilization": 0.1498,
+      "server_mem_utilization": 0.0352,
+      "server_load_score": 0.1565,
+      "location_x": -0.0262,
+      "location_y": -0.0619,
+      "arrival_rank": -0.0129,
+      "mobility_rank": 0.0514
+    },
+    "server_cpu_utilization": {
+      "cpu_cycles": 0.4001,
+      "data_size": 0.3988,
+      "deadline_window_s": 0.3576,
+      "difficulty_score": 0.4241,
+      "execution_time_s": 0.1498,
+      "server_cpu_utilization": 1.0,
+      "server_mem_utilization": -0.0682,
+      "server_load_score": 0.9636,
+      "location_x": 0.0141,
+      "location_y": -0.0316,
+      "arrival_rank": 0.7844,
+      "mobility_rank": 0.8358
+    },
+    "server_mem_utilization": {
+      "cpu_cycles": 0.0909,
+      "data_size": 0.0938,
+      "deadline_window_s": 0.0818,
+      "difficulty_score": 0.1008,
+      "execution_time_s": 0.0352,
+      "server_cpu_utilization": -0.0682,
+      "server_mem_utilization": 1.0,
+      "server_load_score": 0.201,
+      "location_x": -0.0054,
+      "location_y": 0.0156,
+      "arrival_rank": 0.1372,
+      "mobility_rank": 0.1542
+    },
+    "server_load_score": {
+      "cpu_cycles": 0.4172,
+      "data_size": 0.4167,
+      "deadline_window_s": 0.373,
+      "difficulty_score": 0.4434,
+      "execution_time_s": 0.1565,
+      "server_cpu_utilization": 0.9636,
+      "server_mem_utilization": 0.201,
+      "server_load_score": 1.0,
+      "location_x": 0.0124,
+      "location_y": -0.0269,
+      "arrival_rank": 0.807,
+      "mobility_rank": 0.862
+    },
+    "location_x": {
+      "cpu_cycles": -0.0193,
+      "data_size": -0.0234,
+      "deadline_window_s": -0.0208,
+      "difficulty_score": -0.009,
+      "execution_time_s": -0.0262,
+      "server_cpu_utilization": 0.0141,
+      "server_mem_utilization": -0.0054,
+      "server_load_score": 0.0124,
+      "location_x": 1.0,
+      "location_y": 0.4806,
+      "arrival_rank": 0.0123,
+      "mobility_rank": 0.0059
+    },
+    "location_y": {
+      "cpu_cycles": -0.0543,
+      "data_size": -0.0443,
+      "deadline_window_s": -0.0541,
+      "difficulty_score": -0.0486,
+      "execution_time_s": -0.0619,
+      "server_cpu_utilization": -0.0316,
+      "server_mem_utilization": 0.0156,
+      "server_load_score": -0.0269,
+      "location_x": 0.4806,
+      "location_y": 1.0,
+      "arrival_rank": -0.0011,
+      "mobility_rank": -0.0123
+    },
+    "arrival_rank": {
+      "cpu_cycles": 0.0304,
+      "data_size": 0.0379,
+      "deadline_window_s": 0.0471,
+      "difficulty_score": -0.0223,
+      "execution_time_s": -0.0129,
+      "server_cpu_utilization": 0.7844,
+      "server_mem_utilization": 0.1372,
+      "server_load_score": 0.807,
+      "location_x": 0.0123,
+      "location_y": -0.0011,
+      "arrival_rank": 1.0,
+      "mobility_rank": 0.9524
+    },
+    "mobility_rank": {
+      "cpu_cycles": 0.2194,
+      "data_size": 0.2908,
+      "deadline_window_s": 0.2076,
+      "difficulty_score": 0.1841,
+      "execution_time_s": 0.0514,
+      "server_cpu_utilization": 0.8358,
+      "server_mem_utilization": 0.1542,
+      "server_load_score": 0.862,
+      "location_x": 0.0059,
+      "location_y": -0.0123,
+      "arrival_rank": 0.9524,
+      "mobility_rank": 1.0
+    }
+  },
+  "priority_summary": [
+    {
+      "priority": 0,
+      "tasks": 1658,
+      "cpu_cycles_mean": 1451610629.6224,
+      "data_size_mean": 957.8088,
+      "deadline_window_mean": 1.121,
+      "difficulty_mean": 0.3859,
+      "server_load_mean": 0.5565
+    },
+    {
+      "priority": 1,
+      "tasks": 451,
+      "cpu_cycles_mean": 841812480.6142,
+      "data_size_mean": 794.6231,
+      "deadline_window_mean": 0.4999,
+      "difficulty_mean": 0.4556,
+      "server_load_mean": 0.5462
+    },
+    {
+      "priority": 2,
+      "tasks": 342,
+      "cpu_cycles_mean": 853260933.9649,
+      "data_size_mean": 756.8713,
+      "deadline_window_mean": 0.4374,
+      "difficulty_mean": 0.4689,
+      "server_load_mean": 0.5464
+    },
+    {
+      "priority": 3,
+      "tasks": 2549,
+      "cpu_cycles_mean": 1642417503.2809,
+      "data_size_mean": 2145.6901,
+      "deadline_window_mean": 0.7459,
+      "difficulty_mean": 0.5864,
+      "server_load_mean": 0.579
+    }
+  ],
+  "oracle": {
+    "available": true,
+    "task_count": 500,
+    "oracle_success_rate": 0.918,
+    "impossible_task_ratio": 0.08199999999999996,
+    "dominant_action": "edge_75",
+    "dominant_action_share": 0.7015250544662309,
+    "action_summary": [
+      {
+        "action": 0,
+        "action_name": "local",
+        "feasible_rate": 0.21,
+        "avg_delay_s": 1.319474179428
+      },
+      {
+        "action": 1,
+        "action_name": "edge_25",
+        "feasible_rate": 0.236,
+        "avg_delay_s": 1.017770211510779
+      },
+      {
+        "action": 2,
+        "action_name": "edge_50",
+        "feasible_rate": 0.522,
+        "avg_delay_s": 0.687901666653779
+      },
+      {
+        "action": 3,
+        "action_name": "edge_75",
+        "feasible_rate": 0.88,
+        "avg_delay_s": 0.5495282003634582
+      },
+      {
+        "action": 4,
+        "action_name": "edge_100",
+        "feasible_rate": 0.494,
+        "avg_delay_s": 0.7050220339612929
+      },
+      {
+        "action": 5,
+        "action_name": "cloud",
+        "feasible_rate": 0.392,
+        "avg_delay_s": 0.6491833741593052
+      }
+    ],
+    "action_diversity": 3
+  },
+  "policy": {
+    "available": false
+  },
+  "gate": {
+    "status": "pass",
+    "warnings": []
+  }
+}

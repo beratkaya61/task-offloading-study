@@ -33,6 +33,7 @@ def build_trace_training_config(
             "learning_starts": algo_cfg.get("learning_starts", 1000),
             "train_freq": algo_cfg.get("train_freq", 4),
             "target_update_interval": algo_cfg.get("target_update_interval", 500),
+            "ent_coef": algo_cfg.get("ent_coef", 0.0),
         },
         "environment": {
             "trace_source": trace_cfg.get("trace_source", "real_data"),
@@ -46,8 +47,10 @@ def build_trace_training_config(
             "use_battery_awareness": bool(env_cfg.get("use_battery_awareness", True)),
             "use_mobility_features": bool(env_cfg.get("use_mobility_features", True)),
             "use_queue_awareness": bool(env_cfg.get("use_queue_awareness", False)),
+            "use_deadline_features": bool(env_cfg.get("use_deadline_features", False)),
             "use_success_bonus": bool(env_cfg.get("use_success_bonus", True)),
             "success_bonus": float(env_cfg.get("success_bonus", 100.0)),
+            "cloud_fixed_latency": float(env_cfg.get("cloud_fixed_latency", 0.1)),
         },
         "data": {
             "real_data_mode": bool(trace_cfg.get("real_data_mode", True)),

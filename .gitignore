@@ -172,3 +172,10 @@ data/raw_real_datasets/**
 # Local generated real-data composite outputs
 data/real_composite_trace/**
 !data/real_composite_trace/
+
+# Local generated benchmark variants and temporary experiment artifacts
+data/real_composite_trace_*/**
+models/tmp/
+results/tmp/
+results/phase_5/metrics/real_data/
+data.zip
